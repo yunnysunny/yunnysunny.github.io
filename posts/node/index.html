@@ -41,7 +41,7 @@
   <a href="/posts/node/">
     <h1 class="post-title">node中调试子进程</h1>
   </a>
-  <span class="post-date">2014 &#183; 2 &#183; 8</span>
+  <span class="post-date">2014 &#183; 7 &#183; 31</span>
 </div>
 
 <div class="post-body markdown"><p>现在node.js在单步调试中做的最好的，就要数intellij idea了，但是node在使用cluster的时候，无法开启调试，stackoverflow上有对这个问题的描述与解答（点击<a href="http://stackoverflow.com/questions/16840623/how-to-debug-node-js-child-forked-process">这里</a>查看）。但是这里要将的解决方案确实通过增加启动参数控制，摒弃多进程模式来实现调试，比如说在本地测试的时候启动单进程，在运营环境中使用多进程。</p>

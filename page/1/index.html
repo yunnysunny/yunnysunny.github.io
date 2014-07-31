@@ -36,30 +36,149 @@
 
 
   <div class="post-head group">
-  <a href="/posts/node/">
-    <h1 class="post-title">node中调试子进程</h1>
+  <a href="/posts/socket/">
+    <h1 class="post-title">小议socket关闭</h1>
   </a>
   <span class="post-date">2014 &#183; 2 &#183; 8</span>
 </div>
 
-<div class="post-body markdown"><p>现在node.js在单步调试中做的最好的，就要数intellij idea了，但是node在使用cluster的时候，无法开启调试，stackoverflow上有对这个问题的描述与解答（点击<a href="http://stackoverflow.com/questions/16840623/how-to-debug-node-js-child-forked-process">这里</a>查看）。但是这里要将的解决方案确实通过增加启动参数控制，摒弃多进程模式来实现调试，比如说在本地测试的时候启动单进程，在运营环境中使用多进程。</p>
-<p>node.js中可以读取环境变量，使用方法为<code>process.env.环境变量名</code>，也就是说可以通过下列方式来控制是否启用多进程：</p>
-<pre><code><div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">DEBUG_LOCAL</span> <span class="o">==</span> <span class="s1">&#39;true&#39;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//单进程代码处理</span>
-<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="c1">//cluster代码处理</span>
+<div class="post-body markdown"><p>socket编程过程中往往会遇到这样那样的问题，出现了这些问题，有的是由于并发访问量太大造成的，有些却是由于代码中编程不慎造成的。
+比如说，最常见的错误就是程序中报打开的文件数过多这个错误。socket建立连接的时候是三次握手，这个大家都很清楚，
+但是socket关闭连接的时候，需要进行四次挥手，但很多人对于这四次挥手的具体流程不清楚，吃了很多亏。</p>
+<h2><a name="close-wait" class="anchor" href="#close-wait"><span class="header-link"></span></a>CLOSE_WAIT分析</h2>
+<p>socket是一种全双工的通信方式，建立完socket连接后，连接的任何一方都可以发起关闭操作。这里不妨假设连接的关闭是客户端发起。客户端的代码如下：</p>
+<pre><code><div class="highlight"><pre><span class="nx">ret</span> <span class="o">=</span> <span class="nx">CS_GetConnect</span><span class="p">(</span><span class="o">&amp;</span><span class="nx">client</span><span class="p">,</span><span class="nx">ipAddr</span><span class="p">,</span><span class="mi">9010</span><span class="p">);</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">ret</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;connected success.&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+<span class="nx">CloseSocket</span><span class="p">(</span><span class="nx">client</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>代码片段1.1</p>
+<p>基本逻辑就是，连接建立后立即关闭。其中CloseSocket函数是自定义函数，仅仅封装了在windows和linux下关闭socket的不同实现而已</p>
+<pre><code><div class="highlight"><pre><span class="err">#</span><span class="k">if</span> <span class="nx">defined</span><span class="p">(</span><span class="nx">WIN32</span><span class="p">)</span> <span class="o">||</span> <span class="nx">defined</span><span class="p">(</span><span class="nx">WIN64</span><span class="p">)</span>
+<span class="err">#</span><span class="nx">define</span> <span class="nx">CloseSocket</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span> <span class="k">do</span><span class="p">{</span> <span class="nx">closesocket</span><span class="p">(</span><span class="nx">fd</span><span class="p">);</span><span class="cm">/* shutdown(fd, 2);*/</span> <span class="p">}</span><span class="k">while</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="err">#</span><span class="k">else</span>
+<span class="err">#</span><span class="nx">define</span> <span class="nx">CloseSocket</span><span class="p">(</span><span class="nx">fd</span><span class="p">)</span> <span class="k">do</span><span class="p">{</span> <span class="nx">close</span><span class="p">(</span><span class="nx">fd</span><span class="p">);</span> <span class="cm">/*shutdown(fd,2);*/</span> <span class="p">}</span><span class="k">while</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+<span class="err">#</span><span class="nx">endif</span>
+</pre></div>
+</code></pre>
+<p>代码片段1.2</p>
+<p><img src="http://git.oschina.net/yunnysunny/socket_close/raw/master/doc/close1.png" alt="socket的关闭流程1"></p>
+<p>图1.1 CLOSE_WAIT出现流程</p>
+<p>客户端调用了CloseSocket之后，发送FIN信号到服务器端，告诉socket程序，连接已经断开。服务器端接收到FIN信号后，会将自身的TCP状态置为<code>CLOSE_WAIT</code>,同时回复 一个ACK信号给客户端，客户端接收到这个ACK信号后，自身将处于<code>FIN_WAIT_2</code>状态。</p>
+<p>但是tcp是全双工的通信协议，虽然客户端关闭了连接，但是服务器端对于这个关闭动作不予理睬怎么办。对于服务器端来说，这是个不幸的消息，因为它将一直处于<code>CLOSE_WAIT</code>状态，虽然客户端已经不需要和服务器间进行通信了，但是服务器端的socket连接句柄一直得不到释放；如果老是有这种情况出现，久而久之服务器端的连接句柄就会被耗尽。对于发起关闭的客户端来说，他处于<code>FIN_WAIT_2</code>状态，如果出现服务器端一直处于<code>CLOSE_WATI</code>状态的情况，客户端并不会一直处在<code>FIN_WAIT_2</code>状态，因为这个状态有一个超时时间，这个值可以在/etc/sysctl.conf中进行配置。在这个文件中配置<code>net.ipv4.tcp_fin_timeout=30</code>即可保证<code>FIN_WAIT_2</code>状态最多保持30秒，超过这个时间后就进入TIME_WAIT状态（下面要讲到这个状态）。</p>
+<p><strong>注意：这里socket的关闭从客户端发起，仅仅是为了举例说明，socket的关闭完全也可以从服务器端发起。比如说你写了一个爬虫程序去下载互联网上的某些web服务器上的资源的时候，某些要下载的web资源不存在，web服务器会立即关闭当前的socket连接，但是你的爬虫程序不够健壮，对于这种情况没有做处理，同样会使你的爬虫客户端处于CLOSE_WAIT状态。</strong></p>
+<p>那么怎样预防SOCKET处于CLOSE_WATI状态呢，答案在这里：</p>
+<pre><code><div class="highlight"><pre>    <span class="k">while</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">memset</span><span class="p">(</span><span class="nx">getBuffer</span><span class="p">,</span><span class="mi">0</span><span class="p">,</span><span class="nx">MY_SOCKET_BUFFER_SIZE</span><span class="p">);</span>
+        <span class="nx">Ret</span> <span class="o">=</span> <span class="nx">recv</span><span class="p">(</span><span class="nx">client</span><span class="p">,</span> <span class="nx">getBuffer</span><span class="p">,</span> <span class="nx">MY_SOCKET_BUFFER_SIZE</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
+        <span class="k">if</span> <span class="p">(</span> <span class="nx">Ret</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">||</span> <span class="nx">Ret</span> <span class="o">==</span> <span class="nx">SOCKET_ERROR</span> <span class="p">)</span> 
+        <span class="p">{</span>
+            <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;对方socket已经退出,Ret【%d】!\n&quot;</span><span class="p">,</span><span class="nx">Ret</span><span class="p">);</span>
+            <span class="nx">Ret</span> <span class="o">=</span> <span class="nx">SOCKET_READE_ERROR</span><span class="p">;</span><span class="c1">//接收服务器端信息失败</span>
+            <span class="k">break</span><span class="p">;</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="nx">clear</span><span class="o">:</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">getBuffer</span> <span class="o">!=</span> <span class="nx">NULL</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">free</span><span class="p">(</span><span class="nx">getBuffer</span><span class="p">);</span>
+        <span class="nx">getBuffer</span> <span class="o">=</span> <span class="nx">NULL</span><span class="p">;</span>
+    <span class="p">}</span>
+    <span class="nx">closesocket</span><span class="p">(</span><span class="nx">client</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>代码片段1.3</p>
+<p>这里摘录了服务器端部分代码，注意这个recv函数，这个函数在连接建立时，会堵塞住当前代码，等有数据接收成功后才返回，返回值为接收到的字节数；但是对于连接对方socket关闭情况，它能立即感应到，并且返回0.所以对于返回0的时候，可以跳出循环，结束当前socket处理，进行一些垃圾回收工作，注意最后一句closesocket操作是很重要的，假设没有写这句话，服务器端会一直处于CLOSE_WAIT状态。如果写了这句话，那么socket的流程就会是这样的：
+<img src="http://git.oschina.net/yunnysunny/socket_close/raw/master/doc/close2.png" alt="socket的关闭流程2"></p>
+<p>图1.2 <code>TIME_WAIT</code>出现流程</p>
+<h2><a name="time-wait" class="anchor" href="#time-wait"><span class="header-link"></span></a>TIME_WAIT分析</h2>
+<p>服务器端调用了CloseSocket操作后，会发送一个FIN信号给客户端，客户端进入<code>TIME_WAIT</code>状态，而且将维持在这个状态一段时间，这个时间也被成为2MSL(MSL是maximum segment lifetime的缩写，意指最大分节生命周期，这是IP数据包能在互联网上生存的最长时间，超过这个时间将在互联网上消失)，在这个时间段内如果客户端的发出的数据还没有被服务器端确认接收的话，可以趁这个时间等待服务端的确认消息。注意，客户端最后发出的ACK N+1消息，是一进入<code>TIME_WAIT</code>状态后就发出的，并不是在<code>TIME_WAIT</code>状态结束后发出的。如果在发送ACK N+1的时候，由于某种原因服务器端没有收到，那么服务器端会重新发送FIN N消息，这个时候如果客户端还处于<code>TIME_WAIT</code>状态的，会重新发送ACK N+1消息，否则客户端会直接发送一个RST消息，告诉服务器端socket连接已经不存在了。</p>
+<p>有时，我们在使用netstat命令查看web服务器端的tcp状态的时候，会发现有成千上万的连接句柄处在<code>TIME_WAIT</code>状态。web服务器的socket连接一般都是服务器端主动关闭的，当web服务器的并发访问量过大的时候，由于web服务器大多情况下是短连接，socket句柄的生命周期比较短，于是乎就出现了大量的句柄堵在<code>TIME_WAIT</code>状态，等待系统回收的情况。如果这种情况太过频繁，又由于操作系统本身的连接数就有限，势必会影响正常的socket连接的建立。在linux下对于这种情况倒是有解救措施，方法就是修改/etc/sysctl.conf文件，保证里面含有以下三行配置：</p>
+<pre><code><div class="highlight"><pre><span class="err">#表示开启重用。允许将</span><span class="nx">TIME</span><span class="o">-</span><span class="nx">WAIT</span> <span class="nx">sockets</span><span class="err">重新用于新的</span><span class="nx">TCP</span><span class="err">连接，默认为</span><span class="mi">0</span><span class="err">，表示关闭</span>  
+<span class="nx">net</span><span class="p">.</span><span class="nx">ipv4</span><span class="p">.</span><span class="nx">tcp_tw_reuse</span> <span class="o">=</span> <span class="mi">1</span>  
+<span class="err">#表示开启</span><span class="nx">TCP</span><span class="err">连接中</span><span class="nx">TIME</span><span class="o">-</span><span class="nx">WAIT</span> <span class="nx">sockets</span><span class="err">的快速回收，默认为</span><span class="mi">0</span><span class="err">，表示关闭</span>  
+<span class="nx">net</span><span class="p">.</span><span class="nx">ipv4</span><span class="p">.</span><span class="nx">tcp_tw_recycle</span> <span class="o">=</span> <span class="mi">1</span>  
+<span class="err">#表示系统同时保持</span><span class="nx">TIME_WAIT</span><span class="err">的最大数量，如果超过这个数字，</span>
+<span class="err">#</span><span class="nx">TIME_WAIT</span><span class="err">将立刻被清除并打印警告信息。默认为</span><span class="mi">180000</span><span class="err">，改为</span><span class="mi">5000</span><span class="err">。</span>
+<span class="nx">net</span><span class="p">.</span><span class="nx">ipv4</span><span class="p">.</span><span class="nx">tcp_max_tw_buckets</span> <span class="o">=</span> <span class="mi">5000</span>
+</pre></div>
+</code></pre>
+<p>配置型 2.1</p>
+<p>关于重用<code>TIME_WAIT</code>状态的句柄的操作，也可以在代码中设置：</p>
+<pre><code><div class="highlight"><pre><span class="kr">int</span> <span class="nx">on</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">setsockopt</span><span class="p">(</span><span class="nx">socketfd</span><span class="cm">/*socket句柄*/</span><span class="p">,</span><span class="nx">SOL_SOCKET</span><span class="p">,</span><span class="nx">SO_REUSEADDR</span><span class="p">,(</span><span class="kr">char</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="nx">on</span><span class="p">,</span><span class="nx">sizeof</span><span class="p">(</span><span class="nx">on</span><span class="p">)))</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="nx">ERROR_SET_REUSE_ADDR</span><span class="p">;</span>
 <span class="p">}</span>
 </pre></div>
 </code></pre>
-<p><strong>代码1.1</strong></p>
-<p>剩下的就是在idea中配置环境变量了，点击调试的配置功能，即点击图1.1位置。<br><img src="/images/edit_config.jpg" alt="选择配置"><br><strong>图1.1 选择配置</strong></p>
-<p>在打开的界面中点击环境变量配置功能按钮<br><img src="/images/set_env_show.jpg" alt="配置界面"><br><strong>图1.2 配置界面</strong></p>
-<p>添加一个环境变量<br><img src="/images/add_env.jpg" alt="添加环境变量"><br><strong>图1.3 添加环境变量</strong>  </p>
-<p>至此完成配置，点击调试后，就会将当前的代码运行成单进程，在生产环境中不加环境变量启动，则运行到正常的cluster代码中。</p>
+<p>代码片段2.1</p>
+<p>如果在代码中设置了关于重用的操作，程序中将使用代码中设置的选项决定重用或者不重用，/etc/sysctl.conf中<code>net.ipv4.tcp_tw_reuse</code>中的设置将不再其作用。</p>
+<p>当然这样设置是有悖TCP的设计标准的，因为处于<code>TIME_WAIT</code>状态的TCP连接，是有其存在的积极作用的，前面已经介绍过。假设客户端的ACK N+1信号发送失败，服务器端在1MSL时间过后会重发FIN N信号，而此时客户端重用了之前关闭的连接句柄建立了新的连接，但是此时就会收到一个FIN信号，导致自己被莫名其妙关闭。</p>
+<p>一般<code>TIME_WAIT</code>会维持在2MSL（linux下1MSL默认为30秒）时间，但是这个时间可以通过代码修改：</p>
+<pre><code><div class="highlight"><pre><span class="nx">struct</span> <span class="nx">linger</span> <span class="nx">so_linger</span><span class="p">;</span>
+<span class="nx">so_linger</span><span class="p">.</span><span class="nx">l_onoff</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="nx">so_linger</span><span class="p">.</span><span class="nx">l_linger</span> <span class="o">=</span> <span class="mi">10</span><span class="p">;</span>
+<span class="k">if</span> <span class="p">(</span><span class="nx">setsockopt</span><span class="p">(</span><span class="nx">socketfd</span><span class="p">,</span><span class="nx">SOL_SOCKET</span><span class="p">,</span><span class="nx">SO_LINGER</span><span class="p">,(</span><span class="kr">char</span> <span class="o">*</span><span class="p">)</span><span class="o">&amp;</span><span class="nx">so_linger</span><span class="p">,</span><span class="nx">sizeof</span><span class="p">(</span><span class="nx">struct</span> <span class="nx">linger</span><span class="p">)))</span>
+<span class="p">{</span>
+    <span class="k">return</span> <span class="nx">ERROR_SET_LINGER</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>代码片段2.2</p>
+<p>这里代码将<code>TIME_WAIT</code>的时间设置为10秒（在BSD系统中，将会是0.01*10s）。TCP中的<code>TIME_WAIT</code>机制使得socket程序可以“优雅”的关闭，如果你想你的程序更优雅，最好不要设置<code>TIME_WAIT</code>的停留时间，让老的tcp数据包在合理的时间内自生自灭。当然对于<code>SO_LINGER</code>参数，它不仅仅能够自定义<code>TIME_WAIT</code>状态的时间，还能够将TCP的四次挥手直接禁用掉，假设对于so_linger结构体变量的设置是这个样子的：</p>
+<pre><code><div class="highlight"><pre><span class="nx">so_linger</span><span class="p">.</span><span class="nx">l_onoff</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
+<span class="nx">so_linger</span><span class="p">.</span><span class="nx">l_linger</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p>如果客户端的socket是这么设置的那么socket的关闭流程就直接是这个样子了：
+<img src="http://git.oschina.net/yunnysunny/socket_close/raw/master/doc/close3.png" alt="socket的关闭流程3"></p>
+<p>图2.1 RST关闭流程</p>
+<p>这相当于客户端直接告诉服务器端，我这边异常终止了，对于我稍后给出的所有数据包你都可以丢弃掉。服务器端如果接受到这种RST消息，会直接把对应的socket句柄回收掉。有一些socket程序不想让TCP出现<code>TIME_WAIT</code>状态，会选择直接使用RST方式关闭socket，以保证socket句柄在最短的时间内得到回收，当然前提是接受有可能被丢弃老的数据包这种情况的出现。如果socket通信的前后数据包的关联性不是很强的话，换句话说每次通信都是一个单独的事务，那么可以考虑直接发送RST信号来快速关闭连接。</p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>补充</h2>
+<p>1.文中提到的修改/etc/sysctl.conf文件的情况，修改完成之后需要运行<code>/sbin/sysctl -p</code>后才能生效。
+2.图1中发送完FIN M信号后，被动关闭端的socket程序中输入流会接收到一个EOF标示，是在C代码中处理时recv函数返回0代表对方关闭，在java代码中会在InputStream的read函数中接收到-1：</p>
+<pre><code><div class="highlight"><pre><span class="nx">Socket</span> <span class="nx">client</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Socket</span><span class="p">();</span><span class="c1">//,9090</span>
+    <span class="k">try</span> <span class="p">{</span>
+        <span class="nx">client</span><span class="p">.</span><span class="nx">connect</span><span class="p">(</span>
+            <span class="k">new</span> <span class="nx">InetSocketAddress</span><span class="p">(</span><span class="s2">&quot;192.168.56.101&quot;</span><span class="p">,</span><span class="mi">9090</span><span class="p">));</span>
+
+        <span class="k">while</span><span class="p">(</span><span class="kc">true</span><span class="p">){</span>                
+            <span class="kr">int</span> <span class="nx">c</span> <span class="o">=</span> <span class="nx">client</span><span class="p">.</span><span class="nx">getInputStream</span><span class="p">().</span><span class="nx">read</span><span class="p">();</span>
+            <span class="k">if</span> <span class="p">(</span><span class="nx">c</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">System</span><span class="p">.</span><span class="nx">out</span><span class="p">.</span><span class="nx">print</span><span class="p">((</span><span class="kr">char</span><span class="p">)</span> <span class="nx">c</span><span class="p">);</span>
+            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span><span class="c1">//如果对方socket关闭，read函数返回-1</span>
+                <span class="k">break</span><span class="p">;</span>
+            <span class="p">}</span>
+
+            <span class="k">try</span> <span class="p">{</span>
+                <span class="nx">Thread</span><span class="p">.</span><span class="nx">currentThread</span><span class="p">().</span><span class="nx">sleep</span><span class="p">(</span><span class="mi">2000</span><span class="p">);</span>                    
+            <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">InterruptedException</span> <span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">e</span><span class="p">.</span><span class="nx">printStackTrace</span><span class="p">();</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+    <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">IOException</span> <span class="nx">e2</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">e2</span><span class="p">.</span><span class="nx">printStackTrace</span><span class="p">();</span>
+    <span class="p">}</span> <span class="k">finally</span> <span class="p">{</span>
+        <span class="k">try</span> <span class="p">{</span>
+            <span class="nx">client</span><span class="p">.</span><span class="nx">close</span><span class="p">();</span>
+        <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">IOException</span> <span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
+            <span class="nx">e</span><span class="p">.</span><span class="nx">printStackTrace</span><span class="p">();</span>
+        <span class="p">}</span>
+    <span class="p">}</span>
+
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>代码片段3.1</p>
+<p>3.如果主动关闭方已经发起了关闭的FIN信号，被动关闭方不予理睬，依然往主动关闭方发送数据，那么主动关闭方会直接返回RST新号，连接双方的句柄就被双方的操作系统回收，如果此时双方的路由节点之前还存在未到达的数据，将会被丢弃掉。</p>
+<p>4.通信的过程中，socket双发中有一方的进程意外退出，则这一方将向其对应的另一方发送RST消息，所有双发建立的连接将会被回收，未接收完的消息就会被丢弃。</p>
 </div>
 
   <div class="comments">
-    <a href="/posts/node/#comments">
+    <a href="/posts/socket/#comments">
       <span class="icon-bubbles"></span>
       Comments
     </a>
