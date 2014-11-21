@@ -44,8 +44,7 @@
   <span class="post-date">2014 &#183; 5 &#183; 25</span>
 </div>
 
-<div class="post-body markdown"><h1><a name="session" class="anchor" href="#session"><span class="header-link"></span></a>session的安全性</h1>
-<h2><a name="session" class="anchor" href="#session"><span class="header-link"></span></a>session原理</h2>
+<div class="post-body markdown"><h2><a name="session" class="anchor" href="#session"><span class="header-link"></span></a>session原理</h2>
 <p>提到session，大家肯定会联想到登录，登录成功后记录登录状态，同时标记当前登录用户是谁。功能大体上就是这个样子，但是今天要讲的不是功能，而是实现。通过探讨session的实现方式来发掘一些可能你之前不知道的有趣的事情。<br>为了记录session，在客户端和服务器端都要保存数据，客户端记录一个标记，服务器端不但存储了这个标记同时还存储了这个标记映射的数据。好吧，还是说点白话吧，在客户端记录的其实是一个sessionid，在服务器端记录的是一个key-value形式的数据结构，这里的key肯定是指sessionid了，value就代表session的详细内容。用户在做http请求的时候，总是会把sessionid传递给服务器，然后服务器根据这个sessionid来查询session的内容（也就是上面说到的value）。<br>现在我们重点关注一下sessionid，他是今天问题的关键所在。sessionid在客户端（http的客户端一般就是指浏览器了）是存储在cookie中，当然也有例外（书本上肯定会提到也有保存在url中的，我做程序员这么多年也没有见过这种方式，这难道就是现实和实际的差距吗，好残酷）。
 我们通过一个例子来阐述一下这个sessionid在session处理时的作用。首先假定这么一个场景，我们有一个cms（content management system，内容管理系统），这个应用有一个后台，用户必须登录才能进入后台进行文章发表等操作。首先是登录流程，用户在浏览器输入用户名、密码，点击登录，浏览器会将用户名密码提交到服务器程序进行处理；服务器验证用户名、密码正确后，会返回登录成功信息，并且会修改服务器端的session内容，比如我们将用户ID写入session中，为了方便存储这些session的内容会被序列化成字符串或者二进制保存在文件或者数据库中，这时候大多数情况下服务器在对当前的http请求进行响应时，会返回一个新的sessionid要求浏览器写入本地cookie中，对应的返回的http响应头部信息应该会是是这个样子的：<code>set-cookie:PHPSESSID=xxxxxxx</code>,浏览器解析到这个头之后就会在当前生成一个cookie关联当前的域名。
 <img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/login.png" alt="登录时序图">

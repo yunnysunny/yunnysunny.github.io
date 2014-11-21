@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -6,8 +7,10 @@
     <link rel="icon" type="image/png" href="/images/cabin.png" >
     <link href="/styles/main.css" rel="stylesheet">
     
-    <title>白一梓的博客</title>
+    <title>NOOBS安装自定义系统</title>
     
+    
+    <meta name="description" content="手把手教你怎么将一个自定义的操作系统加入到noobs中">
     
   </head>
   <body>
@@ -34,8 +37,7 @@
     </nav>
     <div class="content">
 
-
-  <div class="post-head group">
+<div class="post-head group">
   <a href="/posts/noobs/">
     <h1 class="post-title">NOOBS安装自定义系统</h1>
   </a>
@@ -131,55 +133,53 @@
 <p><img src="http://image16-c.poco.cn/mypoco/myphoto/20141121/23/4599735520141121233432094.jpg" alt="noobs根目录"><br><strong>图2.3 sd卡根目录</strong><br>至此一个自定义的操作系统已经成功制作完成，将sd卡插入树莓派就可以安装了。</p>
 </div>
 
-  <div class="comments">
-    <a href="/posts/noobs/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
-
-  <div class="post-head group">
-  <a href="/posts/node/">
-    <h1 class="post-title">node中调试子进程</h1>
-  </a>
-  <span class="post-date">2014 &#183; 7 &#183; 31</span>
+<!--Social sharing icons-->
+<div class="social">
+  <a href="https://twitter.com/share" class="twitter-share-button">Tweet</a>
+  <div data-size="medium" data-annotation="bubble" data-width="300" class="g-plusone"></div>
+  <a href="http://news.ycombinator.com/submit" class="hn-share-button">Vote on HN</a>
+</div>
+<!--Disqus comments, Make sure to replace `colinwren` with your account name in the Disqus helper script below-->
+<div id="comments">
+  <div id="disqus_thread"></div>
 </div>
 
-<div class="post-body markdown"><p>现在node.js在单步调试中做的最好的，就要数intellij idea了，但是node在使用cluster的时候，无法开启调试，stackoverflow上有对这个问题的描述与解答（点击<a href="http://stackoverflow.com/questions/16840623/how-to-debug-node-js-child-forked-process">这里</a>查看）。但是这里要将的解决方案确实通过增加启动参数控制，摒弃多进程模式来实现调试，比如说在本地测试的时候启动单进程，在运营环境中使用多进程。</p>
-<p>node.js中可以读取环境变量，使用方法为<code>process.env.环境变量名</code>，也就是说可以通过下列方式来控制是否启用多进程：</p>
-<pre><code><div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">DEBUG_LOCAL</span> <span class="o">==</span> <span class="s1">&#39;true&#39;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//单进程代码处理</span>
-<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="c1">//cluster代码处理</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>代码1.1</strong></p>
-<p>剩下的就是在idea中配置环境变量了，点击调试的配置功能，即点击图1.1位置。<br><img src="/images/edit_config.jpg" alt="选择配置"><br><strong>图1.1 选择配置</strong></p>
-<p>在打开的界面中点击环境变量配置功能按钮<br><img src="/images/set_env_show.jpg" alt="配置界面"><br><strong>图1.2 配置界面</strong></p>
-<p>添加一个环境变量<br><img src="/images/add_env.jpg" alt="添加环境变量"><br><strong>图1.3 添加环境变量</strong>  </p>
-<p>至此完成配置，点击调试后，就会将当前的代码运行成单进程，在生产环境中不加环境变量启动，则运行到正常的cluster代码中。</p>
-</div>
+<!--Helper scripts for social share icons-->
+<!--Hacker News
+<script type="text/javascript">
+  (function(d, t) {
+    var g = d.createElement(t),
+        s = d.getElementsByTagName(t)[0];
+    g.src = '//hnbutton.appspot.com/static/hn.min.js';
+    s.parentNode.insertBefore(g, s);
+  }(document, 'script'));
+</script>-->
 
-  <div class="comments">
-    <a href="/posts/node/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
+<!--Twitter-->
+<script type="text/javascript">
+  !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+</script>
 
+<!--Google Plus-->
+<script type="text/javascript">
+  (function() {
+    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+    po.src = 'https://apis.google.com/js/plusone.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  })();
+</script>
 
-<div class="pagination group">
-  
-    
-    
-  
-    
-    
-      <a href="/page/1/" class="older"> &#8592; Older</a>
-    
-  
-</div>
+<!--Disqus-->
+<script type="text/javascript">
+  var disqus_shortname = 'colinwren'; // Change this to your Disqus account name
+
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
     </div>
     <script src="//upcdn.b0.upaiyun.com/libs/jquery/jquery-1.10.2.min.js" type="text/javascript"></script>
     <script src="/scripts/main.js" type="text/javascript"></script>
