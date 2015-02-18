@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -6,8 +7,10 @@
     <link rel="icon" type="image/png" href="/images/cabin.png" >
     <link href="/styles/main.css" rel="stylesheet">
     
-    <title>白一梓的博客</title>
+    <title>同步和异步回调</title>
     
+    
+    <meta name="description" content="同步和异步API的设计指南">
     
   </head>
   <body>
@@ -34,8 +37,7 @@
     </nav>
     <div class="content">
 
-
-  <div class="post-head group">
+<div class="post-head group">
   <a href="/posts//">
     <h1 class="post-title">同步和异步回调</h1>
   </a>
@@ -116,131 +118,53 @@
 <p>鉴于基于回调的API如此的时髦……如果你准备写一个，我想前面的这个话题你也会遇到。打完收工。</p>
 </div>
 
-  <div class="comments">
-    <a href="/posts//#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
-
-  <div class="post-head group">
-  <a href="/posts/noobs/">
-    <h1 class="post-title">NOOBS安装自定义系统</h1>
-  </a>
-  <span class="post-date">2014 &#183; 11 &#183; 21</span>
+<!--Social sharing icons-->
+<div class="social">
+  <a href="https://twitter.com/share" class="twitter-share-button">Tweet</a>
+  <div data-size="medium" data-annotation="bubble" data-width="300" class="g-plusone"></div>
+  <a href="http://news.ycombinator.com/submit" class="hn-share-button">Vote on HN</a>
+</div>
+<!--Disqus comments, Make sure to replace `colinwren` with your account name in the Disqus helper script below-->
+<div id="comments">
+  <div id="disqus_thread"></div>
 </div>
 
-<div class="post-body markdown"><h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>简介</h2>
-<p>前段时间折腾了一下树莓派，树莓派的操作系统安装时需要自己烧录img文件到SD卡中。烧录SD卡大体分为两种方式一种是吧一个img文件烧录到整张卡中，另一种是通过NBOOBS将多个img文件烧录到一张卡中。前者在windows下通过Win32DiskImager这个软件就能轻松的做到，后者需要使用到NBOOBS，下载地址：<a href="http://downloads.raspberrypi.org/NOOBS_latest">http://downloads.raspberrypi.org/NOOBS_latest</a> 。</p>
-<p>NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安装界面，在安装过程中读取定义好的配置文件，来选择要安装的各个系统。通过上文提到的下载地址下载回来的NOOBS，里面只预置了Raspbian这个系统，但是我们想安装一些自定义的系统改怎么办呢？这就是本文要解决的问题。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>实现</h2>
-<p>关于添加自定义操作系统的问题，在NOOBS的github文档上也是有说明的，详见<a href="https://github.com/raspberrypi/noobs#how-to-create-a-custom-os-version">这里</a>。假设我们现在要安装<a href="http://blog.petrockblock.com/retropie/">RetroPie</a>这个系统，我们首先从<a href="http://blog.petrockblock.com/download/retropie-project-image/">官方地址</a>上把它下载下来。根据github上提到的教程，那么制作NOOBS系统就应该是下面几步。</p>
-<ol>
-<li>下载NOOBS.</li>
-<li>解压下载后的文件。</li>
-<li>进入<code>os</code>文件夹。</li>
-<li>选择其中的一个子文件，拷贝一份新的。这里就拿Raspbin这个文件夹开刀。拷贝完成后，将文件夹改名RetroPie。</li>
-<li><p>好，现在我们修改RetroPie文件夹下的os.json文件，这里面定义的数据将会在安装的时候显示为操作系统的标题和描述等信息。我大体上将其改为如下形式：</p>
-<pre><code><div class="highlight"><pre> <span class="p">{</span>
-   <span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;retropie&quot;</span><span class="p">,</span>
-   <span class="s2">&quot;version&quot;</span><span class="o">:</span> <span class="s2">&quot;2.3&quot;</span><span class="p">,</span>
-   <span class="s2">&quot;release_date&quot;</span><span class="o">:</span> <span class="s2">&quot;2014-05-31&quot;</span><span class="p">,</span>
-   <span class="s2">&quot;kernel&quot;</span><span class="o">:</span> <span class="s2">&quot;3.12&quot;</span><span class="p">,</span>
-   <span class="s2">&quot;description&quot;</span><span class="o">:</span> <span class="s2">&quot;The RetroPie Project started with the idea of turning the Raspberry Pi into a retro-gaming console and evolved ever since.&quot;</span><span class="p">,</span>
-   <span class="s2">&quot;url&quot;</span><span class="o">:</span> <span class="s2">&quot;http://blog.petrockblock.com/retropie/&quot;</span><span class="p">,</span>
-   <span class="s2">&quot;username&quot;</span><span class="o">:</span> <span class="s2">&quot;pi&quot;</span><span class="p">,</span>
-   <span class="s2">&quot;password&quot;</span><span class="o">:</span> <span class="s2">&quot;raspberry&quot;</span><span class="p">,</span>
-   <span class="s2">&quot;feature_level&quot;</span><span class="o">:</span> <span class="mi">123900</span>
- <span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>配置文件2.1 os.json</strong></p>
-</li>
-</ol>
-<p>其中<code>name</code>肯定就是名称了，然后是<code>version</code>版本，<code>description</code>描述等信息。<br>6. 【可选】你可以放一个RetroPie.png来定义一下当前操作系统的logo。<br>7. 【可选】你可以在文件夹<code>slides_vga</code>中放一下说明性的图片，他会在安装过程中当成幻灯片播放出来。<br>8. 这一步是进行分区文件配置，先把做好的分区文件<code>partitions.json</code>贴出来：</p>
-<pre><code><div class="highlight"><pre><span class="p">{</span>
-  <span class="s2">&quot;partitions&quot;</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;label&quot;</span><span class="o">:</span> <span class="s2">&quot;boot&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;filesystem_type&quot;</span><span class="o">:</span> <span class="s2">&quot;FAT&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;partition_size_nominal&quot;</span><span class="o">:</span> <span class="mi">60</span><span class="p">,</span>
-      <span class="s2">&quot;want_maximised&quot;</span><span class="o">:</span> <span class="kc">false</span><span class="p">,</span>
-      <span class="s2">&quot;uncompressed_tarball_size&quot;</span><span class="o">:</span> <span class="mi">11</span><span class="p">,</span>
-      <span class="s2">&quot;mkfs_options&quot;</span><span class="o">:</span> <span class="s2">&quot;-F 32&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;label&quot;</span><span class="o">:</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;filesystem_type&quot;</span><span class="o">:</span> <span class="s2">&quot;ext4&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;partition_size_nominal&quot;</span><span class="o">:</span> <span class="mi">2700</span><span class="p">,</span>
-      <span class="s2">&quot;want_maximised&quot;</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
-      <span class="s2">&quot;mkfs_options&quot;</span><span class="o">:</span> <span class="s2">&quot;-O ^huge_file&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;uncompressed_tarball_size&quot;</span><span class="o">:</span> <span class="mi">2203</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>配置文件2.2 partitions.json</strong></p>
-<p>可以看到在json文件中属性partitions是一个数组类型，数组每个元素定义的是一个分区信息。首先看label为boot的分区，这是一个FAT格式的分区，被用作操作系统启动分区；然后label为root的是ext4分区，里面存放linux操作系统分区。partition_size_nominal是说分区的大小，want_maximised是说当前分区是否需要被扩展，如果为false，则分区的大小就是partition_size_nominal的指定值，如果为true，则noobs会根据sd卡的大小尽量的分配尽可能多的空间给当前分区。<br>9. 之前说过，我们从retropie官网上下载下来它的安装文件，将其解压后我们得到一个img文件。按照noobs给出的文档，根据partitions.json中的配置的信息，我们应该生成两个压缩文件，分别为boot.tar.xz和root.tar.gz，文件名实际上对应的是配置文件中的label属性。那么我们现在得到的是img文件，怎样得到这两个文件呢？<br>如果你是用linux，这个问题很好解决，linux下可以使用mount命令直接把img文件挂载到指定目录上；如果使用windows，那就只能用虚拟机了。好吧，我就是用的windows，打开自己的虚拟机，通过vbox上的共享目录，来访问windows上的这个img文件。<br><img src="/images/select_share.png" alt="vbox共享"><br><strong>图2.1 共享文件夹设置1</strong><br>在弹出的界面中新增一个共享设置，我们假设img文件放在e:\sharing下，那么可以做如下设置：<br><img src="/images/add_new_vbox_share.png" alt="新建共享"><br><strong>图2.2 新建共享</strong><br>最后在ubuntu下通过命令<code>mount -t vboxsf sharing /mnt/share</code>来加载这个共享（这里假设/mnt/share目录已经存在了）。在/mnt/share下我们用fdisk命令来查看img文件内部的分区情况：</p>
-<pre><code><div class="highlight"><pre><span class="nx">fdisk</span> <span class="o">-</span><span class="nx">lu</span> <span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img</span>
-</pre></div>
-</code></pre>
-<p>该命令将会输出如下内容：</p>
-<pre><code><div class="highlight"><pre><span class="nx">Disk</span> <span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img</span><span class="o">:</span> <span class="mi">3460</span> <span class="nx">MB</span><span class="p">,</span> <span class="mi">3460300800</span> <span class="nx">bytes</span>
-<span class="mi">255</span> <span class="nx">heads</span><span class="p">,</span> <span class="mi">63</span> <span class="nx">sectors</span><span class="o">/</span><span class="nx">track</span><span class="p">,</span> <span class="mi">420</span> <span class="nx">cylinders</span><span class="p">,</span> <span class="nx">total</span> <span class="mi">6758400</span> <span class="nx">sectors</span>
-<span class="nx">Units</span> <span class="o">=</span> <span class="err">扇区</span> <span class="nx">of</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">512</span> <span class="o">=</span> <span class="mi">512</span> <span class="nx">bytes</span>
-<span class="nx">Sector</span> <span class="nx">size</span> <span class="p">(</span><span class="nx">logical</span><span class="o">/</span><span class="nx">physical</span><span class="p">)</span><span class="o">:</span> <span class="mi">512</span> <span class="nx">bytes</span> <span class="o">/</span> <span class="mi">512</span> <span class="nx">bytes</span>
-<span class="nx">I</span><span class="o">/</span><span class="nx">O</span> <span class="nx">size</span> <span class="p">(</span><span class="nx">minimum</span><span class="o">/</span><span class="nx">optimal</span><span class="p">)</span><span class="o">:</span> <span class="mi">512</span> <span class="nx">bytes</span> <span class="o">/</span> <span class="mi">512</span> <span class="nx">bytes</span>
-<span class="nx">Disk</span> <span class="nx">identifier</span><span class="o">:</span> <span class="mh">0x000981cb</span>
+<!--Helper scripts for social share icons-->
+<!--Hacker News
+<script type="text/javascript">
+  (function(d, t) {
+    var g = d.createElement(t),
+        s = d.getElementsByTagName(t)[0];
+    g.src = '//hnbutton.appspot.com/static/hn.min.js';
+    s.parentNode.insertBefore(g, s);
+  }(document, 'script'));
+</script>-->
 
-                   <span class="err">设备</span> <span class="err">启动</span> <span class="err">起点</span> <span class="err">终点</span> <span class="err">块数</span> <span class="nx">Id</span> <span class="err">系统</span>
-<span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img1</span> <span class="mi">8192</span> <span class="mi">122879</span> <span class="mi">57344</span> <span class="nx">c</span> <span class="nx">W95</span> <span class="nx">FAT32</span> <span class="p">(</span><span class="nx">LBA</span><span class="p">)</span>
-<span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img2</span> <span class="mi">122880</span> <span class="mi">6676479</span> <span class="mi">3276800</span> <span class="mi">83</span> <span class="nx">Linux</span>
-</pre></div>
-</code></pre>
-<p>通过输出可以轻易的发现，img文件中有两个分区，第一个分区从8192扇区开始，第二个分区从122880扇区开始，然后输出信息还指示一个删除是512字节。接下来我们创建两个目录来加载这两个目录：</p>
-<pre><code><div class="highlight"><pre><span class="nx">sudo</span> <span class="nx">mkdir</span> <span class="o">/</span><span class="nx">mnt</span><span class="o">/</span><span class="nx">share</span><span class="o">/</span><span class="nx">img1</span>
-<span class="nx">sudo</span> <span class="nx">mkdir</span> <span class="o">/</span><span class="nx">mnt</span><span class="o">/</span><span class="nx">share</span><span class="o">/</span><span class="nx">img2</span>
-</pre></div>
-</code></pre>
-<p>接下来是mount命令的使用，mount命令的<code>-o</code>参数可以指定从某一个字节处开始mount，那么加载第一个分区的命令就是如下所示了：</p>
-<pre><code><div class="highlight"><pre><span class="nx">sudo</span> <span class="nx">mount</span> <span class="o">-</span><span class="nx">o</span> <span class="nx">loop</span><span class="p">,</span><span class="nx">offset</span><span class="o">=</span><span class="nx">$</span><span class="p">((</span><span class="mi">8192</span><span class="o">*</span><span class="mi">512</span><span class="p">))</span> <span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img</span> <span class="o">/</span><span class="nx">mnt</span><span class="o">/</span><span class="nx">share</span><span class="o">/</span><span class="nx">img1</span>
-</pre></div>
-</code></pre>
-<p>现在我们进入img1目录，进行打包：</p>
-<pre><code><div class="highlight"><pre><span class="nx">tar</span> <span class="o">-</span><span class="nx">cvpf</span> <span class="p">..</span><span class="o">/</span><span class="nx">boot</span><span class="p">.</span><span class="nx">tar</span> <span class="p">.</span>
-</pre></div>
-</code></pre>
-<p>其中打包的时候我们制定了<code>p</code>参数，这里是告诉tar命令，在tar命令运行时，要保留原文件的权限属性不变。<br>接着就是使用xz命令就行压缩了：</p>
-<pre><code><div class="highlight"><pre><span class="nx">xz</span> <span class="o">-</span><span class="mi">9</span> <span class="o">-</span><span class="nx">e</span> <span class="nx">boot</span><span class="p">.</span><span class="nx">tar</span>
-</pre></div>
-</code></pre>
-<p>最终生成一个boot.tar.xz文件，拷贝到文件夹RetroPie中。同理我们可以再生成一个boot.tar.xz文件。<br>10. 最后我们就是格式化SD卡了，使用SDFormatter（<a href="https://www.sdcard.org/chs/downloads/formatter_4/">下载页面地址</a>）将你的SD卡拷贝，然后将制作好的noobs文件全部拷贝到sd卡中，保证recovery.img在sd卡根目录：</p>
-<p><img src="/images/noobs_files.jpg" alt="noobs根目录"><br><strong>图2.3 sd卡根目录</strong><br>至此一个自定义的操作系统已经成功制作完成，将sd卡插入树莓派就可以安装了。</p>
-</div>
+<!--Twitter-->
+<script type="text/javascript">
+  !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+</script>
 
-  <div class="comments">
-    <a href="/posts/noobs/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
+<!--Google Plus-->
+<script type="text/javascript">
+  (function() {
+    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+    po.src = 'https://apis.google.com/js/plusone.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  })();
+</script>
 
+<!--Disqus-->
+<script type="text/javascript">
+  var disqus_shortname = 'colinwren'; // Change this to your Disqus account name
 
-<div class="pagination group">
-  
-    
-    
-  
-    
-    
-      <a href="/page/1/" class="older"> &#8592; Older</a>
-    
-  
-    
-    
-  
-</div>
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
     </div>
     <script src="//upcdn.b0.upaiyun.com/libs/jquery/jquery-1.10.2.min.js" type="text/javascript"></script>
     <script src="/scripts/main.js" type="text/javascript"></script>
