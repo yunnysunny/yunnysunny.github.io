@@ -456,6 +456,8 @@ Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告
 <p>等等，问题来了，这里最后一句才打印<code>create directory success</code>,那么是不是程序是在最后一步才创建的文件夹呢，如果真是这样，就有点低效了，起码这个创建文件的工作被那个while循环给延迟了得有5秒钟。不过幸好，这个想法是错误的！node.js中使用libuv来IO或者CPU计算量大的操作，而在libuv中处理这些耗时的操作都是用线程来解决，以避免堵塞住js线程（这一点和android的程序设计思路类似，android开发中使用子线程来处理耗时逻辑，避免对主线程造成卡顿）。这里我们来演示一个libuv的异步处理，在异步处理中模拟一个耗时操作：</p>
 <pre><code><div class="highlight"><pre><span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
 <span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">string</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">v8</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
 
 <span class="err">#</span><span class="nx">ifdef</span> <span class="nx">WINDOWS_SPECIFIC_DEFINE</span>
 <span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">windows</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
@@ -467,13 +469,8 @@ Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告
 <span class="err">#</span><span class="nx">endif</span>
 <span class="nx">using</span> <span class="nx">namespace</span> <span class="nx">v8</span><span class="p">;</span>
 
-<span class="nx">Handle</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">async_hello</span><span class="p">(</span><span class="kr">const</span> <span class="nx">Arguments</span><span class="o">&amp;</span> <span class="nx">args</span><span class="p">);</span>
+<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">async_hello</span><span class="p">);</span>
 
-<span class="c1">//不在js主线程，，在uv线程池内被调用</span>
-<span class="k">void</span> <span class="nx">call_work</span><span class="p">(</span><span class="nx">uv_work_t</span><span class="o">*</span> <span class="nx">req</span><span class="p">);</span>
-
-<span class="c1">//回调函数</span>
-<span class="k">void</span> <span class="nx">call_work_after</span><span class="p">(</span><span class="nx">uv_work_t</span><span class="o">*</span> <span class="nx">req</span><span class="p">);</span>
 
 <span class="kr">static</span> <span class="nx">ThreadId</span> <span class="nx">__getThreadId</span><span class="p">()</span> <span class="p">{</span>
     <span class="nx">ThreadId</span> <span class="nx">nThreadID</span><span class="p">;</span>
@@ -496,126 +493,71 @@ Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告
 <span class="err">#</span><span class="nx">endif</span>
 <span class="p">}</span>
 
-<span class="c1">//定义一个结构体，存储异步请求信息</span>
-<span class="nx">struct</span> <span class="nx">Baton</span> <span class="p">{</span>
 
-    <span class="c1">//存储回调函数，使用Persistent来声明，让系统不会在函数结束后自动回收</span>
-    <span class="c1">//当回调成功后，需要执行dispose释放空间</span>
-    <span class="nx">Persistent</span><span class="o">&lt;</span><span class="nb">Function</span><span class="o">&gt;</span> <span class="nx">callback</span><span class="p">;</span>
+<span class="kr">class</span> <span class="nx">ThreadWoker</span> <span class="o">:</span> <span class="kr">public</span> <span class="nx">NanAsyncWorker</span> <span class="p">{</span>
+    <span class="kr">private</span><span class="o">:</span>
+        <span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">str</span><span class="p">;</span>
+    <span class="kr">public</span><span class="o">:</span>
+        <span class="nx">ThreadWoker</span><span class="p">(</span><span class="nx">NanCallback</span> <span class="o">*</span><span class="nx">callback</span><span class="p">,</span><span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">str</span><span class="p">)</span>
+            <span class="o">:</span> <span class="nx">NanAsyncWorker</span><span class="p">(</span><span class="nx">callback</span><span class="p">),</span> <span class="nx">str</span><span class="p">(</span><span class="nx">str</span><span class="p">)</span> <span class="p">{}</span>
+        <span class="o">~</span><span class="nx">ThreadWoker</span><span class="p">()</span> <span class="p">{}</span>
+        <span class="c1">//在该函数内模拟处理过程 ，如i/o阻塞或者cpu高消耗情形的处理。</span>
+        <span class="c1">// 注意不能使用v8 api,这个线程不是在js主线程内</span>
+        <span class="k">void</span> <span class="nx">Execute</span><span class="p">()</span> <span class="p">{</span>
+            <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;\n%s Thread id : gettid() == %d\n&quot;</span><span class="p">,</span><span class="nx">__FUNCTION__</span><span class="p">,</span><span class="nx">__getThreadId</span><span class="p">());</span>
+            <span class="k">for</span> <span class="p">(</span><span class="kr">int</span> <span class="nx">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nx">i</span><span class="o">&lt;</span><span class="mi">15</span><span class="p">;</span><span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+                <span class="nx">__tsleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
+                <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;sleep 1 seconds in uv_work\n&quot;</span><span class="p">);</span>
+            <span class="p">}</span>
+        <span class="p">}</span>
+        <span class="k">void</span> <span class="nx">HandleOKCallback</span> <span class="p">()</span> <span class="p">{</span>
+            <span class="nx">NanScope</span><span class="p">();</span>
 
-    <span class="c1">// 错误控制，保护错误信息和错误状态</span>
-    <span class="nx">bool</span> <span class="nx">error</span><span class="p">;</span>
-    <span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">error_message</span><span class="p">;</span>
+            <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">argv</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+                <span class="nx">NanNull</span><span class="p">(),</span>
+                <span class="nx">NanNew</span><span class="p">(</span><span class="s2">&quot;the result:&quot;</span><span class="o">+</span><span class="nx">str</span><span class="p">)</span>
+            <span class="p">};</span>
 
-    <span class="c1">//存储js传入的参数，字符串</span>
-    <span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">input_string</span><span class="p">;</span>
-
-    <span class="c1">//存放返回参数，字符串</span>
-    <span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">result</span><span class="p">;</span>
-
+            <span class="nx">callback</span><span class="o">-&gt;</span><span class="nx">Call</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nx">argv</span><span class="p">);</span>
+        <span class="p">};</span>
 <span class="p">};</span>
 
 
-<span class="nx">Handle</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">async_hello</span><span class="p">(</span><span class="kr">const</span> <span class="nx">Arguments</span><span class="o">&amp;</span> <span class="nx">args</span><span class="p">)</span> <span class="p">{</span>
+<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">async_hello</span><span class="p">)</span> <span class="p">{</span>
     <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;\n%s Thread id : gettid() == %d\n&quot;</span><span class="p">,</span><span class="nx">__FUNCTION__</span><span class="p">,</span><span class="nx">__getThreadId</span><span class="p">());</span>
-    <span class="nx">HandleScope</span> <span class="nx">scope</span><span class="p">;</span>
+    <span class="nx">NanScope</span><span class="p">();</span>
     <span class="k">if</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">Length</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span> 
-        <span class="nx">ThrowException</span><span class="p">(</span><span class="nx">Exception</span><span class="o">::</span><span class="nx">TypeError</span><span class="p">(</span><span class="nb">String</span><span class="o">::</span><span class="nx">New</span><span class="p">(</span><span class="s2">&quot;Wrong number of arguments&quot;</span><span class="p">)));</span> 
-        <span class="k">return</span> <span class="nx">scope</span><span class="p">.</span><span class="nx">Close</span><span class="p">(</span><span class="nx">Undefined</span><span class="p">());</span> 
-      <span class="p">}</span> 
+        <span class="nx">NanThrowError</span><span class="p">(</span><span class="s2">&quot;Wrong number of arguments&quot;</span><span class="p">);</span> 
+        <span class="nx">NanReturnUndefined</span><span class="p">();</span> 
+    <span class="p">}</span>
 
 
     <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">IsString</span><span class="p">()</span> <span class="o">||</span> <span class="o">!</span><span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">IsFunction</span><span class="p">())</span> <span class="p">{</span>
-        <span class="k">return</span> <span class="nx">ThrowException</span><span class="p">(</span><span class="nx">Exception</span><span class="o">::</span><span class="nx">TypeError</span><span class="p">(</span>
-            <span class="nb">String</span><span class="o">::</span><span class="nx">New</span><span class="p">(</span><span class="s2">&quot;Wrong number of arguments&quot;</span><span class="p">)));</span>
+        <span class="nx">NanThrowError</span><span class="p">(</span><span class="s2">&quot;Wrong number of arguments&quot;</span><span class="p">);</span>
+        <span class="nx">NanReturnUndefined</span><span class="p">();</span>
     <span class="p">}</span>
 
     <span class="c1">// 强制转换成函数变量</span>
-    <span class="nx">Local</span><span class="o">&lt;</span><span class="nb">Function</span><span class="o">&gt;</span> <span class="nx">callback</span> <span class="o">=</span> <span class="nx">Local</span><span class="o">&lt;</span><span class="nb">Function</span><span class="o">&gt;::</span><span class="nx">Cast</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
-
-    <span class="nx">Baton</span><span class="o">*</span> <span class="nx">baton</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">Baton</span><span class="p">();</span>
-    <span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">error</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-    <span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">callback</span> <span class="o">=</span> <span class="nx">Persistent</span><span class="o">&lt;</span><span class="nb">Function</span><span class="o">&gt;::</span><span class="nx">New</span><span class="p">(</span><span class="nx">callback</span><span class="p">);</span>
-    <span class="nx">v8</span><span class="o">::</span><span class="nb">String</span><span class="o">::</span><span class="nx">Utf8Value</span> <span class="nx">param1</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">ToString</span><span class="p">());</span>
-    <span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">input_string</span> <span class="o">=</span> <span class="nx">std</span><span class="o">::</span><span class="nx">string</span><span class="p">(</span><span class="o">*</span><span class="nx">param1</span><span class="p">);</span> 
-
-    <span class="nx">uv_work_t</span> <span class="o">*</span><span class="nx">req</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">uv_work_t</span><span class="p">();</span>
-    <span class="nx">req</span><span class="o">-&gt;</span><span class="nx">data</span> <span class="o">=</span> <span class="nx">baton</span><span class="p">;</span>
-
-    <span class="kr">int</span> <span class="nx">status</span> <span class="o">=</span> <span class="nx">uv_queue_work</span><span class="p">(</span><span class="nx">uv_default_loop</span><span class="p">(),</span> <span class="nx">req</span><span class="p">,</span> <span class="nx">call_work</span><span class="p">,</span>
-                               <span class="p">(</span><span class="nx">uv_after_work_cb</span><span class="p">)</span><span class="nx">call_work_after</span><span class="p">);</span>
-    <span class="nx">assert</span><span class="p">(</span><span class="nx">status</span> <span class="o">==</span> <span class="mi">0</span><span class="p">);</span>
-    <span class="k">return</span> <span class="nx">Undefined</span><span class="p">();</span>
+    <span class="nx">NanCallback</span> <span class="o">*</span><span class="nx">callback</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">NanCallback</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nx">As</span><span class="o">&lt;</span><span class="nb">Function</span><span class="o">&gt;</span><span class="p">());</span>
+    <span class="nx">NanUtf8String</span> <span class="nx">param1</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
+    <span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">str</span> <span class="o">=</span> <span class="nx">std</span><span class="o">::</span><span class="nx">string</span><span class="p">(</span><span class="o">*</span><span class="nx">param1</span><span class="p">);</span> 
+    <span class="nx">NanAsyncQueueWorker</span><span class="p">(</span><span class="k">new</span> <span class="nx">ThreadWoker</span><span class="p">(</span><span class="nx">callback</span><span class="p">,</span> <span class="nx">str</span><span class="p">));</span>
+    <span class="nx">NanReturnUndefined</span><span class="p">();</span> 
 <span class="p">}</span>
 
-<span class="c1">//在该函数内模拟处理过程 ，如i/o阻塞或者cpu高消耗情形的处理。</span>
-<span class="c1">// 注意不能使用v8 api,这个线程不是在js主线程内</span>
-<span class="k">void</span> <span class="nx">call_work</span><span class="p">(</span><span class="nx">uv_work_t</span><span class="o">*</span> <span class="nx">req</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;\n%s Thread id : gettid() == %d\n&quot;</span><span class="p">,</span><span class="nx">__FUNCTION__</span><span class="p">,</span><span class="nx">__getThreadId</span><span class="p">());</span>
-    <span class="nx">Baton</span><span class="o">*</span> <span class="nx">baton</span> <span class="o">=</span> <span class="nx">static_cast</span><span class="o">&lt;</span><span class="nx">Baton</span><span class="o">*&gt;</span><span class="p">(</span><span class="nx">req</span><span class="o">-&gt;</span><span class="nx">data</span><span class="p">);</span>
-    <span class="k">for</span> <span class="p">(</span><span class="kr">int</span> <span class="nx">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nx">i</span><span class="o">&lt;</span><span class="mi">15</span><span class="p">;</span><span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">__tsleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
-        <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;sleep 1 seconds in uv_work\n&quot;</span><span class="p">);</span>
-    <span class="p">}</span>
-
-
-    <span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">result</span> <span class="o">=</span> <span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">input_string</span><span class="o">+</span> <span class="s2">&quot;---&gt;hello world from c++&quot;</span><span class="p">;</span>
-
+<span class="k">void</span> <span class="nx">Init</span><span class="p">(</span><span class="nx">Handle</span><span class="o">&lt;</span><span class="nb">Object</span><span class="o">&gt;</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">exports</span><span class="o">-&gt;</span><span class="nx">Set</span><span class="p">(</span><span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">(</span><span class="s2">&quot;async_hello&quot;</span><span class="p">),</span>
+    <span class="nx">NanNew</span><span class="o">&lt;</span><span class="nx">FunctionTemplate</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">async_hello</span><span class="p">)</span><span class="o">-&gt;</span><span class="nx">GetFunction</span><span class="p">());</span>
 <span class="p">}</span>
 
-
-<span class="c1">//执行完任务，进行回调的时候，返回到 js主线程</span>
-<span class="k">void</span> <span class="nx">call_work_after</span><span class="p">(</span><span class="nx">uv_work_t</span><span class="o">*</span> <span class="nx">req</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;\n%s Thread id : gettid() == %d\n&quot;</span><span class="p">,</span><span class="nx">__FUNCTION__</span><span class="p">,</span><span class="nx">__getThreadId</span><span class="p">());</span>    
-    <span class="nx">HandleScope</span> <span class="nx">scope</span><span class="p">;</span>
-    <span class="nx">Baton</span><span class="o">*</span> <span class="nx">baton</span> <span class="o">=</span> <span class="nx">static_cast</span><span class="o">&lt;</span><span class="nx">Baton</span><span class="o">*&gt;</span><span class="p">(</span><span class="nx">req</span><span class="o">-&gt;</span><span class="nx">data</span><span class="p">);</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">error</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">err</span> <span class="o">=</span> <span class="nx">Exception</span><span class="o">::</span><span class="nb">Error</span><span class="p">(</span><span class="nb">String</span><span class="o">::</span><span class="nx">New</span><span class="p">(</span><span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">error_message</span><span class="p">.</span><span class="nx">c_str</span><span class="p">()));</span>
-
-        <span class="c1">// 准备回调函数的参数</span>
-        <span class="kr">const</span> <span class="nx">unsigned</span> <span class="nx">argc</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-        <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">argv</span><span class="p">[</span><span class="nx">argc</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span> <span class="nx">err</span> <span class="p">};</span>
-
-        <span class="c1">//捕捉回调中的错误，在Node环境中可利用process.on(&#39;uncaughtException&#39;)捕捉错误 </span>
-        <span class="nx">TryCatch</span> <span class="nx">try_catch</span><span class="p">;</span>
-
-        <span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">callback</span><span class="o">-&gt;</span><span class="nx">Call</span><span class="p">(</span><span class="nx">Context</span><span class="o">::</span><span class="nx">GetCurrent</span><span class="p">()</span><span class="o">-&gt;</span><span class="nx">Global</span><span class="p">(),</span> <span class="nx">argc</span><span class="p">,</span> <span class="nx">argv</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">try_catch</span><span class="p">.</span><span class="nx">HasCaught</span><span class="p">())</span> <span class="p">{</span>
-            <span class="nx">node</span><span class="o">::</span><span class="nx">FatalException</span><span class="p">(</span><span class="nx">try_catch</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-
-        <span class="kr">const</span> <span class="nx">unsigned</span> <span class="nx">argc</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
-        <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">argv</span><span class="p">[</span><span class="nx">argc</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span>
-            <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;::</span><span class="nx">New</span><span class="p">(</span><span class="nx">Null</span><span class="p">()),</span>
-            <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;::</span><span class="nx">New</span><span class="p">(</span><span class="nb">String</span><span class="o">::</span><span class="nx">New</span><span class="p">(</span><span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">result</span><span class="p">.</span><span class="nx">c_str</span><span class="p">()))</span>
-        <span class="p">};</span>
-        <span class="nx">TryCatch</span> <span class="nx">try_catch</span><span class="p">;</span>
-        <span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">callback</span><span class="o">-&gt;</span><span class="nx">Call</span><span class="p">(</span><span class="nx">Context</span><span class="o">::</span><span class="nx">GetCurrent</span><span class="p">()</span><span class="o">-&gt;</span><span class="nx">Global</span><span class="p">(),</span> <span class="nx">argc</span><span class="p">,</span> <span class="nx">argv</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">try_catch</span><span class="p">.</span><span class="nx">HasCaught</span><span class="p">())</span> <span class="p">{</span>
-            <span class="nx">node</span><span class="o">::</span><span class="nx">FatalException</span><span class="p">(</span><span class="nx">try_catch</span><span class="p">);</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-    <span class="c1">//注意一定释放</span>
-    <span class="nx">baton</span><span class="o">-&gt;</span><span class="nx">callback</span><span class="p">.</span><span class="nx">Dispose</span><span class="p">();</span>
-    <span class="c1">// 处理完毕，清除对象和空间</span>
-    <span class="k">delete</span> <span class="nx">baton</span><span class="p">;</span>
-    <span class="k">delete</span> <span class="nx">req</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="k">void</span> <span class="nx">RegisterModule</span><span class="p">(</span><span class="nx">Handle</span><span class="o">&lt;</span><span class="nb">Object</span><span class="o">&gt;</span> <span class="nx">target</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">target</span><span class="o">-&gt;</span><span class="nx">Set</span><span class="p">(</span><span class="nb">String</span><span class="o">::</span><span class="nx">NewSymbol</span><span class="p">(</span><span class="s2">&quot;async_hello&quot;</span><span class="p">),</span><span class="nx">FunctionTemplate</span><span class="o">::</span><span class="nx">New</span><span class="p">(</span><span class="nx">async_hello</span><span class="p">)</span><span class="o">-&gt;</span><span class="nx">GetFunction</span><span class="p">());</span>
-<span class="p">}</span>
-
-<span class="nx">NODE_MODULE</span><span class="p">(</span><span class="nx">binding</span><span class="p">,</span> <span class="nx">RegisterModule</span><span class="p">);</span>  
+<span class="nx">NODE_MODULE</span><span class="p">(</span><span class="nx">binding</span><span class="p">,</span> <span class="nx">Init</span><span class="p">);</span>
 </pre></div>
 </code></pre>
 <p><strong>代码2.4</strong>  </p>
 <blockquote>
-<p>上述代码是在node 0.10.x上编译的，如果想在0.12.x上使用，请clone完整代码，并参照<a href="http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md">编译说明</a>，项目源码地址参加第3节。</p>
+<p>上述代码的编译参照<a href="http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md">编译说明</a>，项目源码地址参加第3节。</p>
 </blockquote>
-<p>编写的测试代码，将其运行，就可以看出函数<code>call_work</code>根本就不在js线程中执行，也就是说它是可以和js线程并行的；函数<code>call_work_after</code>中能够触发js中的回调函数，将处理完的结果交给js。下面就编译上面代码（需要node-gyp支持，执行<code>node-gpy rebuild</code>进行编译），来验证上述结论：  </p>
+<p>编写的测试代码，将其运行，就可以看出函数<code>Execute</code>根本就不在js线程中执行，也就是说它是可以和js线程并行的；函数<code>HandleOKCallback</code>中能够触发js中的回调函数，将处理完的结果交给js。下面就编译上面代码（需要node-gyp支持，执行<code>node-gpy rebuild</code>进行编译），来验证上述结论：  </p>
 <pre><code><div class="highlight"><pre><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
     <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">synchronizedCode</span><span class="p">(</span><span class="s1">&#39;timer1&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
     <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured second.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
