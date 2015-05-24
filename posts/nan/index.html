@@ -1,0 +1,235 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="icon" type="image/png" href="/images/cabin.png" >
+    <link href="/styles/main.css" rel="stylesheet">
+    
+    <title>nan入门教程</title>
+    
+    
+    <meta name="description" content="node的c++ API在不同版本中差异是巨大的，那么怎么解决这个问题呢，幸好有nan这个模块，它通过宏定义的方式把不同版本的API统一起来，极大简化了代码编写过程。">
+    
+  </head>
+  <body>
+    <nav>
+      <h1 class="name">
+        <a href="/">白一梓</a>
+      </h1>
+      <div class="menu icon-menu"></div>
+      <ul class="nav-links">
+        <li class="text-link">
+          <a href="/about.html">关于</a>
+        </li>
+        <li class="text-link">
+          <a href="/projects.html">项目</a>
+        </li>
+        <li class="text-link">
+          <a href="/archives.html">文章</a>
+        </li>
+      </ul>
+      <div class="social-media">
+        <a href="https://github.com/yunnysunny" class="icon-github"></a>
+        <a href="https://twitter.com/yunnysunny" class="icon-twitter"></a>
+      </div>
+    </nav>
+    <div class="content">
+
+<div class="post-head group">
+  <a href="/posts/nan/">
+    <h1 class="post-title">nan入门教程</h1>
+  </a>
+  <span class="post-date">2015 &#183; 5 &#183; 24</span>
+</div>
+
+<div class="post-body markdown"><p>Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如果你之前的代码是按照0.10的API编写的，将其改成0.12的形式是需要耗费一番精力的，但是问题又来了，你如果改为0.12形式，0.10又不能够被兼容了。幸好有<a href="https://github.com/nodejs/nan">nan</a>，其实它的核心是一个头文件，通过宏定义来做不同版本的node的c++ API的兼容。</p>
+<h2><a name="1" class="anchor" href="#1"><span class="header-link"></span></a>1.配置</h2>
+<p>首先你得在<code>package.json</code>中引入<code>nan</code>,然后在binding.gyp中配置：</p>
+<pre><code><div class="highlight"><pre><span class="s2">&quot;include_dirs&quot;</span> <span class="o">:</span> <span class="p">[</span>
+    <span class="s2">&quot;&lt;!(node -e \&quot;require(&#39;nan&#39;)\&quot;)&quot;</span>
+<span class="p">]</span>
+</pre></div>
+</code></pre>
+<p> 最后在使用<code>nan</code>的c++文件中引入头文件<code>#include&lt;nan.h&gt;</code>。</p>
+<h2><a name="2-demo" class="anchor" href="#2-demo"><span class="header-link"></span></a>2.demo</h2>
+<p> 下面的demo摘自nan的readme文档</p>
+<pre><code><div class="highlight"><pre> <span class="c1">// addon.cc</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="c1">// ..引入async.h或者sync.h</span>
+
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">FunctionTemplate</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">Handle</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">Object</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">String</span><span class="p">;</span>
+
+<span class="k">void</span> <span class="nx">InitAll</span><span class="p">(</span><span class="nx">Handle</span><span class="o">&lt;</span><span class="nb">Object</span><span class="o">&gt;</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">exports</span><span class="o">-&gt;</span><span class="nx">Set</span><span class="p">(</span><span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">(</span><span class="s2">&quot;calculateSync&quot;</span><span class="p">),</span>
+    <span class="nx">NanNew</span><span class="o">&lt;</span><span class="nx">FunctionTemplate</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">CalculateSync</span><span class="p">)</span><span class="o">-&gt;</span><span class="nx">GetFunction</span><span class="p">());</span>
+
+  <span class="nx">exports</span><span class="o">-&gt;</span><span class="nx">Set</span><span class="p">(</span><span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">(</span><span class="s2">&quot;calculateAsync&quot;</span><span class="p">),</span>
+    <span class="nx">NanNew</span><span class="o">&lt;</span><span class="nx">FunctionTemplate</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">CalculateAsync</span><span class="p">)</span><span class="o">-&gt;</span><span class="nx">GetFunction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="nx">NODE_MODULE</span><span class="p">(</span><span class="nx">addon</span><span class="p">,</span> <span class="nx">InitAll</span><span class="p">)</span>   
+</pre></div>
+</code></pre>
+<p><strong>代码2.1 addon.cc</strong></p>
+<p>首先就是导出函数部分，<code>nan</code>中写法为<code>exports-&gt;Set(NanNew&lt;String&gt;(&quot;calculateSync&quot;),
+        NanNew&lt;FunctionTemplate&gt;(CalculateSync)-&gt;GetFunction());</code>，对于c++ api来说，在nan中全部都要用<code>NanNew</code>来声明，在0.10中这句话被写作<code>exports-&gt;Set(String::NewSymbol(&quot;calculateSync&quot;),FunctionTemplate::New(CalculateAsync)-&gt;GetFunction());</code>在0.12中是<code>NODE_SET_METHOD(exports, &quot;calculateSync&quot;, CalculateAsync);</code>。
+ 正常情况下需要引入函数<code>CalculateAsync</code>所在的头文件的，但是官方文档给出了两个<code>CalculateAsync</code>函数的实现，一个同步版，一个异步版。同步版仅仅是直接调用：</p>
+<pre><code><div class="highlight"><pre><span class="c1">// sync.h</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+
+<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">CalculateSync</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.2 sync.h</strong></p>
+<p>通过头文件就可以看出，函数声明的方式需要使用<code>NAN_METHOD(CalculateSync)</code>，这等同于0.10中的<code>Handle&lt;Value&gt; CalculateSync(const Arguments&amp; args)</code>,在0.12中要这么写<code>void CalculateSync(const FunctionCallbackInfo&lt;Value&gt;&amp; args)</code>。</p>
+<pre><code><div class="highlight"><pre><span class="c1">// sync.cc</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="s2">&quot;./sync.h&quot;</span>
+<span class="c1">// ...引入第三方类库头文件</span>
+
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">Number</span><span class="p">;</span>
+
+<span class="c1">// Simple synchronous access to the `Estimate()` function</span>
+<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">CalculateSync</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">NanScope</span><span class="p">();</span>
+
+  <span class="c1">// expect a number as the first argument</span>
+  <span class="kr">int</span> <span class="nx">points</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">Uint32Value</span><span class="p">();</span>
+  <span class="kr">double</span> <span class="nx">est</span> <span class="o">=</span> <span class="nx">Estimate</span><span class="p">(</span><span class="nx">points</span><span class="p">);</span><span class="c1">//Estimate是一个第三方类库的函数，这里可以不用理会</span>
+
+  <span class="nx">NanReturnValue</span><span class="p">(</span><span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">Number</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">est</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.3 sync.cc</strong>
+首先是函数<code>NanScope();</code>,他来完成node0.10中的<code>HandleScope scope;</code>的功能，在node0.12中是：</p>
+<pre><code><div class="highlight"><pre><span class="nx">Isolate</span><span class="o">*</span> <span class="nx">isolate</span> <span class="o">=</span> <span class="nx">Isolate</span><span class="o">::</span><span class="nx">GetCurrent</span><span class="p">();</span>
+<span class="nx">HandleScope</span> <span class="nx">scope</span><span class="p">(</span><span class="nx">isolate</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>函数结束返回值操作也变成由函数（确切的说应该是宏定义）NanReturnValue来代替。</p>
+<p>更令人振奋的是，nan中还对libuv中的函数<code>uv_queue_work</code>进行了抽象，可以通过继承类<code>NanAsyncWorker</code>来实现异步话操作，省去了为了使用<code>uv_queue_work</code>而自定义数据结构的步骤。下面就是async.cc的代码：</p>
+<pre><code><div class="highlight"><pre><span class="c1">// async.cc</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="s2">&quot;./async.h&quot;</span>
+
+<span class="c1">// ...引入第三方类库</span>
+
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">Function</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">Local</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">Null</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">Number</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">Value</span><span class="p">;</span>
+
+<span class="kr">class</span> <span class="nx">PiWorker</span> <span class="o">:</span> <span class="kr">public</span> <span class="nx">NanAsyncWorker</span> <span class="p">{</span>
+ <span class="kr">public</span><span class="o">:</span>
+  <span class="nx">PiWorker</span><span class="p">(</span><span class="nx">NanCallback</span> <span class="o">*</span><span class="nx">callback</span><span class="p">,</span> <span class="kr">int</span> <span class="nx">points</span><span class="p">)</span>
+    <span class="o">:</span> <span class="nx">NanAsyncWorker</span><span class="p">(</span><span class="nx">callback</span><span class="p">),</span> <span class="nx">points</span><span class="p">(</span><span class="nx">points</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="o">~</span><span class="nx">PiWorker</span><span class="p">()</span> <span class="p">{}</span>
+
+  <span class="c1">//这个函数运行在工作线程，而不是v8线程，所以不能访问v8的数据</span>
+  <span class="k">void</span> <span class="nx">Execute</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="nx">estimate</span> <span class="o">=</span> <span class="nx">Estimate</span><span class="p">(</span><span class="nx">points</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">//这个是libuv的回调函数，在这里可以使用v8的数据</span>
+  <span class="k">void</span> <span class="nx">HandleOKCallback</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="nx">NanScope</span><span class="p">();</span>
+
+    <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">argv</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="nx">NanNull</span><span class="p">()</span>
+      <span class="p">,</span> <span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">Number</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">estimate</span><span class="p">)</span>
+    <span class="p">};</span>
+
+    <span class="nx">callback</span><span class="o">-&gt;</span><span class="nx">Call</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nx">argv</span><span class="p">);</span>
+  <span class="p">};</span>
+
+ <span class="kr">private</span><span class="o">:</span>
+  <span class="kr">int</span> <span class="nx">points</span><span class="p">;</span>
+  <span class="kr">double</span> <span class="nx">estimate</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// Asynchronous access to the `Estimate()` function</span>
+<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">CalculateAsync</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">NanScope</span><span class="p">();</span>
+
+  <span class="kr">int</span> <span class="nx">points</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">Uint32Value</span><span class="p">();</span>
+  <span class="nx">NanCallback</span> <span class="o">*</span><span class="nx">callback</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">NanCallback</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nx">As</span><span class="o">&lt;</span><span class="nb">Function</span><span class="o">&gt;</span><span class="p">());</span>
+
+  <span class="nx">NanAsyncQueueWorker</span><span class="p">(</span><span class="k">new</span> <span class="nx">PiWorker</span><span class="p">(</span><span class="nx">callback</span><span class="p">,</span> <span class="nx">points</span><span class="p">));</span>
+  <span class="nx">NanReturnUndefined</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.4 async.cc</strong><br><a href="http://git.oschina.net/yunnysunny/async-tutorial-code/tree/master/addon">这里</a>有一个利用nan和node0.10/0.12来完成异步操作的对比。</p>
+<p>这篇教程仅仅是一个入门操作，就讲到这里了，详细的使用请参考nan的readme文档。</p>
+</div>
+
+<!--Social sharing icons-->
+<div class="social">
+  <a href="https://twitter.com/share" class="twitter-share-button">Tweet</a>
+  <div data-size="medium" data-annotation="bubble" data-width="300" class="g-plusone"></div>
+  <a href="http://news.ycombinator.com/submit" class="hn-share-button">Vote on HN</a>
+</div>
+<!--Disqus comments, Make sure to replace `colinwren` with your account name in the Disqus helper script below-->
+<div id="comments">
+  <div id="disqus_thread"></div>
+</div>
+
+<!--Helper scripts for social share icons-->
+<!--Hacker News
+<script type="text/javascript">
+  (function(d, t) {
+    var g = d.createElement(t),
+        s = d.getElementsByTagName(t)[0];
+    g.src = '//hnbutton.appspot.com/static/hn.min.js';
+    s.parentNode.insertBefore(g, s);
+  }(document, 'script'));
+</script>-->
+
+<!--Twitter
+<script type="text/javascript">
+  !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+</script>
+-->
+
+<!--Google Plus
+<script type="text/javascript">
+  (function() {
+    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
+    po.src = 'https://apis.google.com/js/plusone.js';
+    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
+  })();
+</script>
+-->
+
+<!--Disqus-->
+<script type="text/javascript">
+  var disqus_shortname = 'colinwren'; // Change this to your Disqus account name
+
+  (function() {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+  })();
+</script>
+
+    </div>
+    <script src="//upcdn.b0.upaiyun.com/libs/jquery/jquery-1.10.2.min.js" type="text/javascript"></script>
+    <script src="/scripts/main.js" type="text/javascript"></script>
+    <script  type="text/javascript">
+      var _bdhmProtocol = (("https:" == document.location.protocol) ? " https://" : " http://");
+document.write(unescape("%3Cscript src='" + _bdhmProtocol + "hm.baidu.com/h.js%3F628c040f31bc950845419d51d5cbebeb' type='text/javascript'%3E%3C/script%3E"));
+    </script>
+  </body>
+</html>
+
