@@ -12,6 +12,32 @@
     
     <meta name="description" content="同步和异步API的设计指南">
     
+	<style type="text/css">
+
+	.social-media a.qq {
+		background-position: 0 0;
+	}
+	
+	.social-media a.sina {
+		background-position: -39px 0;
+		width: 22px;
+	}
+	.social-media a.qq:hover {
+		background-position: 0 -28px;
+	}
+	.social-media a.sina:hover {
+		background-position: -39px -28px;
+		width: 22px;
+	}
+	.social-media a {
+		background: rgba(0, 0, 0, 0) url("/images/sns.png") no-repeat scroll 0 0;
+		display: inline-block;
+		float: left;
+		height: 20px;
+		margin: 10px 5px;
+		width: 20px;
+	}	
+	</style>
   </head>
   <body>
     <nav>
@@ -31,8 +57,8 @@
         </li>
       </ul>
       <div class="social-media">
-        <a href="https://github.com/yunnysunny" class="icon-github"></a>
-        <a href="https://twitter.com/yunnysunny" class="icon-twitter"></a>
+		<a title="我的腾讯微博" class="qq" href="http://t.qq.com/baiyizi" target="_blank"></a>
+		<a title="我的新浪微博" class="sina" href="http://weibo.com/1261004702" target="_blank"></a>        
       </div>
     </nav>
     <div class="content">
@@ -118,54 +144,25 @@
 <p>鉴于基于回调的API如此的时髦……如果你准备写一个，我想前面的这个话题你也会遇到。打完收工。</p>
 </div>
 
-<!--Social sharing icons-->
-<div class="social">
-  <a href="https://twitter.com/share" class="twitter-share-button">Tweet</a>
-  <div data-size="medium" data-annotation="bubble" data-width="300" class="g-plusone"></div>
-  <a href="http://news.ycombinator.com/submit" class="hn-share-button">Vote on HN</a>
-</div>
-<!--Disqus comments, Make sure to replace `colinwren` with your account name in the Disqus helper script below-->
-<div id="comments">
-  <div id="disqus_thread"></div>
-</div>
-
-<!--Helper scripts for social share icons-->
-<!--Hacker News
+<a name="comments"></a>
+<!-- 多说评论框 start -->
+<div class="ds-thread" data-thread-key="posts//" data-title="同步和异步回调" data-url="/posts//"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
 <script type="text/javascript">
-  (function(d, t) {
-    var g = d.createElement(t),
-        s = d.getElementsByTagName(t)[0];
-    g.src = '//hnbutton.appspot.com/static/hn.min.js';
-    s.parentNode.insertBefore(g, s);
-  }(document, 'script'));
-</script>-->
-
-<!--Twitter
-<script type="text/javascript">
-  !function(d,s,id){var js,fjs=d.getElementsByTagName(s)[0];if(!d.getElementById(id)){js=d.createElement(s);js.id=id;js.src="https://platform.twitter.com/widgets.js";fjs.parentNode.insertBefore(js,fjs);}}(document,"script","twitter-wjs");
+var duoshuoQuery = {short_name:"whyun"};
+(function() {
+	var ds = document.createElement('script');
+	ds.type = 'text/javascript';ds.async = true;
+	ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+	ds.charset = 'UTF-8';
+	(document.getElementsByTagName('head')[0] 
+	 || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
 </script>
--->
+<!-- 多说公共JS代码 end -->
 
-<!--Google Plus
-<script type="text/javascript">
-  (function() {
-    var po = document.createElement('script'); po.type = 'text/javascript'; po.async = true;
-    po.src = 'https://apis.google.com/js/plusone.js';
-    var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
-  })();
-</script>
--->
 
-<!--Disqus-->
-<script type="text/javascript">
-  var disqus_shortname = 'colinwren'; // Change this to your Disqus account name
-
-  (function() {
-      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
-      dsq.src = '//' + disqus_shortname + '.disqus.com/embed.js';
-      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
-  })();
-</script>
 
     </div>
     <script src="//upcdn.b0.upaiyun.com/libs/jquery/jquery-1.10.2.min.js" type="text/javascript"></script>

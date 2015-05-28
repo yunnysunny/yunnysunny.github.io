@@ -1168,16 +1168,7 @@ nav a:hover {
   width: 100%;
   font-size: 1.8em;
   line-height: 2em;
-}
-/* line 102, ../../nodeblog/src/styles/_nav.scss */
-.social-media a {
-  margin: 0 10px;
-  padding: 2px;
-}
-/* line 108, ../../nodeblog/src/styles/_nav.scss */
-.social-media a:hover {
-  text-decoration: none;
-  color: #393838;
+  margin-left: 30px;
 }
 @media (max-width: 1250px) {
   /* line 94, ../../nodeblog/src/styles/_nav.scss */
