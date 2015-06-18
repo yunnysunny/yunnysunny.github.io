@@ -328,7 +328,7 @@
 </code></pre>
 <p><strong>代码2.4</strong>  </p>
 <blockquote>
-<p>上述代码的编译参照<a href="http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md">编译说明</a>，项目源码地址参加第3节。</p>
+<p>上述代码的编译参照<a href="http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md">编译说明</a>，项目源码地址参加第3节。关于nan的使用，可以参照我的另一篇教程<a href="http://blog.whyun.com/posts/nan/">《nan基础教程》</a>。</p>
 </blockquote>
 <p>编写的测试代码，将其运行，就可以看出函数<code>Execute</code>根本就不在js线程中执行，也就是说它是可以和js线程并行的；函数<code>HandleOKCallback</code>中能够触发js中的回调函数，将处理完的结果交给js。下面就编译上面代码（需要node-gyp支持，执行<code>node-gpy rebuild</code>进行编译），来验证上述结论：  </p>
 <pre><code><div class="highlight"><pre><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>

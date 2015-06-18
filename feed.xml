@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Mon, 08 Jun 2015 10:18:31 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Mon, 08 Jun 2015 10:18:31 GMT</pubDate><copyright><![CDATA[2015 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[nan入门教程]]></title><description><![CDATA[<p>Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如果你之前的代码是按照0.10的API编写的，将其改成0.12的形式是需要耗费一番精力的，但是问题又来了，你如果改为0.12形式，0.10又不能够被兼容了。幸好有<a href="https://github.com/nodejs/nan">nan</a>，其实它的核心是一个头文件，通过宏定义来做不同版本的node的c++ API的兼容。</p>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Thu, 18 Jun 2015 08:45:56 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Thu, 18 Jun 2015 08:45:56 GMT</pubDate><copyright><![CDATA[2015 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[nan入门教程]]></title><description><![CDATA[<p>Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如果你之前的代码是按照0.10的API编写的，将其改成0.12的形式是需要耗费一番精力的，但是问题又来了，你如果改为0.12形式，0.10又不能够被兼容了。幸好有<a href="https://github.com/nodejs/nan">nan</a>，其实它的核心是一个头文件，通过宏定义来做不同版本的node的c++ API的兼容。</p>
 <h2><a name="1" class="anchor" href="#1"><span class="header-link"></span></a>1.配置</h2>
 <p>首先你得在<code>package.json</code>中引入<code>nan</code>,然后在binding.gyp中配置：</p>
 <pre><code><div class="highlight"><pre><span class="s2">&quot;include_dirs&quot;</span> <span class="o">:</span> <span class="p">[</span>
@@ -125,7 +125,7 @@
 <span class="p">}</span>
 </pre></div>
 </code></pre>
-<p><strong>代码2.4 async.cc</strong><br><a href="http://git.oschina.net/yunnysunny/async-tutorial-code/tree/master/addon">这里</a>有一个利用nan和node0.10/0.12来完成异步操作的对比。</p>
+<p><strong>代码2.4 async.cc</strong><br><a href="http://git.oschina.net/yunnysunny/async-tutorial-code/tree/master/addon">这里</a>有一个利用<a href="https://github.com/nodejs/nan">nan</a>和node0.10/0.12来完成异步操作的对比。</p>
 <p>这篇教程仅仅是一个入门操作，就讲到这里了，详细的使用请参考nan的readme文档。</p>
 ]]></description><link>http://blog.whyun.com/posts/nan/</link><guid isPermaLink="true">http://blog.whyun.com/posts/nan/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Sun, 24 May 2015 00:00:00 GMT</pubDate></item><item><title><![CDATA[即将面临的Node0.12中的C++API的改变]]></title><description><![CDATA[<p>原文地址：<a href="https://strongloop.com/strongblog/node-js-v0-12-c-apis-breaking/">https://strongloop.com/strongblog/node-js-v0-12-c-apis-breaking/</a></p>
 <blockquote>
@@ -624,7 +624,7 @@ Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告
 </code></pre>
 <p><strong>代码2.4</strong>  </p>
 <blockquote>
-<p>上述代码的编译参照<a href="http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md">编译说明</a>，项目源码地址参加第3节。</p>
+<p>上述代码的编译参照<a href="http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md">编译说明</a>，项目源码地址参加第3节。关于nan的使用，可以参照我的另一篇教程<a href="http://blog.whyun.com/posts/nan/">《nan基础教程》</a>。</p>
 </blockquote>
 <p>编写的测试代码，将其运行，就可以看出函数<code>Execute</code>根本就不在js线程中执行，也就是说它是可以和js线程并行的；函数<code>HandleOKCallback</code>中能够触发js中的回调函数，将处理完的结果交给js。下面就编译上面代码（需要node-gyp支持，执行<code>node-gpy rebuild</code>进行编译），来验证上述结论：  </p>
 <pre><code><div class="highlight"><pre><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
