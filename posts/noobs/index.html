@@ -139,7 +139,7 @@
 <span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img2</span> <span class="mi">122880</span> <span class="mi">6676479</span> <span class="mi">3276800</span> <span class="mi">83</span> <span class="nx">Linux</span>
 </pre></div>
 </code></pre>
-<p>通过输出可以轻易的发现，img文件中有两个分区，第一个分区从8192扇区开始，第二个分区从122880扇区开始，然后输出信息还指示一个删除是512字节。接下来我们创建两个目录来加载这两个目录：</p>
+<p>通过输出可以轻易的发现，img文件中有两个分区，第一个分区从8192扇区开始，第二个分区从122880扇区开始，然后输出信息还指示一个扇区是512字节。接下来我们创建两个目录来加载这两个目录：</p>
 <pre><code><div class="highlight"><pre><span class="nx">sudo</span> <span class="nx">mkdir</span> <span class="o">/</span><span class="nx">mnt</span><span class="o">/</span><span class="nx">share</span><span class="o">/</span><span class="nx">img1</span>
 <span class="nx">sudo</span> <span class="nx">mkdir</span> <span class="o">/</span><span class="nx">mnt</span><span class="o">/</span><span class="nx">share</span><span class="o">/</span><span class="nx">img2</span>
 </pre></div>
@@ -156,7 +156,7 @@
 <pre><code><div class="highlight"><pre><span class="nx">xz</span> <span class="o">-</span><span class="mi">9</span> <span class="o">-</span><span class="nx">e</span> <span class="nx">boot</span><span class="p">.</span><span class="nx">tar</span>
 </pre></div>
 </code></pre>
-<p>最终生成一个boot.tar.xz文件，拷贝到文件夹RetroPie中。同理我们可以再生成一个boot.tar.xz文件。<br>10. 最后我们就是格式化SD卡了，使用SDFormatter（<a href="https://www.sdcard.org/chs/downloads/formatter_4/">下载页面地址</a>）将你的SD卡拷贝，然后将制作好的noobs文件全部拷贝到sd卡中，保证recovery.img在sd卡根目录：</p>
+<p>最终生成一个boot.tar.xz文件，拷贝到文件夹RetroPie中。同理我们可以再生成一个root.tar.xz文件。<br>10. 最后我们就是格式化SD卡了，使用SDFormatter（<a href="https://www.sdcard.org/chs/downloads/formatter_4/">下载页面地址</a>）将你的SD卡格式化，然后将制作好的noobs文件全部拷贝到sd卡中，保证recovery.img在sd卡根目录：</p>
 <p><img src="/images/noobs_files.jpg" alt="noobs根目录"><br><strong>图2.3 sd卡根目录</strong><br>至此一个自定义的操作系统已经成功制作完成，将sd卡插入树莓派就可以安装了。</p>
 </div>
 
