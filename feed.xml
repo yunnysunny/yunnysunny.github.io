@@ -1,5 +1,107 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Sun, 18 Oct 2015 06:01:43 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Sun, 18 Oct 2015 06:01:43 GMT</pubDate><copyright><![CDATA[2015 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[nan入门教程]]></title><description><![CDATA[<p>Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如果你之前的代码是按照0.10的API编写的，将其改成0.12的形式是需要耗费一番精力的，但是问题又来了，你如果改为0.12形式，0.10又不能够被兼容了。幸好有<a href="https://github.com/nodejs/nan">nan</a>，其实它的核心是一个头文件，通过宏定义来做不同版本的node的c++ API的兼容。</p>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Sun, 01 Nov 2015 04:33:01 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Sun, 01 Nov 2015 04:33:01 GMT</pubDate><copyright><![CDATA[2015 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[JNI系列教程一——入门]]></title><description><![CDATA[<h2><a name="1-1" class="anchor" href="#1-1"><span class="header-link"></span></a>1.1 背景</h2>
+<p>和很多语言类似，java也提供了调用原生代码的功能，这门技术叫做JNI。有了JNI，可以在付出更小的代价的前提下，复用大量已经写好的C/C++库，当然一般用JNI的目的还是由于java在处理<strong>计算密集型</strong>（比如说非对称运算）的操作时有时会力不从心。<br>从结构上来看JNI是一个中间层，具体的调用步骤是这个样子的：java-&gt;JNI-&gt;C/C++。  </p>
+<blockquote>
+<p>本文源地址<a href="http://blog.whyun.com/posts/jni">http://blog.whyun.com/posts/jni</a> 转载请注明出处</p>
+</blockquote>
+<h2><a name="1-2" class="anchor" href="#1-2"><span class="header-link"></span></a>1.2 准备活动</h2>
+<h3><a name="1-2-1-java" class="anchor" href="#1-2-1-java"><span class="header-link"></span></a>1.2.1 编写java代码</h3>
+<pre><code class="lang-java"><div class="highlight"><pre><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">whyun</span><span class="o">.</span><span class="na">jni</span><span class="o">.</span><span class="na">chapter1</span><span class="o">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * User: sunny</span>
+<span class="cm"> * Date: 15-10-28</span>
+<span class="cm"> * Time: 下午12:29</span>
+<span class="cm"> */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">FirstDemo</span> <span class="o">{</span>
+    <span class="kd">static</span><span class="o">{</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">loadLibrary</span><span class="o">(</span><span class="s">&quot;firstdemo&quot;</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="kd">public</span> <span class="kd">native</span> <span class="kt">int</span> <span class="nf">getNum</span><span class="o">();</span>
+    <span class="kd">public</span> <span class="kd">native</span> <span class="n">String</span> <span class="nf">getString</span><span class="o">();</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span> <span class="o">[]</span><span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">FirstDemo</span> <span class="n">demo</span> <span class="o">=</span> <span class="k">new</span> <span class="n">FirstDemo</span><span class="o">();</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;num:&quot;</span><span class="o">+</span><span class="n">demo</span><span class="o">.</span><span class="na">getNum</span><span class="o">()+</span><span class="s">&quot;,string:&quot;</span><span class="o">+</span><span class="n">demo</span><span class="o">.</span><span class="na">getString</span><span class="o">());</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.2.1.1</strong>
+注意到我们在类<code>FirstDemo</code>中定义了两个成员函数都没有函数体，且都加了关键字<code>native</code>声明，如果函数写成这样，则代表当前函数需要调用底层C/C++代码。注意<code>System.loadLibrary</code>这句话，java中使用这个函数来加载动态库，windows平台下运行此段代码要保证<code>firstdemo.dll</code>存在环境变量<code>%path%</code>中，linux平台下要保证<code>libfirstdemo.so</code>存在环境变量<code>$LD_LIBRARY_PATH</code>中。</p>
+<h3><a name="1-2-2" class="anchor" href="#1-2-2"><span class="header-link"></span></a>1.2.2 生成头文件</h3>
+<p>在命令行中运行如下命令<code>javah com.whyun.jni.chapter1.FirstDemo</code>，运行成功之后则在运行命令行的目录下生成文件<code>com_whyun_jni_chapter1_FirstDemo.h</code>,用文本编辑器打开这个头文件，会显示如下内容：</p>
+<pre><code class="lang-c"><div class="highlight"><pre><span class="cm">/* DO NOT EDIT THIS FILE - it is machine generated */</span>
+<span class="cp">#include &lt;jni.h&gt;</span>
+<span class="cm">/* Header for class com_whyun_jni_chapter1_FirstDemo */</span>
+
+<span class="cp">#ifndef _Included_com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cp">#define _Included_com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cp">#ifdef __cplusplus</span>
+<span class="k">extern</span> <span class="s">&quot;C&quot;</span> <span class="p">{</span>
+<span class="cp">#endif</span>
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cm"> * Method:    getNum</span>
+<span class="cm"> * Signature: ()I</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="n">Java_com_whyun_jni_chapter1_FirstDemo_getNum</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="p">,</span> <span class="n">jobject</span><span class="p">);</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cm"> * Method:    getString</span>
+<span class="cm"> * Signature: ()Ljava/lang/String;</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jstring</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getString</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="p">,</span> <span class="n">jobject</span><span class="p">);</span>
+
+<span class="cp">#ifdef __cplusplus</span>
+<span class="p">}</span>
+<span class="cp">#endif</span>
+<span class="cp">#endif</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.2.1</strong></p>
+<h2><a name="1-3" class="anchor" href="#1-3"><span class="header-link"></span></a>1.3 编译运行</h2>
+<h3><a name="1-3-1-windows" class="anchor" href="#1-3-1-windows"><span class="header-link"></span></a>1.3.1 windows编译环境配置</h3>
+<p>windows下需要安装visual studio（简称vs）环境来完成C/C++编译，vs 有professional、ultimate和Express三个版本，前两者收费，我们使用免费的Express就够用了。我电脑上装的是vs express for desktop版本。<br>打开vs，新建项目，选择Visual C++，然后选择Empty Project，输入项目名<code>firstdemo</code>,点击确定。<br>接着设置项目属性，右击项目，然后选择properties，在Configuration Properties-&gt;General-&gt;Project Defaults-&gt;Configuration Type中，选择<code>Dynamic Library (.dll)</code>。然后在Configuration Properties-&gt;VC++ Directories-&gt;General-&gt;Include Directories中添加两个路径：<code>%JAVA_HOME%\include</code>和<code>%JAVA_HOME%\include\win32</code>，将<code>%JAVA_HOME%</code>替换成你的java安装目录。<br>最后编写c代码，在vs中新建源代码的时候，默认是cpp后缀，我们这里建一个c后缀的文件，因为我的编写习惯是c语法。</p>
+<pre><code class="lang-c"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &quot;com_whyun_jni_chapter1_FirstDemo.h&quot;</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cm"> * Method:    getNum</span>
+<span class="cm"> * Signature: ()I</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getNum</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">(</span><span class="n">jint</span><span class="p">)</span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cm"> * Method:    getString</span>
+<span class="cm"> * Signature: ()Ljava/lang/String;</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jstring</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getString</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">ob</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">jstring</span> <span class="n">jinfo</span>            <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">NewStringUTF</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="s">&quot;the first demo.&quot;</span><span class="p">);</span>
+      <span class="k">return</span> <span class="n">jinfo</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码1.3.1 firstdemo.c</strong><br>注意我们引用了之前的<code>com_whyun_jni_chapter1_FirstDemo.h</code>，我们把它放到<code>firstdemo.c</code>同一级目录下了。<br>接着运行编译，产生dll文件，默认情况下会在项目目录Debug文件夹下产生firstdeom.dll，你可以把这个文件夹添加到环境变量PATH中去，也可以写脚本在编译完成之后将dll拷贝到电脑的任何一个PATH路径下，在Configuration Properties-&gt;Build Events-&gt;Command Line中写入如下命令：<code>copy &quot;$(TargetDir)$(TargetName).dll&quot; 随便一个PATH中的目录\$(TargetName).dll</code>。</p>
+<h3><a name="1-3-2-linux" class="anchor" href="#1-3-2-linux"><span class="header-link"></span></a>1.3.2 linux编译</h3>
+<p>在linux下使用命令行GCC即可，将<code>com_whyun_jni_chapter1_FirstDemo.h</code>和<code>firstdemo.c</code>放到同一个目录下，然后运行<code>gcc -g -Wall -I $JAVA_HOME/include/ -I $JAVA_HOME/include/linux -fPIC -shared -o $saveDir/libfirstdemo.so firstdemo.c</code>,将<code>$JAVA_HOME</code>替换为你的JDK安装目录，<code>$saveDir</code>替换为环境变量<code>$LD_LIBRARY_PATH</code>中的任一个目录即可。</p>
+<h3><a name="1-3-3" class="anchor" href="#1-3-3"><span class="header-link"></span></a>1.3.3 运行</h3>
+<p>运行java代码，最终输出</p>
+<pre><code><div class="highlight"><pre><span class="nx">num</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">string</span><span class="o">:</span><span class="nx">the</span> <span class="nx">first</span> <span class="nx">demo</span><span class="p">.</span>
+</pre></div>
+</code></pre>
+<blockquote>
+<p>本文用到的源代码可以从<a href="http://git.oschina.net/yunnysunny/jni">http://git.oschina.net/yunnysunny/jni</a> 获得到</p>
+</blockquote>
+]]></description><link>http://blog.whyun.com/posts/jni/</link><guid isPermaLink="true">http://blog.whyun.com/posts/jni/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Sun, 01 Nov 2015 00:00:00 GMT</pubDate></item><item><title><![CDATA[nan入门教程]]></title><description><![CDATA[<p>Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如果你之前的代码是按照0.10的API编写的，将其改成0.12的形式是需要耗费一番精力的，但是问题又来了，你如果改为0.12形式，0.10又不能够被兼容了。幸好有<a href="https://github.com/nodejs/nan">nan</a>，其实它的核心是一个头文件，通过宏定义来做不同版本的node的c++ API的兼容。</p>
 <h2><a name="1" class="anchor" href="#1"><span class="header-link"></span></a>1.配置</h2>
 <p>首先你得在<code>package.json</code>中引入<code>nan</code>,然后在binding.gyp中配置：</p>
 <pre><code><div class="highlight"><pre><span class="s2">&quot;include_dirs&quot;</span> <span class="o">:</span> <span class="p">[</span>

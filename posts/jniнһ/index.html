@@ -1,0 +1,206 @@
+
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+    <link rel="icon" type="image/png" href="/images/cabin.png" >
+    <link href="/styles/main.css" rel="stylesheet">
+    
+    <title>JNIϵ�н̳�һ��������</title>
+    
+    
+    <meta name="description" content="JNIʹ�ñ�����windows��linux��JNI���������ã���������ִ�е�һ��JNI����">
+    
+	<style type="text/css">
+
+	.social-media a.qq {
+		background-position: 0 0;
+	}
+	
+	.social-media a.sina {
+		background-position: -39px 0;
+		width: 22px;
+	}
+	.social-media a.qq:hover {
+		background-position: 0 -28px;
+	}
+	.social-media a.sina:hover {
+		background-position: -39px -28px;
+		width: 22px;
+	}
+	.social-media a {
+		background: rgba(0, 0, 0, 0) url("/images/sns.png") no-repeat scroll 0 0;
+		display: inline-block;
+		float: left;
+		height: 20px;
+		margin: 10px 5px;
+		width: 20px;
+	}	
+	</style>
+	<link title="白一梓的博文" href="/feed.xml" rel="alternate" type="application/rss+xml" />
+  </head>
+  <body>
+    <nav>
+      <h1 class="name">
+        <a href="/">白一梓</a>
+      </h1>
+      <div class="menu icon-menu"></div>
+      <ul class="nav-links">
+        <li class="text-link">
+          <a href="/about.html">关于</a>
+        </li>
+        <li class="text-link">
+          <a href="/projects.html">项目</a>
+        </li>
+        <li class="text-link">
+          <a href="/archives.html">文章</a>
+        </li>
+      </ul>
+      <div class="social-media">
+		<a title="我的腾讯微博" class="qq" href="http://t.qq.com/baiyizi" target="_blank"></a>
+		<a title="我的新浪微博" class="sina" href="http://weibo.com/1261004702" target="_blank"></a>        
+      </div>
+    </nav>
+    <div class="content">
+
+<div class="post-head group">
+  <a href="/posts/jniнһ/">
+    <h1 class="post-title">JNIϵ�н̳�һ��������</h1>
+  </a>
+  <span class="post-date">2015 &#183; 11 &#183; 1</span>
+</div>
+
+<div class="post-body markdown"><h2><a name="1-1" class="anchor" href="#1-1"><span class="header-link"></span></a>1.1 ����</h2>
+<p>�ͺܶ��������ƣ�javaҲ�ṩ�˵���ԭ�������Ĺ��ܣ����ż�������JNI������JNI�������ڸ�����С�Ĵ��۵�ǰ���£����ô����Ѿ�д�õ�C/C++�⣬��Ȼһ����JNI��Ŀ�Ļ�������java�ڴ���<strong>�����ܼ���</strong>������˵�ǶԳ����㣩�Ĳ���ʱ��ʱ���������ġ�<br>�ӽṹ������JNI��һ���м��㣬�����ĵ��ò������������ӵģ�java-&gt;JNI-&gt;C/C++��</p>
+<h2><a name="1-2" class="anchor" href="#1-2"><span class="header-link"></span></a>1.2 ׼���</h2>
+<h3><a name="1-2-1-дjava" class="anchor" href="#1-2-1-дjava"><span class="header-link"></span></a>1.2.1 ��дjava����</h3>
+<pre><code class="lang-java"><div class="highlight"><pre><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">whyun</span><span class="o">.</span><span class="na">jni</span><span class="o">.</span><span class="na">chapter1</span><span class="o">;</span>
+
+<span class="cm">/**</span>
+<span class="cm"> * User: sunny</span>
+<span class="cm"> * Date: 15-10-28</span>
+<span class="cm"> * Time: ����12:29</span>
+<span class="cm"> */</span>
+<span class="kd">public</span> <span class="kd">class</span> <span class="nc">FirstDemo</span> <span class="o">{</span>
+    <span class="kd">static</span><span class="o">{</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">loadLibrary</span><span class="o">(</span><span class="s">&quot;firstdemo&quot;</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="kd">public</span> <span class="kd">native</span> <span class="kt">int</span> <span class="nf">getNum</span><span class="o">();</span>
+    <span class="kd">public</span> <span class="kd">native</span> <span class="n">String</span> <span class="nf">getString</span><span class="o">();</span>
+    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span> <span class="o">[]</span><span class="n">args</span><span class="o">)</span> <span class="o">{</span>
+        <span class="n">FirstDemo</span> <span class="n">demo</span> <span class="o">=</span> <span class="k">new</span> <span class="n">FirstDemo</span><span class="o">();</span>
+        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;num:&quot;</span><span class="o">+</span><span class="n">demo</span><span class="o">.</span><span class="na">getNum</span><span class="o">()+</span><span class="s">&quot;,string:&quot;</span><span class="o">+</span><span class="n">demo</span><span class="o">.</span><span class="na">getString</span><span class="o">());</span>
+    <span class="o">}</span>
+<span class="o">}</span>
+</pre></div>
+</code></pre>
+<p><strong>���� 1.2.1.1</strong>
+ע�⵽��������<code>FirstDemo</code>�ж�����������Ա������û�к����壬�Ҷ����˹ؼ���<code>native</code>��������������д��������������ǰ������Ҫ���õײ�C/C++���롣ע��<code>System.loadLibrary</code>���仰��java��ʹ���������������ض�̬�⣬windowsƽ̨�����д˶δ���Ҫ��֤<code>firstdemo.dll</code>���ڻ�������<code>%path%</code>�У�linuxƽ̨��Ҫ��֤<code>libfirstdemo.so</code>���ڻ�������<code>$LD_LIBRARY_PATH</code>�С�</p>
+<h3><a name="1-2-2" class="anchor" href="#1-2-2"><span class="header-link"></span></a>1.2.2 ����ͷ�ļ�</h3>
+<p>����������������������<code>javah com.whyun.jni.chapter1.FirstDemo</code>�����гɹ�֮���������������е�Ŀ¼�������ļ�<code>com_whyun_jni_chapter1_FirstDemo.h</code>,���ı��༭����������ͷ�ļ�������ʾ�������ݣ�</p>
+<pre><code class="lang-c"><div class="highlight"><pre><span class="cm">/* DO NOT EDIT THIS FILE - it is machine generated */</span>
+<span class="cp">#include &lt;jni.h&gt;</span>
+<span class="cm">/* Header for class com_whyun_jni_chapter1_FirstDemo */</span>
+
+<span class="cp">#ifndef _Included_com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cp">#define _Included_com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cp">#ifdef __cplusplus</span>
+<span class="k">extern</span> <span class="s">&quot;C&quot;</span> <span class="p">{</span>
+<span class="cp">#endif</span>
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cm"> * Method:    getNum</span>
+<span class="cm"> * Signature: ()I</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="n">Java_com_whyun_jni_chapter1_FirstDemo_getNum</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="p">,</span> <span class="n">jobject</span><span class="p">);</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cm"> * Method:    getString</span>
+<span class="cm"> * Signature: ()Ljava/lang/String;</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jstring</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getString</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="p">,</span> <span class="n">jobject</span><span class="p">);</span>
+
+<span class="cp">#ifdef __cplusplus</span>
+<span class="p">}</span>
+<span class="cp">#endif</span>
+<span class="cp">#endif</span>
+</pre></div>
+</code></pre>
+<p><strong>���� 1.2.1</strong></p>
+<h2><a name="1-3" class="anchor" href="#1-3"><span class="header-link"></span></a>1.3 ��������</h2>
+<h3><a name="1-3-1-windows" class="anchor" href="#1-3-1-windows"><span class="header-link"></span></a>1.3.1 windows���뻷������</h3>
+<p>windows����Ҫ��װvisual studio������vs������������C/C++���룬vs ��professional��ultimate��Express�����汾��ǰ�����շѣ�����ʹ�����ѵ�Express�͹����ˡ��ҵ�����װ����vs express for desktop�汾��<br>����vs���½���Ŀ��ѡ��Visual C++��Ȼ��ѡ��Empty Project��������Ŀ��<code>firstdemo</code>,����ȷ����<br>����������Ŀ���ԣ��һ���Ŀ��Ȼ��ѡ��properties����Configuration Properties-&gt;General-&gt;Project Defaults-&gt;Configuration Type�У�ѡ��<code>Dynamic Library (.dll)</code>��Ȼ����Configuration Properties-&gt;VC++ Directories-&gt;General-&gt;Include Directories����������·����<code>%JAVA_HOME%\include</code>��<code>%JAVA_HOME%\include\win32</code>����<code>%JAVA_HOME%</code>�滻������java��װĿ¼��<br>������дc���룬��vs���½�Դ������ʱ����Ĭ����cpp��׺���������ｨһ��c��׺���ļ�����Ϊ�ҵı�дϰ����c�﷨��</p>
+<pre><code class="lang-c"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
+<span class="cp">#include &quot;com_whyun_jni_chapter1_FirstDemo.h&quot;</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cm"> * Method:    getNum</span>
+<span class="cm"> * Signature: ()I</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getNum</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">return</span> <span class="p">(</span><span class="n">jint</span><span class="p">)</span><span class="mi">1</span><span class="p">;</span>
+<span class="p">}</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
+<span class="cm"> * Method:    getString</span>
+<span class="cm"> * Signature: ()Ljava/lang/String;</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jstring</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getString</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">ob</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">jstring</span> <span class="n">jinfo</span>            <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">NewStringUTF</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="s">&quot;the first demo.&quot;</span><span class="p">);</span>
+      <span class="k">return</span> <span class="n">jinfo</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>����1.3.1 firstdemo.c</strong><br>ע������������֮ǰ��<code>com_whyun_jni_chapter1_FirstDemo.h</code>�����ǰ����ŵ�<code>firstdemo.c</code>ͬһ��Ŀ¼���ˡ�<br>�������б��룬����dll�ļ���Ĭ�������»�����ĿĿ¼Debug�ļ����²���firstdeom.dll�������԰������ļ������ӵ���������PATH��ȥ��Ҳ����д�ű��ڱ�������֮����dll���������Ե��κ�һ��PATH·���£���Configuration Properties-&gt;Build Events-&gt;Command Line��д���������<code>copy &quot;$(TargetDir)$(TargetName).dll&quot; ����һ��PATH�е�Ŀ¼\$(TargetName).dll</code>��</p>
+<h3><a name="1-3-2-linux" class="anchor" href="#1-3-2-linux"><span class="header-link"></span></a>1.3.2 linux����</h3>
+<p>��linux��ʹ��������GCC���ɣ���<code>com_whyun_jni_chapter1_FirstDemo.h</code>��<code>firstdemo.c</code>�ŵ�ͬһ��Ŀ¼�£�Ȼ������<code>gcc -g -Wall -I $JAVA_HOME/include/ -I $JAVA_HOME/include/linux -fPIC -shared -o $saveDir/libfirstdemo.so firstdemo.c</code>,��<code>$JAVA_HOME</code>�滻Ϊ����JDK��װĿ¼��<code>$saveDir</code>�滻Ϊ��������<code>$LD_LIBRARY_PATH</code>�е���һ��Ŀ¼���ɡ�</p>
+<h3><a name="1-3-3" class="anchor" href="#1-3-3"><span class="header-link"></span></a>1.3.3 ����</h3>
+<p>����java���룬��������</p>
+<pre><code><div class="highlight"><pre><span class="nx">num</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">string</span><span class="o">:</span><span class="nx">the</span> <span class="nx">first</span> <span class="nx">demo</span><span class="p">.</span>
+</pre></div>
+</code></pre>
+</div>
+
+<a name="comments"></a>
+<!-- 多说评论框 start -->
+<div class="ds-thread" data-thread-key="posts/jniнһ/" data-title="JNIϵ�н̳�һ��������" data-url="http://blog.whyun.com/posts/jniнһ/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"whyun"};
+(function() {
+	var ds = document.createElement('script');
+	ds.type = 'text/javascript';ds.async = true;
+	ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+	ds.charset = 'UTF-8';
+	(document.getElementsByTagName('head')[0] 
+	 || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!-- 多说公共JS代码 end -->
+
+
+
+    </div>
+    <script src="//upcdn.b0.upaiyun.com/libs/jquery/jquery-1.10.2.min.js" type="text/javascript"></script>
+    <script src="/scripts/main.js" type="text/javascript"></script>
+    <script  type="text/javascript">
+		var _hmt = _hmt || [];
+		(function() {
+		  var hm = document.createElement("script");
+		  hm.src = "//hm.baidu.com/hm.js?628c040f31bc950845419d51d5cbebeb";
+		  var s = document.getElementsByTagName("script")[0]; 
+		  s.parentNode.insertBefore(hm, s);
+		})();
+    </script>
+  </body>
+</html>
+
