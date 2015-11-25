@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -6,8 +7,10 @@
     <link rel="icon" type="image/png" href="/images/cabin.png" >
     <link href="/styles/main.css" rel="stylesheet">
     
-    <title>白一梓的博客</title>
+    <title>JNI系列教程二——数据结构</title>
     
+    
+    <meta name="description" content="JNI和java的数据结构的相互转化，JNI和java的函数相互调用">
     
 	<style type="text/css">
 
@@ -61,8 +64,7 @@
     </nav>
     <div class="content">
 
-
-  <div class="post-head group">
+<div class="post-head group">
   <a href="/posts/jni/2-struct-transform/">
     <h1 class="post-title">JNI系列教程二——数据结构</h1>
   </a>
@@ -259,165 +261,26 @@
 <p>这里ThrowNew转成java的话，就是<code>throw new Exception(&quot;This is a exception.&quot;);</code>其它的我就不多说了。</p>
 </div>
 
-  <div class="comments">
-    <a href="/posts/jni/2-struct-transform/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
-
-  <div class="post-head group">
-  <a href="/posts/jni/">
-    <h1 class="post-title">JNI系列教程一——入门</h1>
-  </a>
-  <span class="post-date">2015 &#183; 11 &#183; 1</span>
-</div>
-
-<div class="post-body markdown"><h2><a name="1-1" class="anchor" href="#1-1"><span class="header-link"></span></a>1.1 背景</h2>
-<p>和很多语言类似，java也提供了调用原生代码的功能，这门技术叫做JNI。有了JNI，可以在付出更小的代价的前提下，复用大量已经写好的C/C++库，当然一般用JNI的目的还是由于java在处理<strong>计算密集型</strong>（比如说非对称运算）的操作时有时会力不从心。<br>从结构上来看JNI是一个中间层，具体的调用步骤是这个样子的：java-&gt;JNI-&gt;C/C++。  </p>
-<blockquote>
-<p>本文源地址<a href="http://blog.whyun.com/posts/jni">http://blog.whyun.com/posts/jni</a> 转载请注明出处</p>
-</blockquote>
-<h2><a name="1-2" class="anchor" href="#1-2"><span class="header-link"></span></a>1.2 准备活动</h2>
-<h3><a name="1-2-1-java" class="anchor" href="#1-2-1-java"><span class="header-link"></span></a>1.2.1 编写java代码</h3>
-<pre><code class="lang-java"><div class="highlight"><pre><span class="kn">package</span> <span class="n">com</span><span class="o">.</span><span class="na">whyun</span><span class="o">.</span><span class="na">jni</span><span class="o">.</span><span class="na">chapter1</span><span class="o">;</span>
-
-<span class="cm">/**</span>
-<span class="cm"> * User: sunny</span>
-<span class="cm"> * Date: 15-10-28</span>
-<span class="cm"> * Time: 下午12:29</span>
-<span class="cm"> */</span>
-<span class="kd">public</span> <span class="kd">class</span> <span class="nc">FirstDemo</span> <span class="o">{</span>
-    <span class="kd">static</span><span class="o">{</span>
-        <span class="n">System</span><span class="o">.</span><span class="na">loadLibrary</span><span class="o">(</span><span class="s">&quot;firstdemo&quot;</span><span class="o">);</span>
-    <span class="o">}</span>
-    <span class="kd">public</span> <span class="kd">native</span> <span class="kt">int</span> <span class="nf">getNum</span><span class="o">();</span>
-    <span class="kd">public</span> <span class="kd">native</span> <span class="n">String</span> <span class="nf">getString</span><span class="o">();</span>
-    <span class="kd">public</span> <span class="kd">static</span> <span class="kt">void</span> <span class="nf">main</span><span class="o">(</span><span class="n">String</span> <span class="o">[]</span><span class="n">args</span><span class="o">)</span> <span class="o">{</span>
-        <span class="n">FirstDemo</span> <span class="n">demo</span> <span class="o">=</span> <span class="k">new</span> <span class="n">FirstDemo</span><span class="o">();</span>
-        <span class="n">System</span><span class="o">.</span><span class="na">out</span><span class="o">.</span><span class="na">println</span><span class="o">(</span><span class="s">&quot;num:&quot;</span><span class="o">+</span><span class="n">demo</span><span class="o">.</span><span class="na">getNum</span><span class="o">()+</span><span class="s">&quot;,string:&quot;</span><span class="o">+</span><span class="n">demo</span><span class="o">.</span><span class="na">getString</span><span class="o">());</span>
-    <span class="o">}</span>
-<span class="o">}</span>
-</pre></div>
-</code></pre>
-<p><strong>代码 1.2.1.1</strong>
-注意到我们在类<code>FirstDemo</code>中定义了两个成员函数都没有函数体，且都加了关键字<code>native</code>声明，如果函数写成这样，则代表当前函数需要调用底层C/C++代码。注意<code>System.loadLibrary</code>这句话，java中使用这个函数来加载动态库，windows平台下运行此段代码要保证<code>firstdemo.dll</code>存在环境变量<code>%path%</code>中，linux平台下要保证<code>libfirstdemo.so</code>存在环境变量<code>$LD_LIBRARY_PATH</code>中。</p>
-<blockquote>
-<p>其实java在<code>loadLibrary</code>的时候，是读取的系统变量<code>java.library.path</code>来搜寻动态库位置的，你可以用<code>System.getProperty(&quot;java.library.path&quot;)</code>来输出这个变量的内容。只不过在windows中会把环境变量<code>%path%</code>的内容加入到这个变量中，在linux中会把环境变量<code>$LD_LIBRARY_PATH</code>加入到这个变量中。在我的一台linux上打印<code>java.library.path</code>，会输入如下内容：
-<code>/usr/jdk1.6.0_45/jre/lib/i386/server:/usr/jdk1.6.0_45/jre/lib/i386:
-/usr/jdk1.6.0_45/jre/../lib/i386:
-/home/username/lib::/usr/java/packages/lib/i386
-:/lib:/usr/lib</code>
-其中<code>/home/username/lib:</code>是从环境变量<code>$LD_LIBRARY_PATH</code>读取的。不推荐将生成的动态库放置到系统目录中，首先是不一定有管理员权限，其次会导致系统库目录下的文件过多，不易管理。</p>
-</blockquote>
-<h3><a name="1-2-2" class="anchor" href="#1-2-2"><span class="header-link"></span></a>1.2.2 生成头文件</h3>
-<p>本文用到的项目源码在文后给出，项目的目录结构如下：<br><img src="http://blog.whyun.com/images/chapter1_dir.jpg" alt="项目目录结构"><br><strong>图1.2.2 项目目录结构</strong><br>其中目录<code>out/production</code>为我们的class文件生成的目录，在命令行下进入该目录，运行如下命令<code>javah com.whyun.jni.chapter1.FirstDemo</code>，运行成功之后则在运行命令行的目录下生成文件<code>com_whyun_jni_chapter1_FirstDemo.h</code>,用文本编辑器打开这个头文件，会显示如下内容：</p>
-<pre><code class="lang-c"><div class="highlight"><pre><span class="cm">/* DO NOT EDIT THIS FILE - it is machine generated */</span>
-<span class="cp">#include &lt;jni.h&gt;</span>
-<span class="cm">/* Header for class com_whyun_jni_chapter1_FirstDemo */</span>
-
-<span class="cp">#ifndef _Included_com_whyun_jni_chapter1_FirstDemo</span>
-<span class="cp">#define _Included_com_whyun_jni_chapter1_FirstDemo</span>
-<span class="cp">#ifdef __cplusplus</span>
-<span class="k">extern</span> <span class="s">&quot;C&quot;</span> <span class="p">{</span>
-<span class="cp">#endif</span>
-<span class="cm">/*</span>
-<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
-<span class="cm"> * Method:    getNum</span>
-<span class="cm"> * Signature: ()I</span>
-<span class="cm"> */</span>
-<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="n">Java_com_whyun_jni_chapter1_FirstDemo_getNum</span>
-  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="p">,</span> <span class="n">jobject</span><span class="p">);</span>
-
-<span class="cm">/*</span>
-<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
-<span class="cm"> * Method:    getString</span>
-<span class="cm"> * Signature: ()Ljava/lang/String;</span>
-<span class="cm"> */</span>
-<span class="n">JNIEXPORT</span> <span class="n">jstring</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getString</span>
-  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="p">,</span> <span class="n">jobject</span><span class="p">);</span>
-
-<span class="cp">#ifdef __cplusplus</span>
-<span class="p">}</span>
-<span class="cp">#endif</span>
-<span class="cp">#endif</span>
-</pre></div>
-</code></pre>
-<p><strong>代码 1.2.1</strong></p>
-<h2><a name="1-3" class="anchor" href="#1-3"><span class="header-link"></span></a>1.3 编译运行</h2>
-<p>为了简化在windows和linux下配置编译步骤，我们先在操作系统中配置两个环境变量，在windows上将<code>JAVA_HOME</code>配置为JDK的安装路径，很多情况下这个环境变量在配置JDK编译环境的时候已经配置过，可以通过<code>echo %JAVA_HOME%</code>的输出来判断之前是否已经配置过；同理我们在linux上也配置环境变量<code>JAVA_HOME</code>(通过运行<code>echo $JAVA_HOME</code>来检测是否存在)。同时我们在windows上将目录<code>d:\lib</code>加入环境变量<code>PATH</code>中，在linux上将<code>/opt/lib</code>加入环境变量<code>LD_LIBRARY_PATH</code>中。</p>
-<h3><a name="1-3-1-windows" class="anchor" href="#1-3-1-windows"><span class="header-link"></span></a>1.3.1 windows编译环境配置</h3>
-<p>windows下需要安装visual studio（简称vs）环境来完成C/C++编译，vs 有professional、ultimate和Express三个版本，前两者收费，我们使用免费的Express就够用了。我电脑上装的是vs express for desktop版本。<br>打开vs，新建项目，选择Visual C++，然后选择Empty Project，输入项目名<code>firstdemo</code>,点击确定。<br>接着设置项目属性，右击项目，然后选择properties，在Configuration Properties-&gt;General-&gt;Project Defaults-&gt;Configuration Type中，选择<code>Dynamic Library (.dll)</code>。然后在Configuration Properties-&gt;VC++ Directories-&gt;General-&gt;Include Directories中添加两个路径：<code>$(JAVA_HOME)\include</code>和<code>$(JAVA_HOME)\include\win32</code>。<br>最后编写c代码，在vs中新建源代码的时候，默认是cpp后缀，我们这里建一个c后缀的文件，因为我的编写习惯是c语法。</p>
-<pre><code class="lang-c"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
-<span class="cp">#include &quot;com_whyun_jni_chapter1_FirstDemo.h&quot;</span>
-
-<span class="cm">/*</span>
-<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
-<span class="cm"> * Method:    getNum</span>
-<span class="cm"> * Signature: ()I</span>
-<span class="cm"> */</span>
-<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getNum</span>
-  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">)</span> <span class="p">{</span>
-      <span class="k">return</span> <span class="p">(</span><span class="n">jint</span><span class="p">)</span><span class="mi">1</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="cm">/*</span>
-<span class="cm"> * Class:     com_whyun_jni_chapter1_FirstDemo</span>
-<span class="cm"> * Method:    getString</span>
-<span class="cm"> * Signature: ()Ljava/lang/String;</span>
-<span class="cm"> */</span>
-<span class="n">JNIEXPORT</span> <span class="n">jstring</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter1_FirstDemo_getString</span>
-  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">ob</span><span class="p">)</span> <span class="p">{</span>
-      <span class="n">jstring</span> <span class="n">jinfo</span>            <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">NewStringUTF</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="s">&quot;the first demo.&quot;</span><span class="p">);</span>
-      <span class="k">return</span> <span class="n">jinfo</span><span class="p">;</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>代码1.3.1 firstdemo.c</strong><br>注意我们引用了之前的<code>com_whyun_jni_chapter1_FirstDemo.h</code>，我们把它放到<code>firstdemo.c</code>同一级目录下了。<br>接着运行编译，产生dll文件，默认情况下会在项目目录Debug文件夹下产生firstdeom.dll，你可以把这个文件夹添加到环境变量PATH中去，也可以写脚本在编译完成之后将dll拷贝到电脑的任何一个PATH路径下，在Configuration Properties-&gt;Build Events-&gt;Post-Build Event-&gt;Command Line中写入如下命令：<code>copy &quot;$(TargetDir)$(TargetName).dll&quot; d:\lib\$(TargetName).dll</code>。</p>
-<h3><a name="1-3-2-linux" class="anchor" href="#1-3-2-linux"><span class="header-link"></span></a>1.3.2 linux编译</h3>
-<p>在linux下使用命令行GCC即可，将<code>com_whyun_jni_chapter1_FirstDemo.h</code>和<code>firstdemo.c</code>放到同一个目录下，然后运行脚本</p>
-<pre><code><div class="highlight"><pre><span class="nx">saveDir</span><span class="o">=</span><span class="err">/opt/lib</span>
-<span class="nx">gcc</span> <span class="o">-</span><span class="nx">g</span> <span class="o">-</span><span class="nx">Wall</span> <span class="o">-</span><span class="nx">I</span> <span class="nx">$JAVA_HOME</span><span class="o">/</span><span class="nx">include</span><span class="o">/</span> <span class="o">-</span><span class="nx">I</span> <span class="nx">$JAVA_HOME</span><span class="o">/</span><span class="nx">include</span><span class="o">/</span><span class="nx">linux</span> <span class="o">-</span><span class="nx">fPIC</span> <span class="o">-</span><span class="nx">shared</span> <span class="o">-</span><span class="nx">o</span> <span class="nx">$saveDir</span><span class="o">/</span><span class="nx">libfirstdemo</span><span class="p">.</span><span class="nx">so</span> <span class="nx">firstdemo</span><span class="p">.</span><span class="nx">c</span>
-</pre></div>
-</code></pre>
-<h3><a name="1-3-3" class="anchor" href="#1-3-3"><span class="header-link"></span></a>1.3.3 运行</h3>
-<p>运行java代码，最终输出</p>
-<pre><code><div class="highlight"><pre><span class="nx">num</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">string</span><span class="o">:</span><span class="nx">the</span> <span class="nx">first</span> <span class="nx">demo</span><span class="p">.</span>
-</pre></div>
-</code></pre>
-<blockquote>
-<p>本文用到的源代码可以从<a href="http://git.oschina.net/yunnysunny/jni">http://git.oschina.net/yunnysunny/jni</a> 获得到</p>
-</blockquote>
-</div>
-
-  <div class="comments">
-    <a href="/posts/jni/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
+<a name="comments"></a>
+<!-- 多说评论框 start -->
+<div class="ds-thread" data-thread-key="posts/jni/2-struct-transform/" data-title="JNI系列教程二——数据结构" data-url="http://blog.whyun.com/posts/jni/2-struct-transform/"></div>
+<!-- 多说评论框 end -->
+<!-- 多说公共JS代码 start (一个网页只需插入一次) -->
+<script type="text/javascript">
+var duoshuoQuery = {short_name:"whyun"};
+(function() {
+	var ds = document.createElement('script');
+	ds.type = 'text/javascript';ds.async = true;
+	ds.src = (document.location.protocol == 'https:' ? 'https:' : 'http:') + '//static.duoshuo.com/embed.js';
+	ds.charset = 'UTF-8';
+	(document.getElementsByTagName('head')[0] 
+	 || document.getElementsByTagName('body')[0]).appendChild(ds);
+})();
+</script>
+<!-- 多说公共JS代码 end -->
 
 
-<div class="pagination group">
-  
-    
-    
-  
-    
-    
-      <a href="/page/1/" class="older"> &#8592; Older</a>
-    
-  
-    
-    
-  
-    
-    
-  
-    
-    
-  
-</div>
+
     </div>
     <script src="//upcdn.b0.upaiyun.com/libs/jquery/jquery-1.10.2.min.js" type="text/javascript"></script>
     <script src="/scripts/main.js" type="text/javascript"></script>

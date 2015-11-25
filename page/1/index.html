@@ -63,6 +63,150 @@
 
 
   <div class="post-head group">
+  <a href="/posts/nan/">
+    <h1 class="post-title">nan入门教程</h1>
+  </a>
+  <span class="post-date">2015 &#183; 5 &#183; 24</span>
+</div>
+
+<div class="post-body markdown"><p>Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如果你之前的代码是按照0.10的API编写的，将其改成0.12的形式是需要耗费一番精力的，但是问题又来了，你如果改为0.12形式，0.10又不能够被兼容了。幸好有<a href="https://github.com/nodejs/nan">nan</a>，其实它的核心是一个头文件，通过宏定义来做不同版本的node的c++ API的兼容。</p>
+<h2><a name="1" class="anchor" href="#1"><span class="header-link"></span></a>1.配置</h2>
+<p>首先你得在<code>package.json</code>中引入<code>nan</code>,然后在binding.gyp中配置：</p>
+<pre><code><div class="highlight"><pre><span class="s2">&quot;include_dirs&quot;</span> <span class="o">:</span> <span class="p">[</span>
+    <span class="s2">&quot;&lt;!(node -e \&quot;require(&#39;nan&#39;)\&quot;)&quot;</span>
+<span class="p">]</span>
+</pre></div>
+</code></pre>
+<p> 最后在使用<code>nan</code>的c++文件中引入头文件<code>#include&lt;nan.h&gt;</code>。</p>
+<h2><a name="2-demo" class="anchor" href="#2-demo"><span class="header-link"></span></a>2.demo</h2>
+<p> 下面的demo摘自nan的readme文档</p>
+<pre><code><div class="highlight"><pre> <span class="c1">// addon.cc</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="c1">// ..引入async.h或者sync.h</span>
+
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">FunctionTemplate</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">Handle</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">Object</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">String</span><span class="p">;</span>
+
+<span class="k">void</span> <span class="nx">InitAll</span><span class="p">(</span><span class="nx">Handle</span><span class="o">&lt;</span><span class="nb">Object</span><span class="o">&gt;</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">exports</span><span class="o">-&gt;</span><span class="nx">Set</span><span class="p">(</span><span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">(</span><span class="s2">&quot;calculateSync&quot;</span><span class="p">),</span>
+    <span class="nx">NanNew</span><span class="o">&lt;</span><span class="nx">FunctionTemplate</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">CalculateSync</span><span class="p">)</span><span class="o">-&gt;</span><span class="nx">GetFunction</span><span class="p">());</span>
+
+  <span class="nx">exports</span><span class="o">-&gt;</span><span class="nx">Set</span><span class="p">(</span><span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">(</span><span class="s2">&quot;calculateAsync&quot;</span><span class="p">),</span>
+    <span class="nx">NanNew</span><span class="o">&lt;</span><span class="nx">FunctionTemplate</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">CalculateAsync</span><span class="p">)</span><span class="o">-&gt;</span><span class="nx">GetFunction</span><span class="p">());</span>
+<span class="p">}</span>
+
+<span class="nx">NODE_MODULE</span><span class="p">(</span><span class="nx">addon</span><span class="p">,</span> <span class="nx">InitAll</span><span class="p">)</span>   
+</pre></div>
+</code></pre>
+<p><strong>代码2.1 addon.cc</strong></p>
+<p>首先就是导出函数部分，<code>nan</code>中写法为<code>exports-&gt;Set(NanNew&lt;String&gt;(&quot;calculateSync&quot;),
+        NanNew&lt;FunctionTemplate&gt;(CalculateSync)-&gt;GetFunction());</code>，对于c++ api来说，在nan中全部都要用<code>NanNew</code>来声明，在0.10中这句话被写作<code>exports-&gt;Set(String::NewSymbol(&quot;calculateSync&quot;),FunctionTemplate::New(CalculateAsync)-&gt;GetFunction());</code>在0.12中是<code>NODE_SET_METHOD(exports, &quot;calculateSync&quot;, CalculateAsync);</code>。
+ 正常情况下需要引入函数<code>CalculateAsync</code>所在的头文件的，但是官方文档给出了两个<code>CalculateAsync</code>函数的实现，一个同步版，一个异步版。同步版仅仅是直接调用：</p>
+<pre><code><div class="highlight"><pre><span class="c1">// sync.h</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+
+<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">CalculateSync</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.2 sync.h</strong></p>
+<p>通过头文件就可以看出，函数声明的方式需要使用<code>NAN_METHOD(CalculateSync)</code>，这等同于0.10中的<code>Handle&lt;Value&gt; CalculateSync(const Arguments&amp; args)</code>,在0.12中要这么写<code>void CalculateSync(const FunctionCallbackInfo&lt;Value&gt;&amp; args)</code>。</p>
+<pre><code><div class="highlight"><pre><span class="c1">// sync.cc</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="s2">&quot;./sync.h&quot;</span>
+<span class="c1">// ...引入第三方类库头文件</span>
+
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">Number</span><span class="p">;</span>
+
+<span class="c1">// Simple synchronous access to the `Estimate()` function</span>
+<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">CalculateSync</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">NanScope</span><span class="p">();</span>
+
+  <span class="c1">// expect a number as the first argument</span>
+  <span class="kr">int</span> <span class="nx">points</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">Uint32Value</span><span class="p">();</span>
+  <span class="kr">double</span> <span class="nx">est</span> <span class="o">=</span> <span class="nx">Estimate</span><span class="p">(</span><span class="nx">points</span><span class="p">);</span><span class="c1">//Estimate是一个第三方类库的函数，这里可以不用理会</span>
+
+  <span class="nx">NanReturnValue</span><span class="p">(</span><span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">Number</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">est</span><span class="p">));</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.3 sync.cc</strong>
+首先是函数<code>NanScope();</code>,他来完成node0.10中的<code>HandleScope scope;</code>的功能，在node0.12中是：</p>
+<pre><code><div class="highlight"><pre><span class="nx">Isolate</span><span class="o">*</span> <span class="nx">isolate</span> <span class="o">=</span> <span class="nx">Isolate</span><span class="o">::</span><span class="nx">GetCurrent</span><span class="p">();</span>
+<span class="nx">HandleScope</span> <span class="nx">scope</span><span class="p">(</span><span class="nx">isolate</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>函数结束返回值操作也变成由函数（确切的说应该是宏定义）NanReturnValue来代替。</p>
+<p>更令人振奋的是，nan中还对libuv中的函数<code>uv_queue_work</code>进行了抽象，可以通过继承类<code>NanAsyncWorker</code>来实现异步话操作，省去了为了使用<code>uv_queue_work</code>而自定义数据结构的步骤。下面就是async.cc的代码：</p>
+<pre><code><div class="highlight"><pre><span class="c1">// async.cc</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
+<span class="err">#</span><span class="nx">include</span> <span class="s2">&quot;./async.h&quot;</span>
+
+<span class="c1">// ...引入第三方类库</span>
+
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">Function</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">Local</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">Null</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nb">Number</span><span class="p">;</span>
+<span class="nx">using</span> <span class="nx">v8</span><span class="o">::</span><span class="nx">Value</span><span class="p">;</span>
+
+<span class="kr">class</span> <span class="nx">PiWorker</span> <span class="o">:</span> <span class="kr">public</span> <span class="nx">NanAsyncWorker</span> <span class="p">{</span>
+ <span class="kr">public</span><span class="o">:</span>
+  <span class="nx">PiWorker</span><span class="p">(</span><span class="nx">NanCallback</span> <span class="o">*</span><span class="nx">callback</span><span class="p">,</span> <span class="kr">int</span> <span class="nx">points</span><span class="p">)</span>
+    <span class="o">:</span> <span class="nx">NanAsyncWorker</span><span class="p">(</span><span class="nx">callback</span><span class="p">),</span> <span class="nx">points</span><span class="p">(</span><span class="nx">points</span><span class="p">)</span> <span class="p">{}</span>
+  <span class="o">~</span><span class="nx">PiWorker</span><span class="p">()</span> <span class="p">{}</span>
+
+  <span class="c1">//这个函数运行在工作线程，而不是v8线程，所以不能访问v8的数据</span>
+  <span class="k">void</span> <span class="nx">Execute</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="nx">estimate</span> <span class="o">=</span> <span class="nx">Estimate</span><span class="p">(</span><span class="nx">points</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="c1">//这个是libuv的回调函数，在这里可以使用v8的数据</span>
+  <span class="k">void</span> <span class="nx">HandleOKCallback</span> <span class="p">()</span> <span class="p">{</span>
+    <span class="nx">NanScope</span><span class="p">();</span>
+
+    <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">argv</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="nx">NanNull</span><span class="p">()</span>
+      <span class="p">,</span> <span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">Number</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">estimate</span><span class="p">)</span>
+    <span class="p">};</span>
+
+    <span class="nx">callback</span><span class="o">-&gt;</span><span class="nx">Call</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nx">argv</span><span class="p">);</span>
+  <span class="p">};</span>
+
+ <span class="kr">private</span><span class="o">:</span>
+  <span class="kr">int</span> <span class="nx">points</span><span class="p">;</span>
+  <span class="kr">double</span> <span class="nx">estimate</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="c1">// Asynchronous access to the `Estimate()` function</span>
+<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">CalculateAsync</span><span class="p">)</span> <span class="p">{</span>
+  <span class="nx">NanScope</span><span class="p">();</span>
+
+  <span class="kr">int</span> <span class="nx">points</span> <span class="o">=</span> <span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">Uint32Value</span><span class="p">();</span>
+  <span class="nx">NanCallback</span> <span class="o">*</span><span class="nx">callback</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">NanCallback</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nx">As</span><span class="o">&lt;</span><span class="nb">Function</span><span class="o">&gt;</span><span class="p">());</span>
+
+  <span class="nx">NanAsyncQueueWorker</span><span class="p">(</span><span class="k">new</span> <span class="nx">PiWorker</span><span class="p">(</span><span class="nx">callback</span><span class="p">,</span> <span class="nx">points</span><span class="p">));</span>
+  <span class="nx">NanReturnUndefined</span><span class="p">();</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码2.4 async.cc</strong><br><a href="http://git.oschina.net/yunnysunny/async-tutorial-code/tree/master/addon">这里</a>有一个利用<a href="https://github.com/nodejs/nan">nan</a>和node0.10/0.12来完成异步操作的对比。</p>
+<p>这篇教程仅仅是一个入门操作，就讲到这里了，详细的使用请参考nan的readme文档。</p>
+</div>
+
+  <div class="comments">
+    <a href="/posts/nan/#comments">
+      <span class="icon-bubbles"></span>
+      Comments
+    </a>
+  </div>
+
+  <div class="post-head group">
   <a href="/posts/node0-12capi/">
     <h1 class="post-title">即将面临的Node0.12中的C++API的改变</h1>
   </a>
@@ -313,351 +457,6 @@ Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告
 
   <div class="comments">
     <a href="/posts/node0-12capi/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
-
-  <div class="post-head group">
-  <a href="/posts/js/">
-    <h1 class="post-title">js异步之惑</h1>
-  </a>
-  <span class="post-date">2015 &#183; 3 &#183; 20</span>
-</div>
-
-<div class="post-body markdown"><h2><a name="1" class="anchor" href="#1"><span class="header-link"></span></a>1.异步是啥</h2>
-<p>与异步对应的就是同步，对于同步我们很好理解，就是代码顺序执行。但是一到异步代码，很多人多少有些理不清。异步，从功能上讲，就是在背后偷偷的执行，不堵塞当前运行的代码；从实现上讲，能够这么做的，就只能靠在当前运行代码中另一起线程或者进程了。举一个使用线程来实现异步的例子：</p>
-<pre><code><div class="highlight"><pre><span class="kr">public</span> <span class="kr">class</span> <span class="nx">MyAsync</span> <span class="kr">extends</span> <span class="nx">Thread</span> <span class="p">{</span>
-    <span class="kr">private</span> <span class="kr">volatile</span> <span class="kr">boolean</span> <span class="nx">done</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
-
-    <span class="kr">public</span> <span class="k">void</span> <span class="nx">run</span><span class="p">()</span> <span class="p">{</span>
-        <span class="k">while</span> <span class="p">(</span><span class="o">!</span><span class="nx">done</span><span class="p">)</span> <span class="p">{</span><span class="c1">//子线程中的循环</span>
-            <span class="nx">System</span><span class="p">.</span><span class="nx">out</span><span class="p">.</span><span class="nx">println</span><span class="p">(</span><span class="s2">&quot;thread out x&quot;</span><span class="p">);</span>
-            <span class="k">try</span> <span class="p">{</span>
-                <span class="nx">Thread</span><span class="p">.</span><span class="nx">sleep</span><span class="p">(</span><span class="mi">500</span><span class="p">);</span>
-            <span class="p">}</span> <span class="k">catch</span> <span class="p">(</span><span class="nx">InterruptedException</span> <span class="nx">e</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">e</span><span class="p">.</span><span class="nx">printStackTrace</span><span class="p">();</span>
-<span class="c1">//                Thread.currentThread().interrupt();</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-
-    <span class="kr">public</span> <span class="kr">synchronized</span> <span class="k">void</span> <span class="nx">setDone</span><span class="p">()</span> <span class="p">{</span>
-        <span class="nx">done</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
-    <span class="p">}</span>
-
-    <span class="kr">public</span> <span class="kr">static</span> <span class="k">void</span> <span class="nx">main</span><span class="p">(</span><span class="nb">String</span> <span class="nx">argv</span><span class="p">[])</span> <span class="p">{</span>
-        <span class="nx">MyAsync</span> <span class="nx">t</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">MyAsync</span><span class="p">();</span>
-        <span class="nx">t</span><span class="p">.</span><span class="nx">start</span><span class="p">();</span><span class="c1">//起子线程</span>
-        <span class="kr">long</span> <span class="nx">last</span> <span class="o">=</span> <span class="nx">System</span><span class="p">.</span><span class="nx">currentTimeMillis</span><span class="p">();</span>
-        <span class="kr">int</span> <span class="nx">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-        <span class="k">while</span><span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span><span class="c1">//主线程中循环</span>
-            <span class="kr">long</span> <span class="nx">now</span> <span class="o">=</span> <span class="nx">System</span><span class="p">.</span><span class="nx">currentTimeMillis</span><span class="p">();</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">now</span> <span class="o">-</span> <span class="nx">last</span> <span class="o">&gt;</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">1</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">last</span> <span class="o">=</span> <span class="nx">now</span><span class="p">;</span>
-                <span class="nx">count</span> <span class="o">++</span><span class="p">;</span>
-                <span class="nx">System</span><span class="p">.</span><span class="nx">out</span><span class="p">.</span><span class="nx">println</span><span class="p">(</span><span class="s2">&quot;the &quot;</span> <span class="o">+</span> <span class="nx">count</span> <span class="o">+</span> <span class="s2">&quot;th count.&quot;</span><span class="p">);</span>
-            <span class="p">}</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nx">count</span> <span class="o">&gt;</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">break</span><span class="p">;</span>
-            <span class="p">}</span>
-
-        <span class="p">}</span>
-
-        <span class="nx">t</span><span class="p">.</span><span class="nx">setDone</span><span class="p">();</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>代码1.1 线程示例</strong><br>对于代码1.1的运行结果，有可能是这个样子的：  </p>
-<pre><code><div class="highlight"><pre><span class="nx">thread</span> <span class="nx">out</span> <span class="nx">x</span>
-<span class="nx">thread</span> <span class="nx">out</span> <span class="nx">x</span>
-<span class="nx">thread</span> <span class="nx">out</span> <span class="nx">x</span>
-<span class="nx">the</span> <span class="mi">1</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">thread</span> <span class="nx">out</span> <span class="nx">x</span>
-<span class="nx">thread</span> <span class="nx">out</span> <span class="nx">x</span>
-<span class="nx">the</span> <span class="mi">2</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">thread</span> <span class="nx">out</span> <span class="nx">x</span>
-<span class="nx">thread</span> <span class="nx">out</span> <span class="nx">x</span>
-<span class="nx">the</span> <span class="mi">3</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-</pre></div>
-</code></pre>
-<p>代码27-38行起是主线程循环，7-15行是子线程循环，你多运行几次，就可以看出两个循环的输出是很随机的，但是不管运行多少次两个循环的输出都是交叉在一起的。这样我们就可以推断出，运行主线程的代码的时候，子线程的代码也在背后偷偷的运行，说白了两者是并行运行的。</p>
-<h2><a name="2-js" class="anchor" href="#2-js"><span class="header-link"></span></a>2.js中的异步</h2>
-<p>就是因为异步这个特性，js如今被大家推崇，下面用一个小例子来演示一下js中异步的使用：  </p>
-<pre><code><div class="highlight"><pre><span class="kd">function</span> <span class="nx">synchronizedCode</span><span class="p">()</span> <span class="p">{</span>
-    <span class="kd">var</span> <span class="nx">last</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">();</span>
-    <span class="kd">var</span> <span class="nx">count</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-    <span class="k">while</span> <span class="p">(</span><span class="kc">true</span><span class="p">)</span> <span class="p">{</span>
-        <span class="kd">var</span> <span class="nx">now</span> <span class="o">=</span> <span class="k">new</span> <span class="nb">Date</span><span class="p">().</span><span class="nx">getTime</span><span class="p">();</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">now</span> <span class="o">-</span> <span class="nx">last</span> <span class="o">&gt;</span> <span class="mi">1000</span> <span class="o">*</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">last</span> <span class="o">=</span> <span class="nx">now</span><span class="p">;</span>
-            <span class="nx">count</span><span class="o">++</span><span class="p">;</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;the %dth count.&#39;</span><span class="p">,</span><span class="nx">count</span><span class="p">);</span>
-        <span class="p">}</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">count</span> <span class="o">&gt;</span> <span class="mi">9</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;exist while.&#39;</span><span class="p">);</span>
-            <span class="k">break</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-<span class="p">}</span>
-<span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured first.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
-    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured second.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
-
-    <span class="nx">synchronizedCode</span><span class="p">();</span>
-<span class="p">})();</span>
-</pre></div>
-</code></pre>
-<p><strong>代码2.1 setTimeout的例子</strong><br>我们运行代码2.1，然后不管运行多少次，输出都是这个样子的：</p>
-<pre><code><div class="highlight"><pre><span class="nx">the</span> <span class="mi">1</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">2</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">3</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">4</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">5</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">exist</span> <span class="k">while</span><span class="p">.</span>
-<span class="nx">setTimeout</span> <span class="mi">0</span> <span class="nx">occured</span> <span class="nx">first</span><span class="p">.</span>
-<span class="nx">setTimeout</span> <span class="mi">0</span> <span class="nx">occured</span> <span class="nx">second</span><span class="p">.</span>
-</pre></div>
-</code></pre>
-<p><strong>输出2.1</strong><br>跟java中的异步和同步代码会交叉输出相比，js中的异步其实是排好队输出的。由于js是单线程执行代码的，所以没有那种交叉输出的效果。那么还有一个问题，while循环明明运行了5秒钟，为何在这期间那两个setTimeout一直没有运行呢？这就和js代码的异步机制有关了。js代码中有帧的概念，对于同步代码是在当前帧运行的，异步代码是在下一帧运行的。对于代码2.1我们给代码运行画一幅图的话，应该是这样的：<br><img src="http://blog.whyun.com/images/js_frame.png" alt="js帧结构"><br><strong>图2.1 js帧结构</strong><br>那么为什么是第一个setTimeout先触发，第二个后触发呢，难道仅仅由于先后顺序？我们把第一个setTimeout改为<code>setTimeout(function() {console.log(&#39;setTimeout 0 occured first.&#39;);},100);</code>,那么输出的时候就会是先输出<code>setTimeout 0 occured second.</code>,在输出<code>setTimeout 0 occured first.</code>。也就是说在第二帧setTimeout的回调的执行顺序不仅与代码顺序有关还和延迟时间有关。<br>在node.js中还有一个特殊的API，就是<code>process.nextTick</code>,虽然已经不推荐使用了，但是已经可以在很多代码中看到它的身影。例如如下代码：</p>
-<pre><code><div class="highlight"><pre><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured first.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
-    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured second.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
-    <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;nextTick occured.&#39;</span><span class="p">);});</span>
-
-    <span class="nx">synchronizedCode</span><span class="p">();</span>
-<span class="p">})();</span>
-</pre></div>
-</code></pre>
-<p><strong>代码2.2</strong><br>运行后输出：</p>
-<pre><code><div class="highlight"><pre><span class="nx">the</span> <span class="mi">1</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">2</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">3</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">4</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">5</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">exist</span> <span class="k">while</span><span class="p">.</span>
-<span class="nx">nextTick</span> <span class="nx">occured</span><span class="p">.</span>
-<span class="nx">setTimeout</span> <span class="mi">0</span> <span class="nx">occured</span> <span class="nx">first</span><span class="p">.</span>
-<span class="nx">setTimeout</span> <span class="mi">0</span> <span class="nx">occured</span> <span class="nx">second</span><span class="p">.</span>  
-</pre></div>
-</code></pre>
-<p><strong>输出2.2</strong><br>之所以nextTick排在所有异步的最前面，是由于nextTick是在第一帧运行的，而其他的都是在第二帧运行的。也就是说代码运行情况是这个样子的：<br><img src="http://blog.whyun.com/images/js_frame2.png" alt=""><br><strong>图2.2 js帧结构</strong><br>接下来再举几个异步API的例子，这次我们添加<code>setImmediate</code>和<code>mkdir</code>两个函数：</p>
-<pre><code><div class="highlight"><pre><span class="kd">var</span> <span class="nx">synchronizedCode</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./sync&#39;</span><span class="p">);</span>
-<span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured first.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
-    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured second.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
-    <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;nextTick occured.&#39;</span><span class="p">);});</span>
-    <span class="nx">setImmediate</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setImmediate occured.&#39;</span><span class="p">)});</span>
-
-    <span class="kd">var</span> <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;fs&#39;</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">crypto</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;crypto&#39;</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">rand</span> <span class="o">=</span> <span class="nx">crypto</span><span class="p">.</span><span class="nx">pseudoRandomBytes</span><span class="p">(</span><span class="mi">8</span><span class="p">).</span><span class="nx">toString</span><span class="p">(</span><span class="s1">&#39;hex&#39;</span><span class="p">);</span>
-    <span class="nx">fs</span><span class="p">.</span><span class="nx">mkdir</span><span class="p">(</span><span class="s1">&#39;d:\\temp\\xx&#39;</span><span class="o">+</span><span class="s1">&#39;\\&#39;</span><span class="o">+</span><span class="nx">rand</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="s1">&#39;错误&#39;</span><span class="p">,</span><span class="nx">err</span><span class="p">.</span><span class="nx">code</span><span class="p">);</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;create directory success.&#39;</span><span class="p">);</span>
-        <span class="p">}</span>        
-    <span class="p">});</span>
-
-    <span class="nx">synchronizedCode</span><span class="p">();</span>
-<span class="p">})();</span>  
-</pre></div>
-</code></pre>
-<p><strong>代码2.3</strong><br>那么他的输出就应该是这样的：  </p>
-<pre><code><div class="highlight"><pre><span class="nx">the</span> <span class="mi">1</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">2</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">3</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">4</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">the</span> <span class="mi">5</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">exist</span> <span class="k">while</span><span class="p">.</span>
-<span class="nx">nextTick</span> <span class="nx">occured</span><span class="p">.</span>
-<span class="nx">setTimeout</span> <span class="mi">0</span> <span class="nx">occured</span> <span class="nx">first</span><span class="p">.</span>
-<span class="nx">setTimeout</span> <span class="mi">0</span> <span class="nx">occured</span> <span class="nx">second</span><span class="p">.</span>
-<span class="nx">setImmediate</span> <span class="nx">occured</span><span class="p">.</span>
-<span class="nx">create</span> <span class="nx">directory</span> <span class="nx">success</span><span class="p">.</span>  
-</pre></div>
-</code></pre>
-<p><strong>输出2.3</strong></p>
-<p>等等，问题来了，这里最后一句才打印<code>create directory success</code>,那么是不是程序是在最后一步才创建的文件夹呢，如果真是这样，就有点低效了，起码这个创建文件的工作被那个while循环给延迟了得有5秒钟。不过幸好，这个想法是错误的！node.js中使用libuv来IO或者CPU计算量大的操作，而在libuv中处理这些耗时的操作都是用线程来解决，以避免堵塞住js线程（这一点和android的程序设计思路类似，android开发中使用子线程来处理耗时逻辑，避免对主线程造成卡顿）。这里我们来演示一个libuv的异步处理，在异步处理中模拟一个耗时操作：</p>
-<pre><code><div class="highlight"><pre><span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">node</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
-<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">string</span><span class="o">&gt;</span>
-<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">v8</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
-<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">nan</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
-
-<span class="err">#</span><span class="nx">ifdef</span> <span class="nx">WINDOWS_SPECIFIC_DEFINE</span>
-<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">windows</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
-<span class="nx">typedef</span> <span class="nx">DWORD</span> <span class="nx">ThreadId</span><span class="p">;</span>
-<span class="err">#</span><span class="k">else</span>
-<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">unistd</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
-<span class="err">#</span><span class="nx">include</span> <span class="o">&lt;</span><span class="nx">pthread</span><span class="p">.</span><span class="nx">h</span><span class="o">&gt;</span>
-<span class="nx">typedef</span> <span class="nx">unsigned</span> <span class="kr">int</span> <span class="nx">ThreadId</span><span class="p">;</span>
-<span class="err">#</span><span class="nx">endif</span>
-<span class="nx">using</span> <span class="nx">namespace</span> <span class="nx">v8</span><span class="p">;</span>
-
-<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">async_hello</span><span class="p">);</span>
-
-
-<span class="kr">static</span> <span class="nx">ThreadId</span> <span class="nx">__getThreadId</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">ThreadId</span> <span class="nx">nThreadID</span><span class="p">;</span>
-<span class="err">#</span><span class="nx">ifdef</span> <span class="nx">WINDOWS_SPECIFIC_DEFINE</span>
-
-    <span class="nx">nThreadID</span> <span class="o">=</span> <span class="nx">GetCurrentProcessId</span><span class="p">();</span>
-    <span class="nx">nThreadID</span> <span class="o">=</span> <span class="p">(</span><span class="nx">nThreadID</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span><span class="p">)</span> <span class="o">+</span> <span class="nx">GetCurrentThreadId</span><span class="p">();</span>
-<span class="err">#</span><span class="k">else</span>
-    <span class="nx">nThreadID</span> <span class="o">=</span> <span class="nx">getpid</span><span class="p">();</span>
-    <span class="nx">nThreadID</span> <span class="o">=</span> <span class="p">(</span><span class="nx">nThreadID</span> <span class="o">&lt;&lt;</span> <span class="mi">16</span><span class="p">)</span> <span class="o">+</span> <span class="nx">pthread_self</span><span class="p">();</span>
-<span class="err">#</span><span class="nx">endif</span>
-    <span class="k">return</span> <span class="nx">nThreadID</span><span class="p">;</span>
-<span class="p">}</span>
-
-<span class="kr">static</span> <span class="k">void</span> <span class="nx">__tsleep</span><span class="p">(</span><span class="nx">unsigned</span> <span class="kr">int</span> <span class="nx">millisecond</span><span class="p">)</span> <span class="p">{</span>
-<span class="err">#</span><span class="nx">ifdef</span> <span class="nx">WINDOWS_SPECIFIC_DEFINE</span>
-    <span class="o">::</span><span class="nx">Sleep</span><span class="p">(</span><span class="nx">millisecond</span><span class="p">);</span>
-<span class="err">#</span><span class="k">else</span>
-    <span class="nx">usleep</span><span class="p">(</span><span class="nx">millisecond</span><span class="o">*</span><span class="mi">1000</span><span class="p">);</span>
-<span class="err">#</span><span class="nx">endif</span>
-<span class="p">}</span>
-
-
-<span class="kr">class</span> <span class="nx">ThreadWoker</span> <span class="o">:</span> <span class="kr">public</span> <span class="nx">NanAsyncWorker</span> <span class="p">{</span>
-    <span class="kr">private</span><span class="o">:</span>
-        <span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">str</span><span class="p">;</span>
-    <span class="kr">public</span><span class="o">:</span>
-        <span class="nx">ThreadWoker</span><span class="p">(</span><span class="nx">NanCallback</span> <span class="o">*</span><span class="nx">callback</span><span class="p">,</span><span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">str</span><span class="p">)</span>
-            <span class="o">:</span> <span class="nx">NanAsyncWorker</span><span class="p">(</span><span class="nx">callback</span><span class="p">),</span> <span class="nx">str</span><span class="p">(</span><span class="nx">str</span><span class="p">)</span> <span class="p">{}</span>
-        <span class="o">~</span><span class="nx">ThreadWoker</span><span class="p">()</span> <span class="p">{}</span>
-        <span class="c1">//在该函数内模拟处理过程 ，如i/o阻塞或者cpu高消耗情形的处理。</span>
-        <span class="c1">// 注意不能使用v8 api,这个线程不是在js主线程内</span>
-        <span class="k">void</span> <span class="nx">Execute</span><span class="p">()</span> <span class="p">{</span>
-            <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;\n%s Thread id : gettid() == %d\n&quot;</span><span class="p">,</span><span class="nx">__FUNCTION__</span><span class="p">,</span><span class="nx">__getThreadId</span><span class="p">());</span>
-            <span class="k">for</span> <span class="p">(</span><span class="kr">int</span> <span class="nx">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="nx">i</span><span class="o">&lt;</span><span class="mi">15</span><span class="p">;</span><span class="nx">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nx">__tsleep</span><span class="p">(</span><span class="mi">1000</span><span class="p">);</span>
-                <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;sleep 1 seconds in uv_work\n&quot;</span><span class="p">);</span>
-            <span class="p">}</span>
-        <span class="p">}</span>
-        <span class="k">void</span> <span class="nx">HandleOKCallback</span> <span class="p">()</span> <span class="p">{</span>
-            <span class="nx">NanScope</span><span class="p">();</span>
-
-            <span class="nx">Local</span><span class="o">&lt;</span><span class="nx">Value</span><span class="o">&gt;</span> <span class="nx">argv</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span>
-                <span class="nx">NanNull</span><span class="p">(),</span>
-                <span class="nx">NanNew</span><span class="p">(</span><span class="s2">&quot;the result:&quot;</span><span class="o">+</span><span class="nx">str</span><span class="p">)</span>
-            <span class="p">};</span>
-
-            <span class="nx">callback</span><span class="o">-&gt;</span><span class="nx">Call</span><span class="p">(</span><span class="mi">2</span><span class="p">,</span> <span class="nx">argv</span><span class="p">);</span>
-        <span class="p">};</span>
-<span class="p">};</span>
-
-
-<span class="nx">NAN_METHOD</span><span class="p">(</span><span class="nx">async_hello</span><span class="p">)</span> <span class="p">{</span>
-    <span class="nx">printf</span><span class="p">(</span><span class="s2">&quot;\n%s Thread id : gettid() == %d\n&quot;</span><span class="p">,</span><span class="nx">__FUNCTION__</span><span class="p">,</span><span class="nx">__getThreadId</span><span class="p">());</span>
-    <span class="nx">NanScope</span><span class="p">();</span>
-    <span class="k">if</span><span class="p">(</span><span class="nx">args</span><span class="p">.</span><span class="nx">Length</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mi">2</span><span class="p">)</span> <span class="p">{</span> 
-        <span class="nx">NanThrowError</span><span class="p">(</span><span class="s2">&quot;Wrong number of arguments&quot;</span><span class="p">);</span> 
-        <span class="nx">NanReturnUndefined</span><span class="p">();</span> 
-    <span class="p">}</span>
-
-
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">IsString</span><span class="p">()</span> <span class="o">||</span> <span class="o">!</span><span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="nx">IsFunction</span><span class="p">())</span> <span class="p">{</span>
-        <span class="nx">NanThrowError</span><span class="p">(</span><span class="s2">&quot;Wrong number of arguments&quot;</span><span class="p">);</span>
-        <span class="nx">NanReturnUndefined</span><span class="p">();</span>
-    <span class="p">}</span>
-
-    <span class="c1">// 强制转换成函数变量</span>
-    <span class="nx">NanCallback</span> <span class="o">*</span><span class="nx">callback</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">NanCallback</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">1</span><span class="p">].</span><span class="nx">As</span><span class="o">&lt;</span><span class="nb">Function</span><span class="o">&gt;</span><span class="p">());</span>
-    <span class="nx">NanUtf8String</span> <span class="nx">param1</span><span class="p">(</span><span class="nx">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]);</span>
-    <span class="nx">std</span><span class="o">::</span><span class="nx">string</span> <span class="nx">str</span> <span class="o">=</span> <span class="nx">std</span><span class="o">::</span><span class="nx">string</span><span class="p">(</span><span class="o">*</span><span class="nx">param1</span><span class="p">);</span> 
-    <span class="nx">NanAsyncQueueWorker</span><span class="p">(</span><span class="k">new</span> <span class="nx">ThreadWoker</span><span class="p">(</span><span class="nx">callback</span><span class="p">,</span> <span class="nx">str</span><span class="p">));</span>
-    <span class="nx">NanReturnUndefined</span><span class="p">();</span> 
-<span class="p">}</span>
-
-<span class="k">void</span> <span class="nx">Init</span><span class="p">(</span><span class="nx">Handle</span><span class="o">&lt;</span><span class="nb">Object</span><span class="o">&gt;</span> <span class="nx">exports</span><span class="p">)</span> <span class="p">{</span>
-  <span class="nx">exports</span><span class="o">-&gt;</span><span class="nx">Set</span><span class="p">(</span><span class="nx">NanNew</span><span class="o">&lt;</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">(</span><span class="s2">&quot;async_hello&quot;</span><span class="p">),</span>
-    <span class="nx">NanNew</span><span class="o">&lt;</span><span class="nx">FunctionTemplate</span><span class="o">&gt;</span><span class="p">(</span><span class="nx">async_hello</span><span class="p">)</span><span class="o">-&gt;</span><span class="nx">GetFunction</span><span class="p">());</span>
-<span class="p">}</span>
-
-<span class="nx">NODE_MODULE</span><span class="p">(</span><span class="nx">binding</span><span class="p">,</span> <span class="nx">Init</span><span class="p">);</span>
-</pre></div>
-</code></pre>
-<p><strong>代码2.4</strong>  </p>
-<blockquote>
-<p>上述代码的编译参照<a href="http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md">编译说明</a>，项目源码地址参加第3节。关于nan的使用，可以参照我的另一篇教程<a href="http://blog.whyun.com/posts/nan/">《nan基础教程》</a>。</p>
-</blockquote>
-<p>编写的测试代码，将其运行，就可以看出函数<code>Execute</code>根本就不在js线程中执行，也就是说它是可以和js线程并行的；函数<code>HandleOKCallback</code>中能够触发js中的回调函数，将处理完的结果交给js。下面就编译上面代码（需要node-gyp支持，执行<code>node-gpy rebuild</code>进行编译），来验证上述结论：  </p>
-<pre><code><div class="highlight"><pre><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">synchronizedCode</span><span class="p">(</span><span class="s1">&#39;timer1&#39;</span><span class="p">,</span><span class="mi">3</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
-    <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured second.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
-    <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;nextTick occured.&#39;</span><span class="p">);});</span>
-
-    <span class="kd">var</span> <span class="nx">addon</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;./addon/build/Release/binding&#39;</span><span class="p">);</span>
-    <span class="nx">addon</span><span class="p">.</span><span class="nx">async_hello</span><span class="p">(</span><span class="s2">&quot;good&quot;</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;node addon result&#39;</span><span class="p">,</span><span class="nx">result</span><span class="p">);</span>
-    <span class="p">});</span>
-
-    <span class="nx">setImmediate</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setImmediate occured.&#39;</span><span class="p">)});</span>
-
-    <span class="kd">var</span> <span class="nx">fs</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;fs&#39;</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">crypto</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;crypto&#39;</span><span class="p">);</span>
-    <span class="kd">var</span> <span class="nx">rand</span> <span class="o">=</span> <span class="nx">crypto</span><span class="p">.</span><span class="nx">pseudoRandomBytes</span><span class="p">(</span><span class="mi">8</span><span class="p">).</span><span class="nx">toString</span><span class="p">(</span><span class="s1">&#39;hex&#39;</span><span class="p">);</span>
-    <span class="nx">fs</span><span class="p">.</span><span class="nx">mkdir</span><span class="p">(</span><span class="s1">&#39;d:\\temp\\xx&#39;</span><span class="o">+</span><span class="s1">&#39;\\&#39;</span><span class="o">+</span><span class="nx">rand</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span><span class="s1">&#39;错误&#39;</span><span class="p">,</span><span class="nx">err</span><span class="p">.</span><span class="nx">code</span><span class="p">);</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;create directory success.&#39;</span><span class="p">);</span>
-        <span class="p">}</span>        
-    <span class="p">});</span>
-
-    <span class="nx">synchronizedCode</span><span class="p">();</span>
-<span class="p">})();</span>  
-</pre></div>
-</code></pre>
-<p><strong>代码2.5</strong><br>我们在代码2.5中引入了代码2.4中的c++扩展，其输出内容如下</p>
-<pre><code><div class="highlight"><pre><span class="nx">async_hello</span> <span class="nx">Thread</span> <span class="nx">id</span> <span class="o">:</span> <span class="nx">gettid</span><span class="p">()</span> <span class="o">==</span> <span class="mi">284953360</span>
-
-<span class="nx">call_work</span> <span class="nx">Thread</span> <span class="nx">id</span> <span class="o">:</span> <span class="nx">gettid</span><span class="p">()</span> <span class="o">==</span> <span class="mi">284958096</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">the</span> <span class="mi">1</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">the</span> <span class="mi">2</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">the</span> <span class="mi">3</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">the</span> <span class="mi">4</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">the</span> <span class="mi">5</span><span class="nx">th</span> <span class="nx">count</span><span class="p">.</span>
-<span class="nx">exist</span> <span class="k">while</span><span class="p">.</span>
-<span class="nx">nextTick</span> <span class="nx">occured</span><span class="p">.</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">the</span> <span class="mi">1</span><span class="nx">th</span> <span class="nx">count</span> <span class="k">in</span> <span class="p">[</span><span class="nx">timer1</span><span class="p">].</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">the</span> <span class="mi">2</span><span class="nx">th</span> <span class="nx">count</span> <span class="k">in</span> <span class="p">[</span><span class="nx">timer1</span><span class="p">].</span>
-<span class="nx">sleep</span> <span class="mi">1</span> <span class="nx">seconds</span> <span class="k">in</span> <span class="nx">uv_work</span>
-<span class="nx">the</span> <span class="mi">3</span><span class="nx">th</span> <span class="nx">count</span> <span class="k">in</span> <span class="p">[</span><span class="nx">timer1</span><span class="p">].</span>
-<span class="nx">the</span> <span class="mi">4</span><span class="nx">th</span> <span class="nx">count</span> <span class="k">in</span> <span class="p">[</span><span class="nx">timer1</span><span class="p">].</span>
-<span class="nx">exist</span> <span class="k">while</span> <span class="k">in</span> <span class="p">[</span><span class="nx">timer1</span><span class="p">].</span>
-<span class="nx">setTimeout</span> <span class="mi">0</span> <span class="nx">occured</span> <span class="nx">second</span><span class="p">.</span>
-<span class="nx">setImmediate</span> <span class="nx">occured</span><span class="p">.</span>
-<span class="nx">create</span> <span class="nx">directory</span> <span class="nx">success</span><span class="p">.</span>
-
-<span class="nx">call_work_after</span> <span class="nx">Thread</span> <span class="nx">id</span> <span class="o">:</span> <span class="nx">gettid</span><span class="p">()</span> <span class="o">==</span> <span class="mi">284953360</span>
-<span class="nx">node</span> <span class="nx">addon</span> <span class="nx">result</span> <span class="nx">good</span><span class="o">---&gt;</span><span class="nx">hello</span> <span class="nx">world</span> <span class="nx">from</span> <span class="nx">c</span><span class="o">++</span>
-</pre></div>
-</code></pre>
-<p><strong>输出2.5</strong><br>我们终于看到开篇提到的类似java代码的交叉输出的效果了。libuv在处理任务时根本就和js不在一个线程中，所以才出现了libuv线程和js线程交叉输出的效果。我们在梳理一下代码2.5的异步流程，那么可以用下面这个图来展示出来：<br><img src="http://blog.whyun.com/images/js_frame3.png" alt=""><br><strong>图2.3</strong><br>在node中维护了一个回调的队列，那为什么调用插件的回调排在队列的最后面呢，是有于我们在代码2.4中故意将其代码设置成15秒之后才执行完成，这要远远长于其他的那些回调，所以它只能被追加到回调队列的最后一位。在第二帧中，node中的事件轮询依次将这些回调队列中的任务取出来，进行触发调用。可以看出回调队列是个先进先出的结构。注意回调是按照队列中排队顺序执行的，同时它们执行的环境是js线程，要知道js线程可是个单线程，也就是说一旦某个回调中的同步代码耗时比较长，那么它后面的回调任务就得一直等着它运行完成，所以说一定不要在回调中写特别耗时的同步代码。</p>
-<h2><a name="3" class="anchor" href="#3"><span class="header-link"></span></a>3. 代码</h2>
-<p>本文用到代码发布在<a href="http://git.oschina.net/yunnysunny/async-tutorial-code"><a href="http://git.oschina.net/yunnysunny/async-tutorial-code">http://git.oschina.net/yunnysunny/async-tutorial-code</a></a></p>
-</div>
-
-  <div class="comments">
-    <a href="/posts/js/#comments">
       <span class="icon-bubbles"></span>
       Comments
     </a>

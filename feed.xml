@@ -1,5 +1,193 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Wed, 04 Nov 2015 09:29:38 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Wed, 04 Nov 2015 09:29:38 GMT</pubDate><copyright><![CDATA[2015 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[JNI系列教程一——入门]]></title><description><![CDATA[<h2><a name="1-1" class="anchor" href="#1-1"><span class="header-link"></span></a>1.1 背景</h2>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Wed, 25 Nov 2015 15:26:44 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Wed, 25 Nov 2015 15:26:44 GMT</pubDate><copyright><![CDATA[2015 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[JNI系列教程二——数据结构]]></title><description><![CDATA[<p>JNI和java相互调用，一个不可避免的问题就是两者的数据结构要相互转换。这一节正是要讲这个重头戏。</p>
+<blockquote>
+<p>本文源地址<a href="http://blog.whyun.com/posts/jni/2-struct-transform/">http://blog.whyun.com/posts/jni/2-struct-transform/</a> 转载请注明出处。</p>
+</blockquote>
+<h2><a name="2-1" class="anchor" href="#2-1"><span class="header-link"></span></a>2.1 基本类型</h2>
+<p>基本数据类型大都是数字类型表2.1.1中给出了java和jni的对应关系。</p>
+<table>
+<thead>
+<tr>
+<th>Java 类型</th>
+<th>本地类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>boolean</td>
+<td>jboolean</td>
+<td>无符号，8 位  </td>
+</tr>
+<tr>
+<td>byte</td>
+<td>jbyte</td>
+<td>无符号，8 位  </td>
+</tr>
+<tr>
+<td>char</td>
+<td>jchar</td>
+<td>无符号，16 位  </td>
+</tr>
+<tr>
+<td>short</td>
+<td>jshort</td>
+<td>有符号，16 位  </td>
+</tr>
+<tr>
+<td>int</td>
+<td>jint</td>
+<td>有符号，32 位  </td>
+</tr>
+<tr>
+<td>long</td>
+<td>jlong</td>
+<td>有符号，64 位  </td>
+</tr>
+<tr>
+<td>float</td>
+<td>jfloat</td>
+<td>32 位  </td>
+</tr>
+<tr>
+<td>double</td>
+<td>jdouble</td>
+<td>64 位  </td>
+</tr>
+</tbody>
+</table>
+<p><strong>表2.1.1 基本数据类型对照表</strong></p>
+<h2><a name="2-2" class="anchor" href="#2-2"><span class="header-link"></span></a>2.2 对象类型</h2>
+<p>对象类型的对照关系牵扯到的知识点比较多，所以下面决定通过具体例子来让大家更好的学习它。
+首先在java代码有这么两行行声明</p>
+<pre><code><div class="highlight"><pre><span class="kr">public</span> <span class="kr">native</span> <span class="kr">int</span> <span class="nx">getSum</span><span class="p">(</span><span class="kr">int</span> <span class="nx">a</span><span class="p">,</span> <span class="kr">int</span> <span class="nx">b</span><span class="p">);</span>
+<span class="kr">public</span> <span class="kr">native</span> <span class="kr">int</span> <span class="nx">getSum</span><span class="p">(</span><span class="kr">byte</span> <span class="p">[]</span> <span class="nx">array</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>第一个函数是一个基本数据类型，第二个函数是一个数组，虽然两个函数在java中是同名的，但是生成的c文件却不能使用同名文件，</p>
+<pre><code class="lang-c"><div class="highlight"><pre><span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter2_StructDemo</span>
+<span class="cm"> * Method:    getSum</span>
+<span class="cm"> * Signature: (II)I</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter2_StructDemo_getSum__II</span>
+    <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">,</span> <span class="n">jint</span> <span class="n">a</span><span class="p">,</span> <span class="n">jint</span> <span class="n">b</span><span class="p">)</span> <span class="p">{</span>
+        <span class="k">return</span> <span class="n">a</span><span class="o">+</span><span class="n">b</span><span class="p">;</span>
+<span class="p">};</span>
+
+<span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter2_StructDemo</span>
+<span class="cm"> * Method:    getSum</span>
+<span class="cm"> * Signature: ([B)I</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jint</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter2_StructDemo_getSum___3B</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">,</span> <span class="n">jbyteArray</span> <span class="n">arr</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kt">int</span> <span class="n">sum</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+      <span class="kt">char</span> <span class="o">*</span><span class="n">data</span> <span class="o">=</span> <span class="p">(</span><span class="kt">char</span><span class="o">*</span><span class="p">)(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetByteArrayElements</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">arr</span><span class="p">,</span><span class="nb">NULL</span><span class="p">);</span>
+      <span class="kt">int</span> <span class="n">dataLen</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="p">)(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetArrayLength</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">arr</span><span class="p">);</span>
+      <span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+      <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">dataLen</span><span class="p">;</span><span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+          <span class="n">sum</span> <span class="o">+=</span> <span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">];</span>
+      <span class="p">}</span>
+      <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">ReleaseByteArrayElements</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">arr</span><span class="p">,</span><span class="n">data</span><span class="p">,</span><span class="mi">0</span><span class="p">);</span>
+      <span class="k">return</span> <span class="p">(</span><span class="n">jint</span><span class="p">)</span><span class="n">sum</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>我们通过<code>javah</code>生成头文件时，就会发现生成的getSum的函数后缀是不一样的。这里重点看JNI中对数组的操作，在实际编程中我们常常要处理二进制数据，那么自己数组便是经常要使用的一个数据结构了。java中的byte[]最终在JNI中被转化为jbyteArray，但是jbyteArray要想在C语言中使用，还必须得到一个C语言中可识别的char类型指针的形式，这就是函数GetByteArrayElements的作用。要想知道当前数组的长度，可以使用函数GetArrayLength。我们可以推断出GetByteArrayElements内部申请了一块内存，也就是说变量<code>data</code>是通过类似于malloc之类的函数申请得到的，所以最终在使用完成之后是需要释放的，所以才有了函数最后调用ReleaseByteArrayElements函数的代码。</p>
+<p>下面看一个复杂的例子通过JNI来调用java函数,直接上JNI的代码：</p>
+<pre><code class="lang-c"><div class="highlight"><pre><span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter2_StructDemo</span>
+<span class="cm"> * Method:    getUserList</span>
+<span class="cm"> * Signature: (I)Ljava/util/ArrayList;</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="n">jobject</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter2_StructDemo_getUserList</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">,</span> <span class="n">jint</span> <span class="n">num</span><span class="p">)</span> <span class="p">{</span>
+    <span class="kt">int</span> <span class="n">count</span> <span class="o">=</span> <span class="p">(</span><span class="kt">int</span><span class="p">)</span><span class="n">num</span><span class="p">,</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span>
+    <span class="n">jclass</span> <span class="n">clsUserBean</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">FindClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="s">&quot;com/whyun/jni/bean/UserBean&quot;</span><span class="p">);</span>
+    <span class="n">jclass</span> <span class="n">clsArrayList</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">FindClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="s">&quot;java/util/ArrayList&quot;</span><span class="p">);</span>
+    <span class="n">jmethodID</span> <span class="n">userBeanConstructor</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetMethodID</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">clsUserBean</span><span class="p">,</span><span class="s">&quot;&lt;init&gt;&quot;</span><span class="p">,</span><span class="s">&quot;()V&quot;</span><span class="p">);</span>
+    <span class="n">jmethodID</span> <span class="n">userBeanSetAge</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetMethodID</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">clsUserBean</span><span class="p">,</span><span class="s">&quot;setAge&quot;</span><span class="p">,</span><span class="s">&quot;(I)V&quot;</span><span class="p">);</span>
+    <span class="n">jmethodID</span> <span class="n">userBeanSetName</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetMethodID</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">clsUserBean</span><span class="p">,</span><span class="s">&quot;setName&quot;</span><span class="p">,</span><span class="s">&quot;(Ljava/lang/String;)V&quot;</span><span class="p">);</span>
+    <span class="n">jmethodID</span> <span class="n">arrayListContructor</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetMethodID</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">clsArrayList</span><span class="p">,</span><span class="s">&quot;&lt;init&gt;&quot;</span><span class="p">,</span><span class="s">&quot;(I)V&quot;</span><span class="p">);</span>
+    <span class="n">jmethodID</span> <span class="n">arrayListAdd</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">GetMethodID</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">clsArrayList</span><span class="p">,</span><span class="s">&quot;add&quot;</span><span class="p">,</span><span class="s">&quot;(ILjava/lang/Object;)V&quot;</span><span class="p">);</span>
+
+    <span class="n">jobject</span> <span class="n">arrayList</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">NewObject</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">clsArrayList</span><span class="p">,</span><span class="n">arrayListContructor</span><span class="p">,</span><span class="n">num</span><span class="p">);</span>
+
+    <span class="kt">char</span> <span class="n">nameStr</span><span class="p">[</span><span class="mi">5</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="mi">0</span><span class="p">};</span>
+    <span class="kt">int</span> <span class="n">index</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="n">jstring</span> <span class="n">name</span><span class="p">;</span>
+
+    <span class="k">for</span><span class="p">(</span><span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">count</span><span class="p">;</span><span class="n">i</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+        <span class="n">jobject</span> <span class="n">userBean</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">NewObject</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">clsUserBean</span><span class="p">,</span><span class="n">userBeanConstructor</span><span class="p">);</span>
+
+        <span class="k">for</span> <span class="p">(</span><span class="n">index</span><span class="o">=</span><span class="mi">0</span><span class="p">;</span><span class="n">index</span><span class="o">&lt;</span><span class="mi">4</span><span class="p">;</span><span class="n">index</span><span class="o">++</span><span class="p">)</span> <span class="p">{</span>
+            <span class="n">nameStr</span><span class="p">[</span><span class="n">index</span><span class="p">]</span> <span class="o">=</span> <span class="n">randStr</span><span class="p">[(</span><span class="n">i</span><span class="o">+</span><span class="mi">7</span><span class="p">)</span><span class="o">%</span><span class="mi">5</span><span class="p">];</span>
+        <span class="p">}</span>
+        <span class="n">name</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">NewStringUTF</span><span class="p">(</span><span class="n">env</span><span class="p">,(</span><span class="k">const</span> <span class="kt">char</span> <span class="o">*</span><span class="p">)</span><span class="n">nameStr</span><span class="p">);</span>
+        <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">CallVoidMethod</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">userBean</span><span class="p">,</span><span class="n">userBeanSetAge</span><span class="p">,(</span><span class="n">jint</span><span class="p">)(</span><span class="mi">20</span><span class="o">+</span><span class="n">i</span><span class="p">));</span>
+        <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">CallVoidMethod</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">userBean</span><span class="p">,</span><span class="n">userBeanSetName</span><span class="p">,</span><span class="n">name</span><span class="p">);</span>
+
+        <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">CallVoidMethod</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">arrayList</span><span class="p">,</span><span class="n">arrayListAdd</span><span class="p">,(</span><span class="n">jint</span><span class="p">)</span><span class="n">i</span><span class="p">,</span><span class="n">userBean</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="n">arrayList</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>如果你稍加揣测的话，这段代码翻译成java代码应该是这么写的：</p>
+<pre><code class="lang-java"><div class="highlight"><pre><span class="kd">public</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">UserBean</span><span class="o">&gt;</span> <span class="nf">getUserList</span><span class="o">(</span><span class="kt">int</span> <span class="n">count</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">UserBean</span><span class="o">&gt;</span> <span class="n">list</span> <span class="o">=</span> <span class="k">new</span> <span class="n">ArrayList</span><span class="o">&lt;</span><span class="n">UserBean</span><span class="o">&gt;(</span><span class="n">count</span><span class="o">);</span>
+    <span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span><span class="n">i</span><span class="o">&lt;</span><span class="n">count</span><span class="o">;</span><span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+        <span class="n">UserBean</span> <span class="n">bean</span> <span class="o">=</span> <span class="k">new</span> <span class="n">UserBean</span><span class="o">();</span>
+        <span class="n">bean</span><span class="o">.</span><span class="na">setAge</span><span class="o">(</span><span class="n">i</span><span class="o">+</span><span class="mi">20</span><span class="o">);</span>
+        <span class="n">bean</span><span class="o">.</span><span class="na">setName</span><span class="o">(</span><span class="s">&quot;name&quot;</span><span class="o">+</span><span class="n">i</span><span class="o">);</span>
+        <span class="n">list</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">i</span><span class="o">,</span><span class="n">bean</span><span class="o">);</span>
+    <span class="o">}</span>
+    <span class="k">return</span> <span class="n">list</span><span class="o">;</span>
+<span class="o">}</span>
+</pre></div>
+</code></pre>
+<p>看上去java代码要简单许多，在JNI中包括类、成员函数、对象之类的数据都需要先创建再使用。在java中创建对象用<code>new UserBean()</code>就够了，但是在JNI中，你首先要通过<code>FindClass</code>函数来找到类定义，然后通过类定义用函数<code>GetMethodID</code>来找到构造函数，然后根据类定义和构造函数通过函数<code>NewObject</code>来获取一个对象，下面分别对这三个函数进行讲解。<br><code>FindClass</code>函数的第二个参数是要加载的类的类名全称，在java中我们应该写作<code>com.whyun.jni.bean.UserBean</code>,在JNI中就是把<code>.</code>换成了<code>/</code>而已。<br><code>GetMethodID</code>函数的第二个参数是<code>FindClass</code>函数得到的类变量<code>clsUserBean</code>,第二个参数是函数名，一般来说函数名直接写函数名称就行了，比如说你再往下看一行代码获取UserBean的<code>setAge</code>函数的时候就直接写的函数名，但是构造函数就不同了，所有类的构造函数在JNI中统一叫<code>&lt;init&gt;</code>。最后一个参数很重要，它是java函数的签名，java中每个函数和属性都有一个它的标识，这个标识用来指出当前函数的参数、返回值类型或者属性的类名，可能有些人第一听说这个概念，其实获取这个标识有一个很简单的方法，就是命令<code>javap</code>，下面先做个小实验，运行<code>javap -s java.lang.String</code>，会输出如下内容：</p>
+<pre><code><div class="highlight"><pre><span class="nx">Compiled</span> <span class="nx">from</span> <span class="s2">&quot;String.java&quot;</span>
+<span class="kr">public</span> <span class="kr">final</span> <span class="kr">class</span> <span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span> <span class="kr">implements</span> <span class="nx">java</span><span class="p">.</span><span class="nx">io</span><span class="p">.</span><span class="nx">Serializable</span><span class="p">,</span> <span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nx">Comparable</span><span class="o">&lt;</span><span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span><span class="o">&gt;</span><span class="p">,</span> <span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nx">CharSequence</span> <span class="p">{</span>
+  <span class="kr">public</span> <span class="kr">static</span> <span class="kr">final</span> <span class="nx">java</span><span class="p">.</span><span class="nx">util</span><span class="p">.</span><span class="nx">Comparator</span><span class="o">&lt;</span><span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span><span class="o">&gt;</span> <span class="nx">CASE_INSENSITIVE_ORDER</span><span class="p">;</span>
+    <span class="nx">Signature</span><span class="o">:</span> <span class="nx">Ljava</span><span class="o">/</span><span class="nx">util</span><span class="o">/</span><span class="nx">Comparator</span><span class="p">;</span>
+  <span class="kr">public</span> <span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span><span class="p">();</span>
+    <span class="nx">Signature</span><span class="o">:</span> <span class="p">()</span><span class="nx">V</span>
+
+  <span class="kr">public</span> <span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span><span class="p">(</span><span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span><span class="p">);</span>
+    <span class="nx">Signature</span><span class="o">:</span> <span class="p">(</span><span class="nx">Ljava</span><span class="o">/</span><span class="nx">lang</span><span class="o">/</span><span class="nb">String</span><span class="p">;)</span><span class="nx">V</span>
+
+  <span class="kr">public</span> <span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span><span class="p">(</span><span class="kr">char</span><span class="p">[]);</span>
+    <span class="nx">Signature</span><span class="o">:</span> <span class="p">([</span><span class="nx">C</span><span class="p">)</span><span class="nx">V</span>
+
+  <span class="kr">public</span> <span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span><span class="p">(</span><span class="kr">char</span><span class="p">[],</span> <span class="kr">int</span><span class="p">,</span> <span class="kr">int</span><span class="p">);</span>
+    <span class="nx">Signature</span><span class="o">:</span> <span class="p">([</span><span class="nx">CII</span><span class="p">)</span><span class="nx">V</span>
+
+  <span class="kr">public</span> <span class="nx">java</span><span class="p">.</span><span class="nx">lang</span><span class="p">.</span><span class="nb">String</span><span class="p">(</span><span class="kr">int</span><span class="p">[],</span> <span class="kr">int</span><span class="p">,</span> <span class="kr">int</span><span class="p">);</span>
+    <span class="nx">Signature</span><span class="o">:</span> <span class="p">([</span><span class="nx">III</span><span class="p">)</span><span class="nx">V</span>
+<span class="err">由于文件内容比较多，所以省略掉下面内容</span>
+</pre></div>
+</code></pre>
+<p>由于java是支持重载的，一个函数可能会拥有多种实现方式，比如<code>String</code>类的构造函数就有N多个，那么你在调用其函数的时候，就必须得依靠参数和返回值类型来区分不同的函数了，而签名正提供了一种简介的方式来表示一个函数的参数和返回值。通过刚才<code>javap</code>命令的输出，我们可以得到对于没有参数的String构造函数，其签名为<code>()V</code>；对于参数为字符数组的构造函数签名为<code>([C)V</code>。
+接着讲函数<code>NewObject</code>,前面经过<code>FindClass</code>和<code>GetMethodID</code>一顿折腾，我们拿到了两个变量类变量<code>clsUserBean</code>和函数变量<code>userBeanConstructor</code>,将其传到<code>NewObject</code>中就能得到一个对象。在我们的代码中还有一个对于ArrayList类型的对象的构造，他调用<code>NewObject</code>的时候比<code>UserBean</code>多了一个参数，那是由于我们使用的构造函数为<code>ArrayList(int i)</code>，故需要传递一个ArrayList的长度参数，这里需要声明的是<code>NewObject</code>函数的参数个数是可变的，调用的构造函数有参数，就依次追加到后面即可。
+终于讲到真正调用java函数这一步了，就是代码中的<code>CallVoidMethod</code>,和<code>NewObject</code>一样，它也是可变参数，参数形式也一样。除了<code>CallVoidMethod</code>，JNI中还有各种<code>Call[Type]Method</code>，这个Type就代表了java函数的返回值，它可以是<code>Object</code> <code>Boolean</code> <code>Byte</code> <code>Char</code> <code>Short</code> <code>Int</code> <code>Long</code> <code>Float</code> <code>Double</code>。</p>
+<h2><a name="2-3" class="anchor" href="#2-3"><span class="header-link"></span></a>2.3 使用异常</h2>
+<p>c语言中没有异常这个概念，使用c代码的时候多是通过返回码来判断是否调用成功，然而对于java程序来说判断有没有成功，往往是看有没有异常抛出，所以说编写一个java友好的JNI程序，我们需要将错误码转成java异常。直接上例子：</p>
+<pre><code class="lang-c"><div class="highlight"><pre><span class="cm">/*</span>
+<span class="cm"> * Class:     com_whyun_jni_chapter2_StructDemo</span>
+<span class="cm"> * Method:    showException</span>
+<span class="cm"> * Signature: ()V</span>
+<span class="cm"> */</span>
+<span class="n">JNIEXPORT</span> <span class="kt">void</span> <span class="n">JNICALL</span> <span class="nf">Java_com_whyun_jni_chapter2_StructDemo_showException</span>
+  <span class="p">(</span><span class="n">JNIEnv</span> <span class="o">*</span><span class="n">env</span><span class="p">,</span> <span class="n">jobject</span> <span class="n">obj</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">jclass</span> <span class="n">exception</span> <span class="o">=</span> <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">FindClass</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="s">&quot;java/lang/Exception&quot;</span><span class="p">);</span>
+      <span class="p">(</span><span class="o">*</span><span class="n">env</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">ThrowNew</span><span class="p">(</span><span class="n">env</span><span class="p">,</span><span class="n">exception</span><span class="p">,</span><span class="s">&quot;This is a exception.&quot;</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>这里ThrowNew转成java的话，就是<code>throw new Exception(&quot;This is a exception.&quot;);</code>其它的我就不多说了。</p>
+]]></description><link>http://blog.whyun.com/posts/jni/2-struct-transform/</link><guid isPermaLink="true">http://blog.whyun.com/posts/jni/2-struct-transform/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Wed, 25 Nov 2015 00:00:00 GMT</pubDate></item><item><title><![CDATA[JNI系列教程一——入门]]></title><description><![CDATA[<h2><a name="1-1" class="anchor" href="#1-1"><span class="header-link"></span></a>1.1 背景</h2>
 <p>和很多语言类似，java也提供了调用原生代码的功能，这门技术叫做JNI。有了JNI，可以在付出更小的代价的前提下，复用大量已经写好的C/C++库，当然一般用JNI的目的还是由于java在处理<strong>计算密集型</strong>（比如说非对称运算）的操作时有时会力不从心。<br>从结构上来看JNI是一个中间层，具体的调用步骤是这个样子的：java-&gt;JNI-&gt;C/C++。  </p>
 <blockquote>
 <p>本文源地址<a href="http://blog.whyun.com/posts/jni">http://blog.whyun.com/posts/jni</a> 转载请注明出处</p>
@@ -30,11 +218,14 @@
 注意到我们在类<code>FirstDemo</code>中定义了两个成员函数都没有函数体，且都加了关键字<code>native</code>声明，如果函数写成这样，则代表当前函数需要调用底层C/C++代码。注意<code>System.loadLibrary</code>这句话，java中使用这个函数来加载动态库，windows平台下运行此段代码要保证<code>firstdemo.dll</code>存在环境变量<code>%path%</code>中，linux平台下要保证<code>libfirstdemo.so</code>存在环境变量<code>$LD_LIBRARY_PATH</code>中。</p>
 <blockquote>
 <p>其实java在<code>loadLibrary</code>的时候，是读取的系统变量<code>java.library.path</code>来搜寻动态库位置的，你可以用<code>System.getProperty(&quot;java.library.path&quot;)</code>来输出这个变量的内容。只不过在windows中会把环境变量<code>%path%</code>的内容加入到这个变量中，在linux中会把环境变量<code>$LD_LIBRARY_PATH</code>加入到这个变量中。在我的一台linux上打印<code>java.library.path</code>，会输入如下内容：
-<code>/usr/jdk1.6.0_45/jre/lib/i386/server:/usr/jdk1.6.0_45/jre/lib/i386:/usr/jdk1.6.0_45/jre/../lib/i386:/home/username/lib::/usr/java/packages/lib/i386:/lib:/usr/lib</code>
+<code>/usr/jdk1.6.0_45/jre/lib/i386/server:/usr/jdk1.6.0_45/jre/lib/i386:
+/usr/jdk1.6.0_45/jre/../lib/i386:
+/home/username/lib::/usr/java/packages/lib/i386
+:/lib:/usr/lib</code>
 其中<code>/home/username/lib:</code>是从环境变量<code>$LD_LIBRARY_PATH</code>读取的。不推荐将生成的动态库放置到系统目录中，首先是不一定有管理员权限，其次会导致系统库目录下的文件过多，不易管理。</p>
 </blockquote>
 <h3><a name="1-2-2" class="anchor" href="#1-2-2"><span class="header-link"></span></a>1.2.2 生成头文件</h3>
-<p>本文用到的项目源码在文后给出，项目的目录结构如下：<br><img src="http://blog.whyun.com/images/chapter1_dir.jpg" alt="项目目录结构"><br><strong>图1.2.2 项目目录结构</strong><br>在项目更目录下的目录<code>out/production</code>下，运行如下命令<code>javah com.whyun.jni.chapter1.FirstDemo</code>，运行成功之后则在运行命令行的目录下生成文件<code>com_whyun_jni_chapter1_FirstDemo.h</code>,用文本编辑器打开这个头文件，会显示如下内容：</p>
+<p>本文用到的项目源码在文后给出，项目的目录结构如下：<br><img src="http://blog.whyun.com/images/chapter1_dir.jpg" alt="项目目录结构"><br><strong>图1.2.2 项目目录结构</strong><br>其中目录<code>out/production</code>为我们的class文件生成的目录，在命令行下进入该目录，运行如下命令<code>javah com.whyun.jni.chapter1.FirstDemo</code>，运行成功之后则在运行命令行的目录下生成文件<code>com_whyun_jni_chapter1_FirstDemo.h</code>,用文本编辑器打开这个头文件，会显示如下内容：</p>
 <pre><code class="lang-c"><div class="highlight"><pre><span class="cm">/* DO NOT EDIT THIS FILE - it is machine generated */</span>
 <span class="cp">#include &lt;jni.h&gt;</span>
 <span class="cm">/* Header for class com_whyun_jni_chapter1_FirstDemo */</span>
@@ -68,8 +259,9 @@
 </code></pre>
 <p><strong>代码 1.2.1</strong></p>
 <h2><a name="1-3" class="anchor" href="#1-3"><span class="header-link"></span></a>1.3 编译运行</h2>
+<p>为了简化在windows和linux下配置编译步骤，我们先在操作系统中配置两个环境变量，在windows上将<code>JAVA_HOME</code>配置为JDK的安装路径，很多情况下这个环境变量在配置JDK编译环境的时候已经配置过，可以通过<code>echo %JAVA_HOME%</code>的输出来判断之前是否已经配置过；同理我们在linux上也配置环境变量<code>JAVA_HOME</code>(通过运行<code>echo $JAVA_HOME</code>来检测是否存在)。同时我们在windows上将目录<code>d:\lib</code>加入环境变量<code>PATH</code>中，在linux上将<code>/opt/lib</code>加入环境变量<code>LD_LIBRARY_PATH</code>中。</p>
 <h3><a name="1-3-1-windows" class="anchor" href="#1-3-1-windows"><span class="header-link"></span></a>1.3.1 windows编译环境配置</h3>
-<p>windows下需要安装visual studio（简称vs）环境来完成C/C++编译，vs 有professional、ultimate和Express三个版本，前两者收费，我们使用免费的Express就够用了。我电脑上装的是vs express for desktop版本。<br>打开vs，新建项目，选择Visual C++，然后选择Empty Project，输入项目名<code>firstdemo</code>,点击确定。<br>接着设置项目属性，右击项目，然后选择properties，在Configuration Properties-&gt;General-&gt;Project Defaults-&gt;Configuration Type中，选择<code>Dynamic Library (.dll)</code>。然后在Configuration Properties-&gt;VC++ Directories-&gt;General-&gt;Include Directories中添加两个路径：<code>%JAVA_HOME%\include</code>和<code>%JAVA_HOME%\include\win32</code>，将<code>%JAVA_HOME%</code>替换成你的java安装目录（如果你之前设置过环境变量<code>%JAVA_HOME%</code>,并将其指向JDK安装目录的话，可以直接写<code>%JAVA_HOME%</code>）。<br>最后编写c代码，在vs中新建源代码的时候，默认是cpp后缀，我们这里建一个c后缀的文件，因为我的编写习惯是c语法。</p>
+<p>windows下需要安装visual studio（简称vs）环境来完成C/C++编译，vs 有professional、ultimate和Express三个版本，前两者收费，我们使用免费的Express就够用了。我电脑上装的是vs express for desktop版本。<br>打开vs，新建项目，选择Visual C++，然后选择Empty Project，输入项目名<code>firstdemo</code>,点击确定。<br>接着设置项目属性，右击项目，然后选择properties，在Configuration Properties-&gt;General-&gt;Project Defaults-&gt;Configuration Type中，选择<code>Dynamic Library (.dll)</code>。然后在Configuration Properties-&gt;VC++ Directories-&gt;General-&gt;Include Directories中添加两个路径：<code>$(JAVA_HOME)\include</code>和<code>$(JAVA_HOME)\include\win32</code>。<br>最后编写c代码，在vs中新建源代码的时候，默认是cpp后缀，我们这里建一个c后缀的文件，因为我的编写习惯是c语法。</p>
 <pre><code class="lang-c"><div class="highlight"><pre><span class="cp">#include &lt;stdio.h&gt;</span>
 <span class="cp">#include &quot;com_whyun_jni_chapter1_FirstDemo.h&quot;</span>
 
@@ -95,9 +287,13 @@
 <span class="p">}</span>
 </pre></div>
 </code></pre>
-<p><strong>代码1.3.1 firstdemo.c</strong><br>注意我们引用了之前的<code>com_whyun_jni_chapter1_FirstDemo.h</code>，我们把它放到<code>firstdemo.c</code>同一级目录下了。<br>接着运行编译，产生dll文件，默认情况下会在项目目录Debug文件夹下产生firstdeom.dll，你可以把这个文件夹添加到环境变量PATH中去，也可以写脚本在编译完成之后将dll拷贝到电脑的任何一个PATH路径下，在Configuration Properties-&gt;Build Events-&gt;Command Line中写入如下命令：<code>copy &quot;$(TargetDir)$(TargetName).dll&quot; 随便一个PATH中的目录\$(TargetName).dll</code>。</p>
+<p><strong>代码1.3.1 firstdemo.c</strong><br>注意我们引用了之前的<code>com_whyun_jni_chapter1_FirstDemo.h</code>，我们把它放到<code>firstdemo.c</code>同一级目录下了。<br>接着运行编译，产生dll文件，默认情况下会在项目目录Debug文件夹下产生firstdeom.dll，你可以把这个文件夹添加到环境变量PATH中去，也可以写脚本在编译完成之后将dll拷贝到电脑的任何一个PATH路径下，在Configuration Properties-&gt;Build Events-&gt;Post-Build Event-&gt;Command Line中写入如下命令：<code>copy &quot;$(TargetDir)$(TargetName).dll&quot; d:\lib\$(TargetName).dll</code>。</p>
 <h3><a name="1-3-2-linux" class="anchor" href="#1-3-2-linux"><span class="header-link"></span></a>1.3.2 linux编译</h3>
-<p>在linux下使用命令行GCC即可，将<code>com_whyun_jni_chapter1_FirstDemo.h</code>和<code>firstdemo.c</code>放到同一个目录下，然后运行<code>gcc -g -Wall -I $JAVA_HOME/include/ -I $JAVA_HOME/include/linux -fPIC -shared -o $saveDir/libfirstdemo.so firstdemo.c</code>,将<code>$JAVA_HOME</code>替换为你的JDK安装目录(如果已经设置环境变量$JAVA_HOME,并且已经将其执行JDK目录的话，可以)，<code>$saveDir</code>替换为环境变量<code>$LD_LIBRARY_PATH</code>中的任一个目录即可。</p>
+<p>在linux下使用命令行GCC即可，将<code>com_whyun_jni_chapter1_FirstDemo.h</code>和<code>firstdemo.c</code>放到同一个目录下，然后运行脚本</p>
+<pre><code><div class="highlight"><pre><span class="nx">saveDir</span><span class="o">=</span><span class="err">/opt/lib</span>
+<span class="nx">gcc</span> <span class="o">-</span><span class="nx">g</span> <span class="o">-</span><span class="nx">Wall</span> <span class="o">-</span><span class="nx">I</span> <span class="nx">$JAVA_HOME</span><span class="o">/</span><span class="nx">include</span><span class="o">/</span> <span class="o">-</span><span class="nx">I</span> <span class="nx">$JAVA_HOME</span><span class="o">/</span><span class="nx">include</span><span class="o">/</span><span class="nx">linux</span> <span class="o">-</span><span class="nx">fPIC</span> <span class="o">-</span><span class="nx">shared</span> <span class="o">-</span><span class="nx">o</span> <span class="nx">$saveDir</span><span class="o">/</span><span class="nx">libfirstdemo</span><span class="p">.</span><span class="nx">so</span> <span class="nx">firstdemo</span><span class="p">.</span><span class="nx">c</span>
+</pre></div>
+</code></pre>
 <h3><a name="1-3-3" class="anchor" href="#1-3-3"><span class="header-link"></span></a>1.3.3 运行</h3>
 <p>运行java代码，最终输出</p>
 <pre><code><div class="highlight"><pre><span class="nx">num</span><span class="o">:</span><span class="mi">1</span><span class="p">,</span><span class="nx">string</span><span class="o">:</span><span class="nx">the</span> <span class="nx">first</span> <span class="nx">demo</span><span class="p">.</span>
