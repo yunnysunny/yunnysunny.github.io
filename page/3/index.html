@@ -63,6 +63,94 @@
 
 
   <div class="post-head group">
+  <a href="/posts//">
+    <h1 class="post-title">同步和异步回调</h1>
+  </a>
+  <span class="post-date">2015 &#183; 2 &#183; 18</span>
+</div>
+
+<div class="post-body markdown"><h1><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步和异步回调</h1>
+<p><em>作者：havoc (原文地址：<a href="http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/"><a href="http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/">http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/</a></a>)</em></p>
+<p>这里讲两个使用callback设计API的指南，并且添加到我的杂记<a href="http://blog.ometer.com/2011/01/20/boolean-parameters-are-wrong/" title="作者显然是贴错地址了，译者注">posts about minor API design points</a>中。我之前多次在不同的场合发起过关于“sync vs. async”回调的问题。这个问题着实困扰着API设计者和使用者。<br>最近，这个问题在我处理<a href="https://github.com/bwmcadams/hammersmith">Hammersmith</a>（一个基于callback回调的MongoDB的Scale API）又被提起。我认为这（这里指基于回调的API，译者注）对大量的JVM代码编写者来说稍微有些 <em>不习惯（new consideration）</em> ，因为传统的JVM使用堵塞API和线程。对于我来说，已经很熟悉编写基于<a href="https://developer.gnome.org/glib/unstable/glib-The-Main-Event-Loop.html">事件循环</a>的客户端代码。</p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>介绍</h2>
+<ul>
+<li>一个<strong>同步（synchronous）</strong>回调在函数返回之前执行，也就是说， <em>当API在调用时callback也处在上下文中(这句话的原文是：while the API receiving the callback remains on the stack)</em> 。例子可以是这样的：<code>list.foreach(callback);</code>在<code>foreach()</code>返回时，你可以预期到callback已经在所有元素上都被执行了。</li>
+<li><p>一个<strong>异步（asynchronous）</strong>或者<strong>延迟（deferred）</strong>回调，在函数返回之后执行，或者至少在另一个线程的栈空间中执行。延迟（deferral）的架构包括线程和主循环【main loops】(其他名字包括event loops,dispatchers,executors)。异步回调在IO相关的API中很流行，例如<code>socket.connect(callback);</code>，你会预期在<code>connect（）</code>返回时，callback可能还没有被调用，因为他正在等待连接建立完毕。</p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>指南</h2>
+<p>基于过往经验，我使用这两条规则：</p>
+</li>
+<li><p>给出的回调不能一直是同步的或者异步的，而是应该将其作为API文档的一部分加以说明。</p>
+</li>
+<li>异步回调需要被主循环中或者 <em>中心分发组件（central dispatch mechanism）</em> 直接调用，也就是说，别在回调执行的栈中存在非必须的代码块，特别是这些代码块可能含有锁的时候。</li>
+</ul>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步回调和异步回调有啥不同？</h2>
+<p>同步和异步回调对于包括app和类库在内的开发者造成问题是不一样的。<br>同步回调：</p>
+<ul>
+<li>在 <em>原始（original）</em> 线程中执行（触发回调和回调执行是一个线程，这里原始线程被指做回调触发的线程，译者注），所以自身不需要关心线程安全。</li>
+<li>在类C/C++语言中，可以读取存储在栈上的数据，比如说本地变量。</li>
+<li>在任一语言中，他们可以访问绑定到当前线程上的数据，比如说thread-local类型变量。比如许多java web框架在当前事务或者请求中创建thread-local类型的变量。</li>
+<li><p>可以假定某些应用程序的状态不变，比如说对象存在、定时器没有被触发、IO访问没有发生，或者任一一个程序关联的结构的状态。
+异步回调：</p>
+</li>
+<li><p>可能会在另一个线程（在基于线程的异步架构中）中被调用，所以应用需要使回调同步访问的任意一个资源。</p>
+</li>
+<li>不能访问任意一个 <em>原始</em> 堆栈或者线程，比如说局部变量或者thread-local类型数据。</li>
+<li>如果 <em>原始</em> 线程中持有锁，那么回调应在锁的外面被调用。</li>
+<li>需要假定其他的线程或者事件可能已经修改了应用程序的状态。</li>
+</ul>
+<p>不能说哪个回调方式更好，都有其优点。试想一下：<br><code>list.foreach(callback)</code><br>大多数情况下，如果callback被延迟调用并且在当前线程中没有做任何操作，你可能会十分惊讶。<br>但是：<br><code>socket.connect(callback)</code><br>如果不延迟调用callback就显得完全没有意义了，为啥要设置一个callback呢？<br>这两个例子告诉我们为什么一个给出的回调要被定义为同步或者异步，它们是不可以互换的，同时也拥有不同的用途。</p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>选择同步或者异步，但是不能同时使用</h2>
+<p>显而易见，可能在某些场景中需要立即执行回调（当数据已经准备好了情况），在另外一些场景回调需要延迟调用（socket没有准备好的情况）。一个很诱人的做法是，在可能的情况下同步执行回调，在另外的情况的异步执行。但是不是一个好想法。<br>因为同步和异步拥有不同的规则，他们产生不同的bug。在测试环境下触发异步回调，但是生产环境的某些不常见场景下，按照同步来运行了，是很典型的。<br>要求应用程序开发者同时对同步和异步情况进行规划和测试是很困难的，所以最简单的就是用库函数来实现：<strong>如果一个回调在某些情况下延迟支持，那么一直使用延迟的方式</strong>。</p>
+<h2><a name="gio" class="anchor" href="#gio"><span class="header-link"></span></a>例子：GIO</h2>
+<p>在GIO库中的<a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html">GSimpleAsyncResult文档</a>有一个针对当前问题的典型例子，直接滑过描述章节，看异步烘烤蛋糕的例子。（GSimpleAsyncResult可以等同于一些框架中的future或者promise。）这个类中提供了两个方法， <a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html#g-simple-async-result-complete-in-idle">complete_in_idle() </a>函数将回调交由一个“空闲句柄”（ <em>是一个立即调度的一次性事件循环，原文是：just an immediately-dispatched one-shot main loop event</em> ）来延迟调用；普通的<a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html#g-simple-async-result-complete">complete()</a>函数同步触发回调。文档中建议，尽量使用complete_in_idle()，除非你知道你已经处在一个没有持有任何锁的回调中（也就是说，你正好处在从一个异步回调到另一个函数的调用链上，那就没有必要再做异步处理了）。  </p>
+<p>GSimpleAsyncResult旨在实现类似于<a href="http://developer.gnome.org/gio/unstable/GFile.html#g-file-read-async" title=" g_file_read_async()">g_file_read_async()</a>这种IO API，开发者可以假定所有使用这些API的回调都是异步的。</p>
+<p>GIO使用这种方式并且在文档中强制声明出来，因为开发者开发的时候曾经（因为文档不明确，译者注）备受煎熬。</p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步资源需要延迟运行所有它们触发的回调函数</h2>
+<p>事实上，这个规则是说，一个类库需要在回调触发之前释放掉它持有的所有锁。释放掉所有锁的最简单的方式就是使回调异步，延迟调用它直到上下文回到主循环或者在另一个线程的上下文中调用它。(也就是说在当前上下文环境中所有代码——包括释放掉锁的代码——执行完毕，然后才在主循环或者另一线程中执行回调，译者注)</p>
+<p>这一点很重要，因为不能预计到应用程序不在回调内部接触你的API。如果你持有锁并且程序（在回调内部，译者注）接触到了你的API，程序就会死锁。（或者如果你使用递归锁，你同样会遇到可怕的问题。）</p>
+<p>与其将回调延迟到主循环或者线程中，同步的资源可以尝试释放掉它所有的锁；但是他是<strong>非常</strong>痛苦的，因为锁可能恰好在上下文中，你最终需要使每个上下文中的函数返回回调函数，将回调函数一直留存给最外部锁的持有者，然后释放掉锁并且触发回调。呸。</p>
+<h2><a name="akkahammersmith" class="anchor" href="#akkahammersmith"><span class="header-link"></span></a>例子：不使用Akka的Hammersmith</h2>
+<p>在前面提到的Hammersmith中，下面给出的伪码会产生死锁：</p>
+<pre><code><div class="highlight"><pre><span class="nx">connection</span><span class="p">.</span><span class="nx">query</span><span class="p">({</span> <span class="nx">cursor</span> <span class="o">=&gt;</span> <span class="cm">/* iterate cursor here, touching connection again */</span> <span class="p">})</span>
+</pre></div>
+</code></pre>
+<p>遍历游标时会反过来访问MongoDB的connection。在connection对象的代码中触发query的回调函数...，而这个connection对象还持有连接锁。虽然不能正常工作，但是这种代码对于开发者来说是很顺手的。如果一个类库不延迟调用回调函数，应用开发者需要自己延迟调用它。大多数应用开发者在开始的时候都会出错，一旦他们捕获到错误并且修正，他们的代码就会被一些异步架构搞的乱七八糟。</p>
+<p>Hammersmith从Netty中继承了这个问题，Netty也是这样使用connection的；Netty没有试图去延迟调用回调函数（我可以立即这种行为，毕竟在java中没有一个明确的 默认/标准/通用/有效 方式来延迟调用回调函数）。</p>
+<p>起初，我对它的修正是添加<a href="https://github.com/havocp/hammersmith/commit/48c6d4b486357d9af17bf4ee5f8042a4944c41bf">一个线程池来运行程序的回调</a>。不幸的是，这个推荐的和Netty一起使用的线程池类并没有解决死锁问题，<a href="https://github.com/havocp/hammersmith/commit/16fb3103851af00d6aa7780c182169e68c41aa45">我只能接着修复它</a>。（所有解决死锁问题的线程池都得拥有无限的容量和资源……）</p>
+<p>最终它终于能用了，但是想想一下，如果基于回调的API流行起来之后，每个jar包你都在它的API中使用回调函数，那么就必须拥有一个线程池。想想也是醉了。这很有可能就是为啥Netty在这个问题上要赌一把。在一个底层网络类库上太难做策略控制了。</p>
+<h2><a name="akka-actor" class="anchor" href="#akka-actor"><span class="header-link"></span></a>例子：AKKA Actor</h2>
+<p>部分由于要寻找一个更有的解决方案，之后我将<a href="https://github.com/bwmcadams/hammersmith">Hammersmith</a> 迁移到 <a href="http://akka.io/">Akka</a> 上来。Akka实现了<a href="https://zh.wikipedia.org/wiki/%E5%8F%83%E8%88%87%E8%80%85%E6%A8%A1%E5%BC%8F">Actor模式</a>。Actor是基于消息而不是基于回调的，一般来说消息还<strong>必须</strong>得是延迟发送的。事实上，Akka还特意强制你使用一个<a href="http://akka.io/api/akka/snapshot/akka/actor/ActorRef.html">ActorRef</a>用来和actor进行通信，所有关联ActoRref的消息都经过一个dispatcher（事件循环）。假定你有两个actor进行通信，他们将使用<code>!</code>或者“发送消息”函数：</p>
+<pre><code><div class="highlight"><pre><span class="nx">actorOne</span> <span class="o">!</span> <span class="nx">Request</span><span class="p">(</span><span class="s2">&quot;Hello&quot;</span><span class="p">)</span>
+<span class="c1">// then in actorOne</span>
+<span class="nx">sender</span> <span class="o">!</span> <span class="nx">Reply</span><span class="p">(</span><span class="s2">&quot;World&quot;</span><span class="p">)</span>
+</pre></div>
+</code></pre>
+<p>这些消息都通过事件循环进行分发的。我希望我的死锁问题能够在这种模式下得到解决，但是我在调用带有锁的回调函数时，还是遇到了小麻烦——同样的问题又被触发了。这次的锁是在actor处理消息时锁住actor本身。</p>
+<p>Akka中的actor可以从其他actor或者从<code>Future</code>中接收消息，Akka将发送者封装在一个称作<code>Channel</code>的对象中。通过<code>!</code>来发送消息到一个actor时，就会将这个消息交给dispather来做延迟，但是发送到future就不会；因此，在API约定上，<code>Channel</code>上的<code>!</code>方法并没有决定是当前是使用同步还是异步。</p>
+<p>那么问题来了，actor模式中的一个重点就是一个actor在同一时间内仅仅只能运行在一个线程中；actor在处理某个消息的时候是不允许另一个消息再进入的。因此，在actor外部产生同步调用是很危险的；在actor上有锁，如果同步调用时试图在回调中再次使用actor本身，就会产生死锁。</p>
+<p>我将MongoDB connection包装成一个actor，立马就重现了和Netty中同样的死锁问题，也就是在query的回调中试图在遍历游标的时候再次访问connection。query的回调是由<code>!</code>方法在发送到future上时触发的。这个<code>Channel</code>上的<code>!</code>方法打破了我的第一条原则（它没有在API约定上定义成同步或者异步），但是我期望它能够一直都是异步的；结果我还意外的打破了我的第二条原则，触发回调时还持有锁。</p>
+<p>如果是我，我将在API约定中吧<code>Channel.!</code>置为延迟，来修正这个问题；但是，正如Akka写的那样，如果你实现这样一个actor，发送回复，并且你程序的回复处理句柄想反回来重新使用actor本身，你必须手动延迟发送这些回复。我偶然间发现了这个实现方式，然而应该还有一个更好的实现方式：</p>
+<pre><code><div class="highlight"><pre><span class="kr">private</span> <span class="nx">def</span> <span class="nx">asyncSend</span><span class="p">(</span><span class="nx">channel</span><span class="o">:</span> <span class="nx">AkkaChannel</span><span class="p">[</span><span class="nx">Any</span><span class="p">],</span> <span class="nx">message</span><span class="o">:</span> <span class="nx">Any</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">Future</span><span class="p">(</span><span class="nx">channel</span> <span class="o">!</span> <span class="nx">message</span><span class="p">,</span> <span class="nx">self</span><span class="p">.</span><span class="nx">timeout</span><span class="p">)(</span><span class="nx">self</span><span class="p">.</span><span class="nx">dispatcher</span><span class="p">)</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>这个解决方案令人不爽的地方是，为了将回复交给future做异步处理，那么对于actor的回复就是两次异步了。</p>
+<p>还好，对于Akka来说至少它<strong>拥有</strong>解决方案——使用dispatcher。如果使用纯Netty，我就不得不使用一个专门的线程池了。</p>
+<p>Akka给出了“如何是回调异步”的答案，但是它还需要一些特殊用途的（special-casing）future来保证它们确实是异步的。<br>（<strong>更新：</strong>Akka团队已经准备解决这个问题，<a href="https://www.assembla.com/spaces/akka/tickets/1054-complete-futures-asynchronously-when-replying-through-a-channel">详情查看</a>。）</p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>总结</h2>
+<p>相对于我发现的Akka的小麻烦，没有使用Akka的JVM环境下的情况将会更糟，因为这时是没有一个dispatcher可供使用的。<br><strong>基于回调的API在有事件循环的时候会运行的很好</strong> ，因为拥有异步触发回调的功能是很重要的。<br>这也就是为啥在客户端javascript和<a href="http://nodejs.org/">node.js</a>还有类似于<a href="http://www.gtk.org/">GTK+</a>的UI组件库中回调运行的很完美。但是如果你在JVM中开始编写基于回调的API，就是没有默认解决方案的。你不得不借鉴一些事件循环类库（Akka工作的很好），或者重新造轮子，或者随处使用线程池。</p>
+<p>鉴于基于回调的API如此的时髦……如果你准备写一个，我想前面的这个话题你也会遇到。打完收工。</p>
+</div>
+
+  <div class="comments">
+    <a href="/posts//#comments">
+      <span class="icon-bubbles"></span>
+      Comments
+    </a>
+  </div>
+
+  <div class="post-head group">
   <a href="/posts/noobs/">
     <h1 class="post-title">NOOBS安装自定义系统</h1>
   </a>
@@ -165,36 +253,6 @@
     </a>
   </div>
 
-  <div class="post-head group">
-  <a href="/posts/node/">
-    <h1 class="post-title">node中调试子进程</h1>
-  </a>
-  <span class="post-date">2014 &#183; 7 &#183; 31</span>
-</div>
-
-<div class="post-body markdown"><p>现在node.js在单步调试中做的最好的，就要数intellij idea了，但是node在使用cluster的时候，无法开启调试，stackoverflow上有对这个问题的描述与解答（点击<a href="http://stackoverflow.com/questions/16840623/how-to-debug-node-js-child-forked-process">这里</a>查看）。但是这里要将的解决方案确实通过增加启动参数控制，摒弃多进程模式来实现调试，比如说在本地测试的时候启动单进程，在运营环境中使用多进程。</p>
-<p>node.js中可以读取环境变量，使用方法为<code>process.env.环境变量名</code>，也就是说可以通过下列方式来控制是否启用多进程：</p>
-<pre><code><div class="highlight"><pre><span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">env</span><span class="p">.</span><span class="nx">DEBUG_LOCAL</span> <span class="o">==</span> <span class="s1">&#39;true&#39;</span><span class="p">)</span> <span class="p">{</span>
-    <span class="c1">//单进程代码处理</span>
-<span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-    <span class="c1">//cluster代码处理</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>代码1.1</strong></p>
-<p>剩下的就是在idea中配置环境变量了，点击调试的配置功能，即点击图1.1位置。<br><img src="/images/edit_config.jpg" alt="选择配置"><br><strong>图1.1 选择配置</strong></p>
-<p>在打开的界面中点击环境变量配置功能按钮<br><img src="/images/set_env_show.jpg" alt="配置界面"><br><strong>图1.2 配置界面</strong></p>
-<p>添加一个环境变量<br><img src="/images/add_env.jpg" alt="添加环境变量"><br><strong>图1.3 添加环境变量</strong>  </p>
-<p>至此完成配置，点击调试后，就会将当前的代码运行成单进程，在生产环境中不加环境变量启动，则运行到正常的cluster代码中。</p>
-</div>
-
-  <div class="comments">
-    <a href="/posts/node/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
-
 
 <div class="pagination group">
   
@@ -215,6 +273,9 @@
     
     
       <a href="/page/4/" class="older"> &#8592; Older</a>
+    
+  
+    
     
   
 </div>
