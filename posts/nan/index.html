@@ -76,7 +76,7 @@
 
 <div class="post-body markdown"><p>Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如果你之前的代码是按照0.10的API编写的，将其改成0.12的形式是需要耗费一番精力的，但是问题又来了，你如果改为0.12形式，0.10又不能够被兼容了。幸好有<a href="https://github.com/nodejs/nan">nan</a>，其实它的核心是一个头文件，通过宏定义来做不同版本的node的c++ API的兼容。</p>
 <h2><a name="1" class="anchor" href="#1"><span class="header-link"></span></a>1.配置</h2>
-<p>首先你得在<code>package.json</code>中引入<code>nan</code>,然后在binding.gyp中配置：</p>
+<p>首先你通过 <code>npm install nan --save</code> 来安装 nan ,然后在binding.gyp中配置：</p>
 <pre><code><div class="highlight"><pre><span class="s2">&quot;include_dirs&quot;</span> <span class="o">:</span> <span class="p">[</span>
     <span class="s2">&quot;&lt;!(node -e \&quot;require(&#39;nan&#39;)\&quot;)&quot;</span>
 <span class="p">]</span>

@@ -66,6 +66,262 @@
 
 
   <div class="post-head group">
+  <a href="/posts/node0-12capi/">
+    <h1 class="post-title">即将面临的Node0.12中的C++API的改变</h1>
+  </a>
+  <span class="post-date">2015 &#183; 5 &#183; 19</span>
+</div>
+
+<div class="post-body markdown"><p>原文地址：<a href="https://strongloop.com/strongblog/node-js-v0-12-c-apis-breaking/">https://strongloop.com/strongblog/node-js-v0-12-c-apis-breaking/</a></p>
+<blockquote>
+<p>编者注：欢迎阅读旨在帮你快速了解，在即将发布的node0.12中（ <em>作者写这篇文章的时候Node0.12还没有发布，译者注</em> ）的API变化三系列教程的第三部分。在<a href="http://strongloop.com/strongblog/node-js-v0-12-new-apis/">第一部分</a>，<a href="https://github.com/alexgorbatchev">Alex Gorbatchev</a>列出来没有变化的API，在<a href="http://strongloop.com/strongblog/node-js-v0-12-apis-breaking/">第二部分</a>中他指出了变化的部分。在第三部分，<a href="http://strongloop.com/strongblog/node-js-v0-12-apis-breaking/">Ben Noordhuis</a>将会详细描述C++API部分的差别。  </p>
+</blockquote>
+<p>在Node v0.10和v0.12之间有大量的差异。我不会试图把每一个细节都点出来，我将把这些差异分类，按照从“更重要”到“次重要”的次序进行排序，然后解释怎样合理的更新你的代码。<br>本文大部分讲述V8 API，因为这正是大量差异出现的地方。欢迎通过<a href="mailto:ben@strongloop.com">ben at strongloop.com</a>来给我提供建议和反馈。  </p>
+<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>原生函数的参数已经被更改</h2>
+<p>在node v0.10中你这么写： </p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Handle</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span><span class="n">FortyTwo</span><span class="p">(</span><span class="k">const</span> <span class="n">v8</span><span class="o">::</span><span class="n">Arguments</span><span class="o">&amp;</span><span class="n">args</span><span class="p">){</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">HandleScope</span> <span class="n">handle_scope</span><span class="p">;</span>
+      <span class="n">returnhandle_scope</span><span class="p">.</span><span class="n">Close</span><span class="p">(</span><span class="n">v8</span><span class="o">::</span><span class="n">Integer</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="mi">42</span><span class="p">));</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>在node v0.12中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="kt">void</span> <span class="nf">FortyTwo</span><span class="p">(</span><span class="k">const</span> <span class="n">v8</span><span class="o">::</span><span class="n">FunctionCallbackInfo</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;&amp;</span><span class="n">info</span><span class="p">){</span>
+      <span class="c1">// Don&#39;t need a HandleScope in this particular example.</span>
+      <span class="n">info</span><span class="p">.</span><span class="n">GetReturnValue</span><span class="p">().</span><span class="n">Set</span><span class="p">(</span><span class="mi">42</span><span class="p">);</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>一些重要的变化如下:  </p>
+<ol>
+<li>返回类型是<code>void</code>。</li>
+<li>返回值通过<code>v8::ReturnValue::Set()</code>,<code>v8::ReturnValue::SetEmptyString()</code>,<code>v8::ReturnValue::SetNull()</code>,<code>v8::ReturnValue::SetUndefined()</code>来设置。</li>
+<li>如果没有显式的设置返回值，将会返回<code>undefined</code>。</li>
+</ol>
+<p><code>v8::ReturnValue::Set()</code>拥有一个数字类型的重载函数可以是使用不同的数据类型。如果你的编译器处理时出现问题或者报歧义错误，那么就是使用<code>static_cast&lt;&gt;</code>来将参数转为支持的类型：  </p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="kt">void</span> <span class="nf">FortyTwo</span><span class="p">(</span><span class="k">const</span> <span class="n">v8</span><span class="o">::</span><span class="n">FunctionCallbackInfo</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;&amp;</span> <span class="n">info</span><span class="p">)</span> <span class="p">{</span>
+      <span class="k">const</span> <span class="kt">int64_t</span> <span class="n">value</span> <span class="o">=</span> <span class="mi">42</span><span class="p">;</span>
+      <span class="c1">// error: call of overloaded &#39;Set(const int64_t&amp;)&#39; is ambiguous</span>
+      <span class="n">info</span><span class="p">.</span><span class="n">GetReturnValue</span><span class="p">().</span><span class="n">Set</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+      <span class="c1">// but this works</span>
+      <span class="n">info</span><span class="p">.</span><span class="n">GetReturnValue</span><span class="p">().</span><span class="n">Set</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">int32_t</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">));</span>
+      <span class="c1">// as does this</span>
+      <span class="n">info</span><span class="p">.</span><span class="n">GetReturnValue</span><span class="p">().</span><span class="n">Set</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="kt">double</span><span class="o">&gt;</span><span class="p">(</span><span class="n">value</span><span class="p">));</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>当然你需要挑选合适的类型来转换。当转化为窄数据类型，以至于无法承载原始数据据时，将会产生不可预期的结果。<br>注意，<code>v8::FunctionCallbackInfo&lt;v8::Value&gt;</code>是对于<code>v8::Arguments</code>的重命名和参数化（parameterized ）。除了名字和额外的<code>GetReturnValue()</code>函数，他们没有表面上的差别。</p>
+<h2><a name="v8-apiv8isolate" class="anchor" href="#v8-apiv8isolate"><span class="header-link"></span></a>大部分V8 API现在需要使用v8::Isolate*</h2>
+<p>在Node v0.10中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">a</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Integer</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="mi">42</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Number</span><span class="o">&gt;</span> <span class="n">b</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Number</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="mf">13.37</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">FunctionTemplate</span><span class="o">&gt;</span> <span class="n">ft</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">FunctionTemplate</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">Foo</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">a</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Integer</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="mi">42</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Number</span><span class="o">&gt;</span> <span class="n">b</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Number</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="mf">13.37</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">FunctionTemplate</span><span class="o">&gt;</span> <span class="n">ft</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">FunctionTemplate</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">Foo</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>你可以通过若干的方法获取当前的<code>v8::Isolate</code>的指针：  </p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="kt">void</span> <span class="nf">FortyTwo</span><span class="p">(</span><span class="k">const</span> <span class="n">v8</span><span class="o">::</span><span class="n">FunctionCallbackInfo</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;&amp;</span> <span class="n">info</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span><span class="p">;</span>
+      <span class="n">isolate</span> <span class="o">=</span> <span class="n">info</span><span class="p">.</span><span class="n">GetIsolate</span><span class="p">();</span>
+      <span class="c1">// or:</span>
+      <span class="n">isolate</span> <span class="o">=</span> <span class="n">info</span><span class="p">.</span><span class="n">GetReturnValue</span><span class="p">().</span><span class="n">GetIsolate</span><span class="p">();</span>
+      <span class="c1">// or even:</span>
+      <span class="n">isolate</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">::</span><span class="n">GetCurrent</span><span class="p">();</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>注意，V8团队已经指出，<code>v8::Isolate::GetCurrent()</code>将会被逐步淘汰。如果你想编写向后兼容的代码，你最好显式的传递isolate参数。</p>
+<h2><a name="v8-string" class="anchor" href="#v8-string"><span class="header-link"></span></a>V8 string函数现在需要显式声明编码</h2>
+<p>在Node v0.10中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="c1">// create a UTF-8 string</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">utf8</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+    <span class="c1">// create a UTF-16 string from input in system endianness</span>
+    <span class="k">static</span> <span class="k">const</span> <span class="kt">uint16_t</span> <span class="n">chars</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="sc">&#39;4&#39;</span><span class="p">,</span> <span class="sc">&#39;2&#39;</span><span class="p">,</span> <span class="mi">0</span> <span class="p">};</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">utf16</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">chars</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="c1">// create a UTF-8 string</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">utf8</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">NewFromUtf8</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="s">&quot;42&quot;</span><span class="p">);</span>
+    <span class="c1">// create a UTF-16 string from input in system endianness</span>
+    <span class="k">static</span> <span class="k">const</span> <span class="kt">uint16_t</span> <span class="n">chars</span><span class="p">[]</span> <span class="o">=</span> <span class="p">{</span> <span class="sc">&#39;4&#39;</span><span class="p">,</span> <span class="sc">&#39;2&#39;</span><span class="p">,</span> <span class="mi">0</span> <span class="p">};</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">utf16</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">NewFromTwoByte</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">chars</span><span class="p">);</span>
+    <span class="c1">// create a ISO-8859-1 a.k.a. Latin1 string</span>
+    <span class="k">const</span> <span class="kt">uint8_t</span><span class="o">*</span> <span class="n">octets</span> <span class="o">=</span> <span class="k">reinterpret_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="kt">uint8_t</span><span class="o">*&gt;</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">latin1</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">NewFromOneByte</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">octets</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p><code>v8::String::NewFromTwoByte()</code>稍微有点命名的不合适，因为他并不是一个严格的双字节编码。他能够识别surrogate pairs【 链接：<a href="https://msdn.microsoft.com/en-us/library/windows/desktop/dd374069(v=vs.85).aspx">https://msdn.microsoft.com/en-us/library/windows/desktop/dd374069(v=vs.85).aspx</a> 】， 所以它应该被称作<a href="https://zh.wikipedia.org/wiki/UTF-16">UTF-16</a>，而不是<a href="https://zh.wikipedia.org/wiki/Universal_Character_Set">UCS-2</a>。</p>
+<h2><a name="v8stringnewsymbolv8stringnewundetectable" class="anchor" href="#v8stringnewsymbolv8stringnewundetectable"><span class="header-link"></span></a>去除了v8::String::NewSymbol()和v8::String::NewUndetectable()</h2>
+<p>在Node v0.10中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">symbol</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">NewSymbol</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">hidden</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">NewUndetectable</span><span class="p">(</span><span class="s">&quot;42&quot;</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">symbol</span> <span class="o">=</span>
+        <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">NewFromUtf8</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="s">&quot;42&quot;</span><span class="p">,</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">kInternalizedString</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">hidden</span> <span class="o">=</span>
+        <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">NewFromUtf8</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="s">&quot;42&quot;</span><span class="p">,</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">kUndetectableString</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<h2><a name="v8stringasciivalue" class="anchor" href="#v8stringasciivalue"><span class="header-link"></span></a>去除了v8::String::AsciiValue</h2>
+<p>在Node v0.10中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">string</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">AsciiValue</span> <span class="n">s</span><span class="p">(</span><span class="n">string</span><span class="p">);</span>
+    <span class="n">puts</span><span class="p">(</span><span class="n">s</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中你这么写：
+Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告诉大家要返回7比特的ASCII数据，但是实际上返回8比特的二进制数据。同时它搞混了多字节字符的字节序。<br>使用<code>v8::String::Utf8Value</code>或者<code>v8::String::Value</code>(适用于UTF-16)来进行替代。如果你想获取一个字符串的原始二进制数据，你可以这么做：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">string</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="k">const</span> <span class="kt">int</span> <span class="n">length</span> <span class="o">=</span> <span class="n">string</span><span class="o">-&gt;</span><span class="n">Utf8Length</span><span class="p">()</span> <span class="o">+</span> <span class="mi">1</span><span class="p">;</span>  <span class="c1">// Add one for trailing zero byte.</span>
+    <span class="kt">uint8_t</span><span class="o">*</span> <span class="n">buffer</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">uint8_t</span><span class="p">[</span><span class="n">length</span><span class="p">];</span>
+    <span class="n">string</span><span class="o">-&gt;</span><span class="n">WriteOneByte</span><span class="p">(</span><span class="n">buffer</span><span class="p">,</span> <span class="cm">/* start */</span> <span class="mi">0</span><span class="p">,</span> <span class="n">length</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>注意：<code>v8::String::Utf8Length()</code>会迭代字符串中的每一个字符，这就是为啥对于大字符串来说会(很)慢的原因。</p>
+<h2><a name="v8handlescopeclose" class="anchor" href="#v8handlescopeclose"><span class="header-link"></span></a>去除了v8::HandleScope::Close()</h2>
+<p>在Node v0.10中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">Example</span><span class="p">()</span> <span class="p">{</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">HandleScope</span> <span class="n">handle_scope</span><span class="p">;</span>
+      <span class="k">return</span> <span class="n">handle_scope</span><span class="p">.</span><span class="n">Close</span><span class="p">(</span><span class="n">v8</span><span class="o">::</span><span class="n">Integer</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="mi">42</span><span class="p">));</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">Example</span><span class="p">(</span><span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">EscapableHandleScope</span> <span class="n">handle_scope</span><span class="p">(</span><span class="n">isolate</span><span class="p">);</span>
+      <span class="k">return</span> <span class="n">handle_scope</span><span class="p">.</span><span class="n">Escape</span><span class="p">(</span><span class="n">v8</span><span class="o">::</span><span class="n">Integer</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="mi">42</span><span class="p">));</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<h2><a name="v8persistenttv8handlet" class="anchor" href="#v8persistenttv8handlet"><span class="header-link"></span></a>v8::Persistent<T>不再继承自v8::Handle<T></h2>
+<p><code>v8::Persistent&lt;T&gt;</code>不再是<code>v8::Handle&lt;T&gt;</code>类型的对象。这就意味着，你不能在直接访问指向的句柄了。做出如此大变革的动机是由于在v0.10中这么操作太容易导致资源泄露或者导致在释放之后再访问其存储的内容。<br>在Node v0.10中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">value</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">persistent</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;::</span><span class="n">New</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+    <span class="c1">// ...</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">value_again</span> <span class="o">=</span> <span class="o">*</span><span class="n">persistent</span><span class="p">;</span>
+    <span class="c1">// ...</span>
+    <span class="n">persistent</span><span class="p">.</span><span class="n">Dispose</span><span class="p">();</span>
+    <span class="n">persistent</span><span class="p">.</span><span class="n">Clear</span><span class="p">();</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span> <span class="o">=</span> <span class="cm">/* ... */</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">value</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">persistent</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+    <span class="c1">// or:</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">persistent</span><span class="p">;</span>
+    <span class="n">persistent</span><span class="p">.</span><span class="n">Reset</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+    <span class="c1">// ...</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">value_again</span> <span class="o">=</span>
+        <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;::</span><span class="n">New</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">persistent</span><span class="p">);</span>  <span class="c1">// rematerialize handle</span>
+    <span class="c1">// ...</span>
+    <span class="n">persistent</span><span class="p">.</span><span class="n">Reset</span><span class="p">();</span>
+</pre></div>
+</code></pre>
+<p>另外一个变化是，persistent 句柄现在不能被拷贝。在Node v0.10中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">value</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">a</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;::</span><span class="n">New</span><span class="p">(</span><span class="n">value</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">b</span> <span class="o">=</span> <span class="n">a</span><span class="p">;</span>  <span class="c1">// a and b now point to |value|</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中你这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span> <span class="o">=</span> <span class="cm">/* ... */</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">value</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">a</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">b</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">a</span><span class="p">);</span>
+    <span class="c1">// or:</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">b</span><span class="p">;</span>
+    <span class="n">b</span><span class="p">.</span><span class="n">Reset</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">a</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>由于<code>v8::Persistent&lt;T&gt;</code>没有在语法上提供拷贝功能，所以现在使用STL容器类的时候会更困难。鉴于此，V8在<code>v8-util.h</code>中提供了若干工具类。</p>
+<p>举个例子：  </p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="err">#</span><span class="n">include</span> <span class="s">&quot;v8-util.h&quot;</span>
+
+    <span class="kt">void</span> <span class="n">Example</span><span class="p">(</span><span class="n">v8</span><span class="o">:</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">StdPersistentValueMap</span><span class="o">&lt;</span><span class="kt">int</span><span class="p">,</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">map</span><span class="p">(</span><span class="n">isolate</span><span class="p">);</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">&gt;</span> <span class="n">value</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">String</span><span class="o">::</span><span class="n">NewFromUtf8</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="s">&quot;fortytwo&quot;</span><span class="p">);</span>
+      <span class="n">map</span><span class="p">.</span><span class="n">Set</span><span class="p">(</span><span class="mi">42</span><span class="p">,</span> <span class="n">value</span><span class="p">);</span>
+      <span class="n">assert</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="n">Contains</span><span class="p">(</span><span class="mi">42</span><span class="p">));</span>
+      <span class="n">assert</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="n">Get</span><span class="p">(</span><span class="mi">42</span><span class="p">)</span><span class="o">-&gt;</span><span class="n">StrictEquals</span><span class="p">(</span><span class="n">value</span><span class="p">));</span>
+      <span class="n">assert</span><span class="p">(</span><span class="n">map</span><span class="p">.</span><span class="n">Get</span><span class="p">(</span><span class="mi">21</span><span class="p">).</span><span class="n">IsEmpty</span><span class="p">());</span>
+      <span class="n">assert</span><span class="p">(</span><span class="mi">1</span> <span class="o">==</span> <span class="n">map</span><span class="p">.</span><span class="n">Size</span><span class="p">());</span>
+      <span class="n">map</span><span class="p">.</span><span class="n">Remove</span><span class="p">(</span><span class="mi">42</span><span class="p">);</span>
+      <span class="n">assert</span><span class="p">(</span><span class="mi">0</span> <span class="o">==</span> <span class="n">map</span><span class="p">.</span><span class="n">Size</span><span class="p">());</span>
+      <span class="n">map</span><span class="p">.</span><span class="n">Clear</span><span class="p">();</span>  <span class="c1">// or we could just call .Clear()</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>如果你使用<code>[C++](https://zh.wikipedia.org/wiki/CBB11 &quot;%3&quot;)</code>,你可以在标准容器类的<a href="http://www.cprogramming.com/c++11/rvalue-references-and-move-semantics-in-c++11.html">移动语义</a>中使用<code>v8::UniquePersistent&lt;T&gt;</code>。<br>或者，你可以通过具有拷贝特性的<code>v8::Persistent&lt;T&gt;</code>,但是要保证这么做不会导致资源泄露或者在释放后再使用的问题：  </p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">CopyablePersistentTraits</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;::</span><span class="n">CopyablePersistent</span> <span class="n">persistent</span><span class="p">;</span>
+    <span class="n">persistent</span><span class="p">.</span><span class="n">Reset</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="cm">/* ... */</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<h2><a name="persistent" class="anchor" href="#persistent"><span class="header-link"></span></a>弱引用persistent句柄的回调函数参数更改</h2>
+<p>一个正常的persistent句柄会被垃圾回收器忽略掉，一直到程序手动释放才会被回收。<br>相反，弱引用persistent句柄会被垃圾回收器跟踪，当需要回收时，回收器会通过回调函数通知程序。接着程序释放掉关联的资源或者复用这个句柄如果对象还要在后续使用的话。<br>在Node v0.10中这么写：  </p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="kt">void</span> <span class="nf">WeakCallback</span><span class="p">(</span><span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">object</span><span class="p">,</span> <span class="kt">void</span><span class="o">*</span> <span class="n">arg</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">puts</span><span class="p">(</span><span class="k">static_cast</span><span class="o">&lt;</span><span class="k">const</span> <span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="n">arg</span><span class="p">));</span>
+      <span class="n">object</span><span class="p">.</span><span class="n">Dispose</span><span class="p">();</span>  <span class="c1">// or .ClearWeak() if you want to keep it around</span>
+    <span class="p">}</span>
+
+    <span class="kt">void</span> <span class="nf">Example</span><span class="p">()</span> <span class="p">{</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">HandleScope</span> <span class="n">handle_scope</span><span class="p">;</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">object</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Object</span><span class="o">::</span><span class="n">New</span><span class="p">();</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">persistent</span> <span class="o">=</span>
+          <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;::</span><span class="n">New</span><span class="p">(</span><span class="n">object</span><span class="p">);</span>
+      <span class="n">persistent</span><span class="p">.</span><span class="n">MakeWeak</span><span class="p">(</span><span class="k">const_cast</span><span class="o">&lt;</span><span class="kt">char</span><span class="o">*&gt;</span><span class="p">(</span><span class="s">&quot;fortytwo&quot;</span><span class="p">),</span> <span class="n">WeakCallback</span><span class="p">);</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="kt">void</span> <span class="nf">WeakCallback</span><span class="p">(</span><span class="k">const</span> <span class="n">v8</span><span class="o">::</span><span class="n">WeakCallbackData</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="p">,</span> <span class="k">const</span> <span class="kt">char</span><span class="o">*&gt;&amp;</span> <span class="n">data</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">puts</span><span class="p">(</span><span class="n">data</span><span class="p">.</span><span class="n">GetParameter</span><span class="p">());</span>
+      <span class="c1">//persistent的存储单元将会自动清除。</span>
+      <span class="c1">//如果你想保持对原始v8::Persistent&lt;T&gt;的引用，你可以使用.ClearWeak()来复用它。</span>
+    <span class="p">}</span>
+
+    <span class="kt">void</span> <span class="nf">Example</span><span class="p">(</span><span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span><span class="p">)</span> <span class="p">{</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">HandleScope</span> <span class="n">handle_scope</span><span class="p">(</span><span class="n">isolate</span><span class="p">);</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">object</span> <span class="o">=</span> <span class="n">v8</span><span class="o">::</span><span class="n">Object</span><span class="o">::</span><span class="n">New</span><span class="p">(</span><span class="n">isolate</span><span class="p">);</span>
+      <span class="n">v8</span><span class="o">::</span><span class="n">Persistent</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">persistent</span><span class="p">(</span><span class="n">isolate</span><span class="p">,</span> <span class="n">object</span><span class="p">);</span>
+      <span class="n">persistent</span><span class="p">.</span><span class="n">SetWeak</span><span class="p">(</span><span class="s">&quot;fortytwo&quot;</span><span class="p">,</span> <span class="n">WeakCallback</span><span class="p">);</span>
+    <span class="p">}</span>
+</pre></div>
+</code></pre>
+<h2><a name="v8throwexception-v8isolatethrowexception" class="anchor" href="#v8throwexception-v8isolatethrowexception"><span class="header-link"></span></a>v8::ThrowException()现在变成了 v8::Isolate::ThrowException()</h2>
+<p>在Node v0.10中这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">exception</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">ThrowException</span><span class="p">(</span><span class="n">exception</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+<p>在Node v0.12中这么写：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre>    <span class="n">v8</span><span class="o">::</span><span class="n">Isolate</span><span class="o">*</span> <span class="n">isolate</span> <span class="o">=</span> <span class="cm">/* ... */</span>
+    <span class="n">v8</span><span class="o">::</span><span class="n">Local</span><span class="o">&lt;</span><span class="n">v8</span><span class="o">::</span><span class="n">Value</span><span class="o">&gt;</span> <span class="n">exception</span> <span class="o">=</span> <span class="cm">/* ... */</span><span class="p">;</span>
+    <span class="n">isolate</span><span class="o">-&gt;</span><span class="n">ThrowException</span><span class="p">(</span><span class="n">exception</span><span class="p">);</span>
+</pre></div>
+</code></pre>
+</div>
+
+  <div class="comments">
+    <a href="/posts/node0-12capi/#comments">
+      <span class="icon-bubbles"></span>
+      Comments
+    </a>
+  </div>
+
+  <div class="post-head group">
   <a href="/posts/js/">
     <h1 class="post-title">js异步之惑</h1>
   </a>
@@ -167,7 +423,7 @@
 <span class="nx">setTimeout</span> <span class="mi">0</span> <span class="nx">occured</span> <span class="nx">second</span><span class="p">.</span>
 </pre></div>
 </code></pre>
-<p><strong>输出2.1</strong><br>跟java中的异步和同步代码会交叉输出相比，js中的异步其实是排好队输出的。由于js是单线程执行代码的，所以没有那种交叉输出的效果。那么还有一个问题，while循环明明运行了5秒钟，为何在这期间那两个setTimeout一直没有运行呢？这就和js代码的异步机制有关了。js代码中有帧的概念，对于同步代码是在当前帧运行的，异步代码是在下一帧运行的。对于代码2.1我们给代码运行画一幅图的话，应该是这样的：<br><img src="http://blog.whyun.com/images/js_frame.png" alt="js帧结构"><br><strong>图2.1 js帧结构</strong><br>那么为什么是第一个setTimeout先触发，第二个后触发呢，难道仅仅由于先后顺序？我们把第一个setTimeout改为<code>setTimeout(function() {console.log(&#39;setTimeout 0 occured first.&#39;);},100);</code>,那么输出的时候就会是先输出<code>setTimeout 0 occured second.</code>,在输出<code>setTimeout 0 occured first.</code>。也就是说在第二帧setTimeout的回调的执行顺序不仅与代码顺序有关还和延迟时间有关。<br>在node.js中还有一个特殊的API，就是<code>process.nextTick</code>,虽然已经不推荐使用了，但是已经可以在很多代码中看到它的身影。例如如下代码：</p>
+<p><strong>输出2.1</strong><br>跟java中的异步和同步代码会交叉输出相比，js中的异步其实是排好队输出的。由于js是单线程执行代码的，所以没有那种交叉输出的效果。那么还有一个问题，while循环明明运行了5秒钟，为何在这期间那两个setTimeout一直没有运行呢？这就和js代码的异步机制有关了。js代码中有帧的概念，对于同步代码是在当前帧运行的，异步代码是在下一帧运行的。对于代码2.1我们给代码运行画一幅图的话，应该是这样的：<br><img src="https://blog.whyun.com/images/js_frame.png" alt="js帧结构"><br><strong>图2.1 js帧结构</strong><br>那么为什么是第一个setTimeout先触发，第二个后触发呢，难道仅仅由于先后顺序？我们把第一个setTimeout改为<code>setTimeout(function() {console.log(&#39;setTimeout 0 occured first.&#39;);},100);</code>,那么输出的时候就会是先输出<code>setTimeout 0 occured second.</code>,在输出<code>setTimeout 0 occured first.</code>。也就是说在第二帧setTimeout的回调的执行顺序不仅与代码顺序有关还和延迟时间有关。<br>在node.js中还有一个特殊的API，就是<code>process.nextTick</code>,虽然已经不推荐使用了，但是已经可以在很多代码中看到它的身影。例如如下代码：</p>
 <pre><code><div class="highlight"><pre><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
     <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured first.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
     <span class="nx">setTimeout</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span><span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;setTimeout 0 occured second.&#39;</span><span class="p">);},</span><span class="mi">0</span><span class="p">);</span>
@@ -410,94 +666,6 @@
     </a>
   </div>
 
-  <div class="post-head group">
-  <a href="/posts//">
-    <h1 class="post-title">同步和异步回调</h1>
-  </a>
-  <span class="post-date">2015 &#183; 2 &#183; 18</span>
-</div>
-
-<div class="post-body markdown"><h1><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步和异步回调</h1>
-<p><em>作者：havoc (原文地址：<a href="http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/"><a href="http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/">http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/</a></a>)</em></p>
-<p>这里讲两个使用callback设计API的指南，并且添加到我的杂记<a href="http://blog.ometer.com/2011/01/20/boolean-parameters-are-wrong/" title="作者显然是贴错地址了，译者注">posts about minor API design points</a>中。我之前多次在不同的场合发起过关于“sync vs. async”回调的问题。这个问题着实困扰着API设计者和使用者。<br>最近，这个问题在我处理<a href="https://github.com/bwmcadams/hammersmith">Hammersmith</a>（一个基于callback回调的MongoDB的Scale API）又被提起。我认为这（这里指基于回调的API，译者注）对大量的JVM代码编写者来说稍微有些 <em>不习惯（new consideration）</em> ，因为传统的JVM使用堵塞API和线程。对于我来说，已经很熟悉编写基于<a href="https://developer.gnome.org/glib/unstable/glib-The-Main-Event-Loop.html">事件循环</a>的客户端代码。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>介绍</h2>
-<ul>
-<li>一个<strong>同步（synchronous）</strong>回调在函数返回之前执行，也就是说， <em>当API在调用时callback也处在上下文中(这句话的原文是：while the API receiving the callback remains on the stack)</em> 。例子可以是这样的：<code>list.foreach(callback);</code>在<code>foreach()</code>返回时，你可以预期到callback已经在所有元素上都被执行了。</li>
-<li><p>一个<strong>异步（asynchronous）</strong>或者<strong>延迟（deferred）</strong>回调，在函数返回之后执行，或者至少在另一个线程的栈空间中执行。延迟（deferral）的架构包括线程和主循环【main loops】(其他名字包括event loops,dispatchers,executors)。异步回调在IO相关的API中很流行，例如<code>socket.connect(callback);</code>，你会预期在<code>connect（）</code>返回时，callback可能还没有被调用，因为他正在等待连接建立完毕。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>指南</h2>
-<p>基于过往经验，我使用这两条规则：</p>
-</li>
-<li><p>给出的回调不能一直是同步的或者异步的，而是应该将其作为API文档的一部分加以说明。</p>
-</li>
-<li>异步回调需要被主循环中或者 <em>中心分发组件（central dispatch mechanism）</em> 直接调用，也就是说，别在回调执行的栈中存在非必须的代码块，特别是这些代码块可能含有锁的时候。</li>
-</ul>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步回调和异步回调有啥不同？</h2>
-<p>同步和异步回调对于包括app和类库在内的开发者造成问题是不一样的。<br>同步回调：</p>
-<ul>
-<li>在 <em>原始（original）</em> 线程中执行（触发回调和回调执行是一个线程，这里原始线程被指做回调触发的线程，译者注），所以自身不需要关心线程安全。</li>
-<li>在类C/C++语言中，可以读取存储在栈上的数据，比如说本地变量。</li>
-<li>在任一语言中，他们可以访问绑定到当前线程上的数据，比如说thread-local类型变量。比如许多java web框架在当前事务或者请求中创建thread-local类型的变量。</li>
-<li><p>可以假定某些应用程序的状态不变，比如说对象存在、定时器没有被触发、IO访问没有发生，或者任一一个程序关联的结构的状态。
-异步回调：</p>
-</li>
-<li><p>可能会在另一个线程（在基于线程的异步架构中）中被调用，所以应用需要使回调同步访问的任意一个资源。</p>
-</li>
-<li>不能访问任意一个 <em>原始</em> 堆栈或者线程，比如说局部变量或者thread-local类型数据。</li>
-<li>如果 <em>原始</em> 线程中持有锁，那么回调应在锁的外面被调用。</li>
-<li>需要假定其他的线程或者事件可能已经修改了应用程序的状态。</li>
-</ul>
-<p>不能说哪个回调方式更好，都有其优点。试想一下：<br><code>list.foreach(callback)</code><br>大多数情况下，如果callback被延迟调用并且在当前线程中没有做任何操作，你可能会十分惊讶。<br>但是：<br><code>socket.connect(callback)</code><br>如果不延迟调用callback就显得完全没有意义了，为啥要设置一个callback呢？<br>这两个例子告诉我们为什么一个给出的回调要被定义为同步或者异步，它们是不可以互换的，同时也拥有不同的用途。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>选择同步或者异步，但是不能同时使用</h2>
-<p>显而易见，可能在某些场景中需要立即执行回调（当数据已经准备好了情况），在另外一些场景回调需要延迟调用（socket没有准备好的情况）。一个很诱人的做法是，在可能的情况下同步执行回调，在另外的情况的异步执行。但是不是一个好想法。<br>因为同步和异步拥有不同的规则，他们产生不同的bug。在测试环境下触发异步回调，但是生产环境的某些不常见场景下，按照同步来运行了，是很典型的。<br>要求应用程序开发者同时对同步和异步情况进行规划和测试是很困难的，所以最简单的就是用库函数来实现：<strong>如果一个回调在某些情况下延迟支持，那么一直使用延迟的方式</strong>。</p>
-<h2><a name="gio" class="anchor" href="#gio"><span class="header-link"></span></a>例子：GIO</h2>
-<p>在GIO库中的<a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html">GSimpleAsyncResult文档</a>有一个针对当前问题的典型例子，直接滑过描述章节，看异步烘烤蛋糕的例子。（GSimpleAsyncResult可以等同于一些框架中的future或者promise。）这个类中提供了两个方法， <a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html#g-simple-async-result-complete-in-idle">complete_in_idle() </a>函数将回调交由一个“空闲句柄”（ <em>是一个立即调度的一次性事件循环，原文是：just an immediately-dispatched one-shot main loop event</em> ）来延迟调用；普通的<a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html#g-simple-async-result-complete">complete()</a>函数同步触发回调。文档中建议，尽量使用complete_in_idle()，除非你知道你已经处在一个没有持有任何锁的回调中（也就是说，你正好处在从一个异步回调到另一个函数的调用链上，那就没有必要再做异步处理了）。  </p>
-<p>GSimpleAsyncResult旨在实现类似于<a href="http://developer.gnome.org/gio/unstable/GFile.html#g-file-read-async" title=" g_file_read_async()">g_file_read_async()</a>这种IO API，开发者可以假定所有使用这些API的回调都是异步的。</p>
-<p>GIO使用这种方式并且在文档中强制声明出来，因为开发者开发的时候曾经（因为文档不明确，译者注）备受煎熬。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步资源需要延迟运行所有它们触发的回调函数</h2>
-<p>事实上，这个规则是说，一个类库需要在回调触发之前释放掉它持有的所有锁。释放掉所有锁的最简单的方式就是使回调异步，延迟调用它直到上下文回到主循环或者在另一个线程的上下文中调用它。(也就是说在当前上下文环境中所有代码——包括释放掉锁的代码——执行完毕，然后才在主循环或者另一线程中执行回调，译者注)</p>
-<p>这一点很重要，因为不能预计到应用程序不在回调内部接触你的API。如果你持有锁并且程序（在回调内部，译者注）接触到了你的API，程序就会死锁。（或者如果你使用递归锁，你同样会遇到可怕的问题。）</p>
-<p>与其将回调延迟到主循环或者线程中，同步的资源可以尝试释放掉它所有的锁；但是他是<strong>非常</strong>痛苦的，因为锁可能恰好在上下文中，你最终需要使每个上下文中的函数返回回调函数，将回调函数一直留存给最外部锁的持有者，然后释放掉锁并且触发回调。呸。</p>
-<h2><a name="akkahammersmith" class="anchor" href="#akkahammersmith"><span class="header-link"></span></a>例子：不使用Akka的Hammersmith</h2>
-<p>在前面提到的Hammersmith中，下面给出的伪码会产生死锁：</p>
-<pre><code><div class="highlight"><pre><span class="nx">connection</span><span class="p">.</span><span class="nx">query</span><span class="p">({</span> <span class="nx">cursor</span> <span class="o">=&gt;</span> <span class="cm">/* iterate cursor here, touching connection again */</span> <span class="p">})</span>
-</pre></div>
-</code></pre>
-<p>遍历游标时会反过来访问MongoDB的connection。在connection对象的代码中触发query的回调函数...，而这个connection对象还持有连接锁。虽然不能正常工作，但是这种代码对于开发者来说是很顺手的。如果一个类库不延迟调用回调函数，应用开发者需要自己延迟调用它。大多数应用开发者在开始的时候都会出错，一旦他们捕获到错误并且修正，他们的代码就会被一些异步架构搞的乱七八糟。</p>
-<p>Hammersmith从Netty中继承了这个问题，Netty也是这样使用connection的；Netty没有试图去延迟调用回调函数（我可以立即这种行为，毕竟在java中没有一个明确的 默认/标准/通用/有效 方式来延迟调用回调函数）。</p>
-<p>起初，我对它的修正是添加<a href="https://github.com/havocp/hammersmith/commit/48c6d4b486357d9af17bf4ee5f8042a4944c41bf">一个线程池来运行程序的回调</a>。不幸的是，这个推荐的和Netty一起使用的线程池类并没有解决死锁问题，<a href="https://github.com/havocp/hammersmith/commit/16fb3103851af00d6aa7780c182169e68c41aa45">我只能接着修复它</a>。（所有解决死锁问题的线程池都得拥有无限的容量和资源……）</p>
-<p>最终它终于能用了，但是想想一下，如果基于回调的API流行起来之后，每个jar包你都在它的API中使用回调函数，那么就必须拥有一个线程池。想想也是醉了。这很有可能就是为啥Netty在这个问题上要赌一把。在一个底层网络类库上太难做策略控制了。</p>
-<h2><a name="akka-actor" class="anchor" href="#akka-actor"><span class="header-link"></span></a>例子：AKKA Actor</h2>
-<p>部分由于要寻找一个更有的解决方案，之后我将<a href="https://github.com/bwmcadams/hammersmith">Hammersmith</a> 迁移到 <a href="http://akka.io/">Akka</a> 上来。Akka实现了<a href="https://zh.wikipedia.org/wiki/%E5%8F%83%E8%88%87%E8%80%85%E6%A8%A1%E5%BC%8F">Actor模式</a>。Actor是基于消息而不是基于回调的，一般来说消息还<strong>必须</strong>得是延迟发送的。事实上，Akka还特意强制你使用一个<a href="http://akka.io/api/akka/snapshot/akka/actor/ActorRef.html">ActorRef</a>用来和actor进行通信，所有关联ActoRref的消息都经过一个dispatcher（事件循环）。假定你有两个actor进行通信，他们将使用<code>!</code>或者“发送消息”函数：</p>
-<pre><code><div class="highlight"><pre><span class="nx">actorOne</span> <span class="o">!</span> <span class="nx">Request</span><span class="p">(</span><span class="s2">&quot;Hello&quot;</span><span class="p">)</span>
-<span class="c1">// then in actorOne</span>
-<span class="nx">sender</span> <span class="o">!</span> <span class="nx">Reply</span><span class="p">(</span><span class="s2">&quot;World&quot;</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<p>这些消息都通过事件循环进行分发的。我希望我的死锁问题能够在这种模式下得到解决，但是我在调用带有锁的回调函数时，还是遇到了小麻烦——同样的问题又被触发了。这次的锁是在actor处理消息时锁住actor本身。</p>
-<p>Akka中的actor可以从其他actor或者从<code>Future</code>中接收消息，Akka将发送者封装在一个称作<code>Channel</code>的对象中。通过<code>!</code>来发送消息到一个actor时，就会将这个消息交给dispather来做延迟，但是发送到future就不会；因此，在API约定上，<code>Channel</code>上的<code>!</code>方法并没有决定是当前是使用同步还是异步。</p>
-<p>那么问题来了，actor模式中的一个重点就是一个actor在同一时间内仅仅只能运行在一个线程中；actor在处理某个消息的时候是不允许另一个消息再进入的。因此，在actor外部产生同步调用是很危险的；在actor上有锁，如果同步调用时试图在回调中再次使用actor本身，就会产生死锁。</p>
-<p>我将MongoDB connection包装成一个actor，立马就重现了和Netty中同样的死锁问题，也就是在query的回调中试图在遍历游标的时候再次访问connection。query的回调是由<code>!</code>方法在发送到future上时触发的。这个<code>Channel</code>上的<code>!</code>方法打破了我的第一条原则（它没有在API约定上定义成同步或者异步），但是我期望它能够一直都是异步的；结果我还意外的打破了我的第二条原则，触发回调时还持有锁。</p>
-<p>如果是我，我将在API约定中吧<code>Channel.!</code>置为延迟，来修正这个问题；但是，正如Akka写的那样，如果你实现这样一个actor，发送回复，并且你程序的回复处理句柄想反回来重新使用actor本身，你必须手动延迟发送这些回复。我偶然间发现了这个实现方式，然而应该还有一个更好的实现方式：</p>
-<pre><code><div class="highlight"><pre><span class="kr">private</span> <span class="nx">def</span> <span class="nx">asyncSend</span><span class="p">(</span><span class="nx">channel</span><span class="o">:</span> <span class="nx">AkkaChannel</span><span class="p">[</span><span class="nx">Any</span><span class="p">],</span> <span class="nx">message</span><span class="o">:</span> <span class="nx">Any</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="nx">Future</span><span class="p">(</span><span class="nx">channel</span> <span class="o">!</span> <span class="nx">message</span><span class="p">,</span> <span class="nx">self</span><span class="p">.</span><span class="nx">timeout</span><span class="p">)(</span><span class="nx">self</span><span class="p">.</span><span class="nx">dispatcher</span><span class="p">)</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p>这个解决方案令人不爽的地方是，为了将回复交给future做异步处理，那么对于actor的回复就是两次异步了。</p>
-<p>还好，对于Akka来说至少它<strong>拥有</strong>解决方案——使用dispatcher。如果使用纯Netty，我就不得不使用一个专门的线程池了。</p>
-<p>Akka给出了“如何是回调异步”的答案，但是它还需要一些特殊用途的（special-casing）future来保证它们确实是异步的。<br>（<strong>更新：</strong>Akka团队已经准备解决这个问题，<a href="https://www.assembla.com/spaces/akka/tickets/1054-complete-futures-asynchronously-when-replying-through-a-channel">详情查看</a>。）</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>总结</h2>
-<p>相对于我发现的Akka的小麻烦，没有使用Akka的JVM环境下的情况将会更糟，因为这时是没有一个dispatcher可供使用的。<br><strong>基于回调的API在有事件循环的时候会运行的很好</strong> ，因为拥有异步触发回调的功能是很重要的。<br>这也就是为啥在客户端javascript和<a href="http://nodejs.org/">node.js</a>还有类似于<a href="http://www.gtk.org/">GTK+</a>的UI组件库中回调运行的很完美。但是如果你在JVM中开始编写基于回调的API，就是没有默认解决方案的。你不得不借鉴一些事件循环类库（Akka工作的很好），或者重新造轮子，或者随处使用线程池。</p>
-<p>鉴于基于回调的API如此的时髦……如果你准备写一个，我想前面的这个话题你也会遇到。打完收工。</p>
-</div>
-
-  <div class="comments">
-    <a href="/posts//#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
-
 
 <div class="pagination group">
   
@@ -518,6 +686,9 @@
     
     
       <a href="/page/4/" class="older"> &#8592; Older</a>
+    
+  
+    
     
   
     
