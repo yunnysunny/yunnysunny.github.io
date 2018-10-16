@@ -108,6 +108,7 @@
 <p><strong>图 2 .2 young/old</strong></p>
 <p>缓存数据在写入的时候，现如 young 区域，程序内置定时器每隔固定时间将 young 区域赋值到 old 区域，同时清空 young 区域。</p>
 <p>使用时要注意缓存击穿问题。比如说笔者曾经犯过的一个问题，在将 Redis 的查询的结果缓存到闪存，但是如果查询结果为空，没有将空的这个结果缓存下来，所以说对于 key 值不存在的情况，每次都是缓存不命中中的，每次都会请求 Redis。解决的问题也很简单，就是在闪存中保存一个空串。</p>
+<p>对应的源代码解决方案参见 <a href="https://www.npmjs.com/package/flash-cache">flash-cache</a>。</p>
 <h3><a name="2-3" class="anchor" href="#2-3"><span class="header-link"></span></a>2.3 镜像</h3>
 <p>前段时间，我们接手了一个 IM 项目，要求实现类似于钉钉的功能，在线可以实时接收数据，离线后上线，可以查看未读历史记录。考虑到是一个实时系统，我们的没有选择直接读取 mongodb，而是将数据先写入 Redis 中。同时将实时聊天记录打入 Kafka，然后通过消费者程序同步到 mongodb。Redis 中存储的数据可以理解成 mongodb 中的镜像，读取的时候，先读取 Redis，只有在 Redis 中查询不到的时候才读取 mongodb （实际上这种情况几乎不可能发生，因为我们在 Redis 中缓存失效时间很长）。</p>
 <p>镜像中一般用来映射数据库中的表记录，采用的 key 类型为 sorted set。但是数据库中的数据量是巨大的，全部缓存到一个 key 中，对于 Redis 是不友好的，所以说需要按天拆分 key。</p>
