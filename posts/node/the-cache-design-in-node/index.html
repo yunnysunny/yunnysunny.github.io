@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html>
   <head>
@@ -6,8 +7,10 @@
     <link rel="icon" type="image/png" href="/images/cabin.png" >
     <link href="/styles/main.css" rel="stylesheet">
     
-    <title>白一梓的博客</title>
+    <title>Node 缓存优化之路</title>
     
+    
+    <meta name="description" content="教你如何在Node中使用缓存，解决高并发问题">
     
 	<style type="text/css">
 
@@ -64,8 +67,7 @@
     </nav>
     <div class="content">
 
-
-  <div class="post-head group">
+<div class="post-head group">
   <a href="/posts/node/the-cache-design-in-node/">
     <h1 class="post-title">Node 缓存优化之路</h1>
   </a>
@@ -116,106 +118,30 @@
 <p>关于性能调优的方法和工具，可以参见我写的《Node 基础教程》中的第11章 <a href="https://github.com/yunnysunny/nodebook/blob/master/text/11_node_optimization.md">Node 调优</a>。</p>
 </div>
 
-  <div class="comments">
-    <a href="/posts/node/the-cache-design-in-node/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
+<a name="comments"></a>
+<div id="disqus_thread"></div>
+<script>
 
-  <div class="post-head group">
-  <a href="/posts//the-design-of-sso-between-diffrent-domain/">
-    <h1 class="post-title">跨越万水千山认识你,跨根域的单点登陆设计</h1>
-  </a>
-  <span class="post-date">2018 &#183; 5 &#183; 27</span>
-</div>
+/**
+*  RECOMMENDED CONFIGURATION VARIABLES: EDIT AND UNCOMMENT THE SECTION BELOW TO INSERT DYNAMIC VALUES FROM YOUR PLATFORM OR CMS.
+*  LEARN WHY DEFINING THESE VARIABLES IS IMPORTANT: https://disqus.com/admin/universalcode/#configuration-variables*/
 
-<div class="post-body markdown"><p>现在我们越来越喜欢使用第三方账号（QQ、微博）来登陆各种网站，比如说只要你的 QQ 在线，点几下鼠标就可以登陆一个第三方网站，最多让你在第一次登陆的时候补充一下手机号或者邮箱地址，下次就可以直接使用 QQ登陆了。但是，我们这篇文章并不是解释这种登陆模式的，这种登陆模式用户体系其实在 QQ 和 微博获取，如果需要单点登陆的网站的用户数据本来就拿到，就不用费这么都周折了，比如说下面这种。</p>
-<blockquote>
-<p>本教程链接 <a href="https://blog.whyun.com/posts//the-design-of-sso-between-diffrent-domain/">https://blog.whyun.com/posts//the-design-of-sso-between-diffrent-domain/</a> ，转载请注明出处</p>
-</blockquote>
-<p>想想这种情况，假设你是一个电商网站，叫某宝，后来你的业务发展了，你又做了一个子产品网站，叫某猫，你肯定想用户登陆一次，就能畅游两个网站。也许你会想，某宝和某猫可以做成挂在同一个一级域名下的二级域名，比如说 tao.xxx.com 和 mao.xxx.com，然后登陆的时候 cookie 写入 xxx.com，就能实现 session 共享了。很遗憾的告诉你，某宝和某猫是两个平行的子公司，根本就不会共用一个一级域名。我们姑且将这两个公司的域名记为 tao.com 和 mao.com 。</p>
-<p>用户在一个节点登陆完成之后，我们在前端需要将登陆凭证写入 cookie ，这样用户再在这个节点上发起请求的时候，会把 cookie 带入请求头发给这个节点的服务器端，服务器端就能判断用户是否在线了。不过现在用户在节点 A 登陆后，根本就没法将 cookie 写入 B 节点，好像问题陷入了死结。我们再来从头分析一下，问题的症结是 cookie 不能跨一级域名写入，那么我们就让它写入一个节点好了，解决问题的关键就是增加一个中心节点，专门用来记录 cookie，哪个节点需要读取 cookie，就从这个中心节点读取即可了。</p>
-<p><img src="https://blog.whyun.com/images/sso.png" alt="sso登陆时序图"></p>
-<p>关键的一个步骤，就是第 2 步，jsonp 的原理其实就是生成一个异域的 script 标签，但是这里请求 sso.com 的时候，会在请求上带入 sso.com 本身的 cookie！然后我们再在 JavaScript 代码中将这个 cookie 信息赋值给 js 变量，这样 tao.com 就能通过 js 得到 sso.com 的 cookie 了。</p>
-<p>为了简化教程，这里只给出 tao.com 前端代码：</p>
-<pre><code class="lang-html"><div class="highlight"><pre><span class="cp">&lt;!DOCTYPE html&gt;</span>
-<span class="nt">&lt;html&gt;</span>
-  <span class="nt">&lt;head&gt;</span>
-    <span class="nt">&lt;meta</span> <span class="na">charset=</span><span class="s">&quot;utf-8&quot;</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;title&gt;</span>首页<span class="nt">&lt;/title&gt;</span>
-    <span class="nt">&lt;link</span> <span class="na">rel=</span><span class="s">&#39;stylesheet&#39;</span> <span class="na">href=</span><span class="s">&#39;/stylesheets/style.css&#39;</span> <span class="nt">/&gt;</span>
-  <span class="nt">&lt;/head&gt;</span>
-  <span class="nt">&lt;body&gt;</span>
-    <span class="nt">&lt;h1&gt;</span>首页<span class="nt">&lt;/h1&gt;</span>
-    <span class="nt">&lt;input</span> <span class="na">type=</span><span class="s">&quot;hidden&quot;</span> <span class="na">id=</span><span class="s">&quot;js-data-hidden&quot;</span> <span class="na">js-domain=</span><span class="s">&quot;&lt;%=domain%&gt;&quot;</span><span class="nt">&gt;</span>
-    <span class="nt">&lt;script </span><span class="na">src=</span><span class="s">&quot;https://upcdn.b0.upaiyun.com/libs/jquery/jquery-2.0.3.min.js&quot;</span><span class="nt">&gt;&lt;/script&gt;</span>
-    <span class="nt">&lt;script&gt;</span>
-        <span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">ready</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-            <span class="kd">var</span> <span class="nx">$data</span> <span class="o">=</span> <span class="nx">$</span><span class="p">(</span><span class="s1">&#39;#js-data-hidden&#39;</span><span class="p">);</span>
-            <span class="kd">var</span> <span class="nx">domain</span> <span class="o">=</span> <span class="nx">$data</span><span class="p">.</span><span class="nx">attr</span><span class="p">(</span><span class="s1">&#39;js-domain&#39;</span><span class="p">);</span>
-            <span class="kd">var</span> <span class="nx">redirect</span> <span class="o">=</span> <span class="nb">encodeURIComponent</span> <span class="p">(</span><span class="s1">&#39;http://&#39;</span> <span class="o">+</span> <span class="nx">domain</span><span class="p">);</span>
-            <span class="kd">var</span> <span class="nx">ssoBaseUrl</span> <span class="o">=</span> <span class="s1">&#39;http://sso.com&#39;</span><span class="p">;</span>
-            <span class="nx">$</span><span class="p">.</span><span class="nx">getJSON</span><span class="p">(</span><span class="nx">ssoBaseUrl</span> <span class="o">+</span> <span class="s1">&#39;/get-ticket?callback=?&#39;</span><span class="p">).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">data</span><span class="p">.</span><span class="nx">ticket</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="k">return</span> <span class="nx">$</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s1">&#39;/get-user-info?ticket=&#39;</span><span class="o">+</span><span class="nx">data</span><span class="p">.</span><span class="nx">ticket</span><span class="p">);</span>
-                <span class="p">}</span>
-                <span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="nx">ssoBaseUrl</span> <span class="o">+</span> <span class="s1">&#39;/login?redirect=&#39;</span> <span class="o">+</span> <span class="nx">redirect</span><span class="p">;</span>
-            <span class="p">}).</span><span class="nx">then</span><span class="p">(</span><span class="kd">function</span><span class="p">(</span><span class="nx">result</span><span class="p">)</span> <span class="p">{</span>
-                <span class="k">if</span> <span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">code</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
-                    <span class="k">return</span> <span class="nx">alert</span><span class="p">(</span><span class="nx">result</span><span class="p">.</span><span class="nx">msg</span> <span class="o">||</span> <span class="s1">&#39;逻辑错误&#39;</span><span class="p">);</span>
-                <span class="p">}</span>
-                <span class="nx">location</span><span class="p">.</span><span class="nx">href</span> <span class="o">=</span> <span class="s1">&#39;/user-backend&#39;</span><span class="p">;</span>
-            <span class="p">}).</span><span class="nx">fail</span><span class="p">(</span><span class="kd">function</span><span class="p">()</span> <span class="p">{</span>
-                <span class="nx">alert</span><span class="p">(</span><span class="s1">&#39;网络错误&#39;</span><span class="p">);</span>
-            <span class="p">});</span>
-        <span class="p">});</span>
-    <span class="nt">&lt;/script&gt;</span>
-  <span class="nt">&lt;/body&gt;</span>
-<span class="nt">&lt;/html&gt;</span>
-</pre></div>
-</code></pre>
-<p><strong>代码 1.1 tao.com 登陆状态获取</strong></p>
-<p>这里我们用 ticket 来表示登陆成功之后写入 sso.com 的 cookie 的变量。上面代码的逻辑还是比较清晰的，首先通过 jsonp 获取 ticket ：如果获取到了就到了就在 tao.com 的后端，通过 ticket 查询出对应的用户 ID 回来，然后将登陆用户数据写入 tao.com 本身的 session中；如果没有获取到 ticket，就跳转到 sso.com 完成登陆，并生产成 ticket，登陆完成后再跳转会 tao.com。</p>
-<blockquote>
-<p>本教程关联的完整代码，参见这里 <a href="https://gitee.com/yunnysunny/sso-demo">https://gitee.com/yunnysunny/sso-demo</a></p>
-</blockquote>
-</div>
+var disqus_config = function () {
+this.page.url = location.href;  // Replace PAGE_URL with your page's canonical URL variable
+this.page.identifier = location.pathname; // Replace PAGE_IDENTIFIER with your page's unique identifier variable
+};
 
-  <div class="comments">
-    <a href="/posts//the-design-of-sso-between-diffrent-domain/#comments">
-      <span class="icon-bubbles"></span>
-      Comments
-    </a>
-  </div>
+(function() { // DON'T EDIT BELOW THIS LINE
+var d = document, s = d.createElement('script');
+s.src = 'https://yunnysunny.disqus.com/embed.js';
+s.setAttribute('data-timestamp', +new Date());
+(d.head || d.body).appendChild(s);
+})();
+</script>
+<noscript>Please enable JavaScript to view the <a href="https://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
 
 
-<div class="pagination group">
-  
-    
-    
-  
-    
-    
-      <a href="/page/1/" class="older"> &#8592; Older</a>
-    
-  
-    
-    
-  
-    
-    
-  
-    
-    
-  
-    
-    
-  
-    
-    
-  
-</div>
+
     </div>
     <script src="//upcdn.b0.upaiyun.com/libs/jquery/jquery-1.10.2.min.js" type="text/javascript"></script>
     <script src="/scripts/main.js" type="text/javascript"></script>

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:image="http://www.google.com/schemas/sitemap-image/1.1">
+<url> <loc>http://blog.whyun.com/posts/node/the-cache-design-in-node/</loc> <lastmod>NaN-NaN-NaN</lastmod> <changefreq>weekly</changefreq> <priority>0.5</priority> </url>
 <url> <loc>http://blog.whyun.com/posts//the-design-of-sso-between-diffrent-domain/</loc> <lastmod>NaN-NaN-NaN</lastmod> <changefreq>weekly</changefreq> <priority>0.5</priority> </url>
 <url> <loc>http://blog.whyun.com/posts/jnindk/use-thrid-part-library-in-ndk/</loc> <lastmod>NaN-NaN-NaN</lastmod> <changefreq>weekly</changefreq> <priority>0.5</priority> </url>
 <url> <loc>http://blog.whyun.com/posts/jni-ndk/</loc> <lastmod>NaN-NaN-NaN</lastmod> <changefreq>weekly</changefreq> <priority>0.5</priority> </url>

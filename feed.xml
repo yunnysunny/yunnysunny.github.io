@@ -1,5 +1,47 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Sun, 27 May 2018 04:32:14 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Sun, 27 May 2018 04:32:14 GMT</pubDate><copyright><![CDATA[2018 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[跨越万水千山认识你,跨根域的单点登陆设计]]></title><description><![CDATA[<p>现在我们越来越喜欢使用第三方账号（QQ、微博）来登陆各种网站，比如说只要你的 QQ 在线，点几下鼠标就可以登陆一个第三方网站，最多让你在第一次登陆的时候补充一下手机号或者邮箱地址，下次就可以直接使用 QQ登陆了。但是，我们这篇文章并不是解释这种登陆模式的，这种登陆模式用户体系其实在 QQ 和 微博获取，如果需要单点登陆的网站的用户数据本来就拿到，就不用费这么都周折了，比如说下面这种。</p>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Tue, 16 Oct 2018 14:24:52 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Tue, 16 Oct 2018 14:24:52 GMT</pubDate><copyright><![CDATA[2018 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[Node 缓存优化之路]]></title><description><![CDATA[<p>当今互联网，越来越往大数据的方向发展。大数据的背后是大用户，你的后端服务必须得有能力承载大用户、高并发的冲击。从宏观上讲，提高并发能力，无怪乎横向扩展（增加服务器节点个数）、纵向扩展（提高单点服务器的处理能力）。横向扩展，常见的有负载均衡，是一种部署的拓扑结构；纵向扩展，更多的体现的在应用程序本身性能提升。计算机中，我们常用拿空间换时间，来提升程序性能，缓存正是这种思想的体现。  </p>
+<blockquote>
+<p>本文链接地址 <a href="https://blog.whyun.com/posts/node/the-cache-design-in-node">https://blog.whyun.com/posts/node/the-cache-design-in-node</a> ,转载请注明出处。</p>
+</blockquote>
+<p>我们这篇文章讲 Node 的缓存设计，不过在切入正题之前，我还是要先讲一下 Node 的线程模型，如下图：</p>
+<p><img src="/images/node_threads.png" alt="Node 线程模型"></p>
+<p><strong>图片0.1 Node 线程模型</strong></p>
+<p>我们常说 Node 是单线程程序，这是由于我们 JavaScript 代码（基于 V8 引擎）正是运行在这个单线程中的，此外我们常说的事件轮询、网络 IO 都是运行在这个线程中的。不过 Node 进程中，并不仅仅只包含这一个线程，它还有一个线程池，用来处理 文件 IO 、crypto 、zlib，还有异步 C++ 模块等操作，只不过，我们平常在 Node 中运用这些操作比较少。</p>
+<h2><a name="1" class="anchor" href="#1"><span class="header-link"></span></a>1. 缓存分类</h2>
+<p>从生命周期上讲，缓存大体上分以下三类，</p>
+<ol>
+<li><p>会话 跟用户登陆状态关联的数据，生命周期长 </p>
+</li>
+<li><p>临时数据，短时间内有效，生命周期短 </p>
+</li>
+<li><p>镜像 数据库的数据镜像，生命周期特长</p>
+</li>
+</ol>
+<h2><a name="2" class="anchor" href="#2"><span class="header-link"></span></a>2. 缓存设计思路</h2>
+<h3><a name="2-1" class="anchor" href="#2-1"><span class="header-link"></span></a>2.1 会话</h3>
+<p>现如今，各种设备终端兴起，很多情况下，我们要自己设计用户会话，而不是直接使用传统 web 中使用的 session，以便更好的适配多端设备，并且能够更好的对性能进行调优。
+一个简单的 session 设计思路，就是生成一个 token，然后将用户数据序列化成 JSON 字符串，最后将 token 和 JSON 字符串的映射关系写入 redis。在读取的时候，根据 token 查询到 JSON 字符串，然后反序列化即可。
+咋一看，这个设计是没有问题的，不过经过性能测试发现，Node 中 JSON 的反序列化性能是不高的，解决这个问题也很简单，我们将 redis 中反序列化的数据缓存到内存即可，这样用户下次请求的 token 验证就直接走内存了。
+不过这又会导致一个问题，如果你的用户量数据巨大，那么内存是不够用的。我们必须得有内存清理机制，否则早晚内存会炸掉。应该怎么清理呢？每天凌晨将内存中的数据清理掉，但是如果白天内存就告急了怎么半？限制内存存储数据个数，在达到内存限制个数后，内存中存储的都是老数据，如果这些老数据都是冷数据，新来的请求还算是会频繁的请求 redis ，做反序列化。
+怎么半？有没有既限制内存数量，且又能读写热数据的思路呢？还真有，这就是 <strong>L</strong>(Least)<strong>R</strong>(Recently)<strong>U</strong>(Used) 算法.。不过如果你使用 JavaScript 编写一个 LRU 算法，就会在 V8 引擎中引入一个耗时操作，这在 Node 中是大忌。我们开头<strong>图0.1</strong>讲过，Node 进程中其实是有一个线程池的，我们何不将这个 LRU 实现代码，在这里实现？
+我写了一个 c++ addon 来处理这个 LRU 算法，刚开始测试的时候性能很不错，看上去完美的解决了这个问题。不过随着时间的推移，我最担心的事情还是发生了，就是进程崩溃了！刚才我们说过，我们借用的是线程池来处理 LRU 算法，但是我们的程序中对于多线程操作，并没有加锁，导致处理的过程中出现脏数据，然后读写非法内存地址，进程就崩溃了。
+我将线程操作加上了锁，不过不幸的事情发生，加锁所导致的性能损耗过大，已经远远慢于不启用 LRU 操作的缓存读写了，这显然不是我们想要的结果。其实细细想来，我们的 LRU 算法处理，仅仅需要一个单线程就足以，但是 Node 中暂时没有单线程操作的 API。庆幸的是 Node 10 中已经引进了 WebWorker 的 API，相信在不久的将来，使用 Node 处理单线程操作将会游刃有余。
+说到这里，我们的优化之路，貌似进入了死胡同，不过当你为一件事情殚精竭虑的时候，上天一定会眷顾你。一个偶然的机会，我发现了 Redis 的内存清理也是使用 LRU 算法的，同时在启用 LRU 时，性能也会下降，这跟我们使用LRU算法的结果是一样的。不过在 Redis 中还有一种算法，用来清理过期key，就是定期遍历 key 列表，从 key 列表中取出 N 个 key，判断其是否过期，如果过期，就删除。Redis 也是单线程，其线程模型和 Node 是类似的，所以它在遍历列表的时候，不会做全量遍历，而是使用定时器。增加定时定量的清理算法后，做性能测试，性能并没有损耗，同时还保证了内存占用在可控范围之内。</p>
+<p>以上就是会话类型的缓存设计历程，对应的源代码已经开源，参见 <a href="https://www.npmjs.com/package/session-token">session-token</a>。</p>
+<h3><a name="2-2" class="anchor" href="#2-2"><span class="header-link"></span></a>2.2 闪存</h3>
+<p>使用闪存，一定是我们允许在短暂时间内缓存数据和真实数据有一定的误差，但是这个误差一定要在允许的范围之内。比如说做阈值处理时，通过 Redis 的 incr 操作做计数器，在达到阈值时就可以把这个值缓存到内存，在达到阈值的短暂时间内，真实的计数器的值我们并不关心。</p>
+<p>整个设计思路类似于 JVM 或者 V8 的新生代 GC 算法：</p>
+<p>  <img src="/images/young_old_area.png" alt="young/old"></p>
+<p><strong>图 2 .2 young/old</strong></p>
+<p>缓存数据在写入的时候，现如 young 区域，程序内置定时器每隔固定时间将 young 区域赋值到 old 区域，同时清空 young 区域。</p>
+<p>使用时要注意缓存击穿问题。比如说笔者曾经犯过的一个问题，在将 Redis 的查询的结果缓存到闪存，但是如果查询结果为空，没有将空的这个结果缓存下来，所以说对于 key 值不存在的情况，每次都是缓存不命中中的，每次都会请求 Redis。解决的问题也很简单，就是在闪存中保存一个空串。</p>
+<h3><a name="2-3" class="anchor" href="#2-3"><span class="header-link"></span></a>2.3 镜像</h3>
+<p>前段时间，我们接手了一个 IM 项目，要求实现类似于钉钉的功能，在线可以实时接收数据，离线后上线，可以查看未读历史记录。考虑到是一个实时系统，我们的没有选择直接读取 mongodb，而是将数据先写入 Redis 中。同时将实时聊天记录打入 Kafka，然后通过消费者程序同步到 mongodb。Redis 中存储的数据可以理解成 mongodb 中的镜像，读取的时候，先读取 Redis，只有在 Redis 中查询不到的时候才读取 mongodb （实际上这种情况几乎不可能发生，因为我们在 Redis 中缓存失效时间很长）。</p>
+<p>镜像中一般用来映射数据库中的表记录，采用的 key 类型为 sorted set。但是数据库中的数据量是巨大的，全部缓存到一个 key 中，对于 Redis 是不友好的，所以说需要按天拆分 key。</p>
+<p>前面说到 key 的类型为 sorted set，那么 score 是什么呢？score 是一个自增数字，我们用自增数字来唯一标识一条聊天记录。者个自增数字使用的是 Redis 的 incr 操作客户端本地存留一个上次阅读到的聊天 Id，服务器端可以根据上次阅读Id，就可以给客户端返回历史记录（操作过程中会涉及到分页查询）。</p>
+<h2><a name="3" class="anchor" href="#3"><span class="header-link"></span></a>3. 性能测试</h2>
+<p>关于性能调优的方法和工具，可以参见我写的《Node 基础教程》中的第11章 <a href="https://github.com/yunnysunny/nodebook/blob/master/text/11_node_optimization.md">Node 调优</a>。</p>
+]]></description><link>http://blog.whyun.com/posts/node/the-cache-design-in-node/</link><guid isPermaLink="true">http://blog.whyun.com/posts/node/the-cache-design-in-node/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Tue, 16 Oct 2018 00:00:00 GMT</pubDate></item><item><title><![CDATA[跨越万水千山认识你,跨根域的单点登陆设计]]></title><description><![CDATA[<p>现在我们越来越喜欢使用第三方账号（QQ、微博）来登陆各种网站，比如说只要你的 QQ 在线，点几下鼠标就可以登陆一个第三方网站，最多让你在第一次登陆的时候补充一下手机号或者邮箱地址，下次就可以直接使用 QQ登陆了。但是，我们这篇文章并不是解释这种登陆模式的，这种登陆模式用户体系其实在 QQ 和 微博获取，如果需要单点登陆的网站的用户数据本来就拿到，就不用费这么都周折了，比如说下面这种。</p>
 <blockquote>
 <p>本教程链接 <a href="https://blog.whyun.com/posts//the-design-of-sso-between-diffrent-domain/">https://blog.whyun.com/posts//the-design-of-sso-between-diffrent-domain/</a> ，转载请注明出处</p>
 </blockquote>
@@ -1252,91 +1294,4 @@ Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告
 <h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>总结</h2>
 <p>相对于我发现的Akka的小麻烦，没有使用Akka的JVM环境下的情况将会更糟，因为这时是没有一个dispatcher可供使用的。<br><strong>基于回调的API在有事件循环的时候会运行的很好</strong> ，因为拥有异步触发回调的功能是很重要的。<br>这也就是为啥在客户端javascript和<a href="http://nodejs.org/">node.js</a>还有类似于<a href="http://www.gtk.org/">GTK+</a>的UI组件库中回调运行的很完美。但是如果你在JVM中开始编写基于回调的API，就是没有默认解决方案的。你不得不借鉴一些事件循环类库（Akka工作的很好），或者重新造轮子，或者随处使用线程池。</p>
 <p>鉴于基于回调的API如此的时髦……如果你准备写一个，我想前面的这个话题你也会遇到。打完收工。</p>
-]]></description><link>http://blog.whyun.com/posts//</link><guid isPermaLink="true">http://blog.whyun.com/posts//</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Wed, 18 Feb 2015 00:00:00 GMT</pubDate></item><item><title><![CDATA[NOOBS安装自定义系统]]></title><description><![CDATA[<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>简介</h2>
-<p>前段时间折腾了一下树莓派，树莓派的操作系统安装时需要自己烧录img文件到SD卡中。烧录SD卡大体分为两种方式一种是吧一个img文件烧录到整张卡中，另一种是通过NBOOBS将多个img文件烧录到一张卡中。前者在windows下通过Win32DiskImager这个软件就能轻松的做到，后者需要使用到NBOOBS，下载地址：<a href="http://downloads.raspberrypi.org/NOOBS_latest">http://downloads.raspberrypi.org/NOOBS_latest</a> 。</p>
-<p>NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安装界面，在安装过程中读取定义好的配置文件，来选择要安装的各个系统。通过上文提到的下载地址下载回来的NOOBS，里面只预置了Raspbian这个系统，但是我们想安装一些自定义的系统改怎么办呢？这就是本文要解决的问题。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>实现</h2>
-<p>关于添加自定义操作系统的问题，在NOOBS的github文档上也是有说明的，详见<a href="https://github.com/raspberrypi/noobs#how-to-create-a-custom-os-version">这里</a>。假设我们现在要安装<a href="http://blog.petrockblock.com/retropie/">RetroPie</a>这个系统，我们首先从<a href="http://blog.petrockblock.com/download/retropie-project-image/">官方地址</a>上把它下载下来。根据github上提到的教程，那么制作NOOBS系统就应该是下面几步。</p>
-<ol>
-<li>下载NOOBS.</li>
-<li>解压下载后的文件。</li>
-<li>进入<code>os</code>文件夹。</li>
-<li>选择其中的一个子文件，拷贝一份新的。这里就拿Raspbin这个文件夹开刀。拷贝完成后，将文件夹改名RetroPie，现在目录下的文件结构如下：</li>
-</ol>
-<p><img src="http://blog.whyun.com/images/noobs_os_dir.jpg" alt="noobs的os文件夹文件列表"><br>下面要依次讲解各个文件的作用。
-5. 好，现在我们修改RetroPie文件夹下的os.json文件，这里面定义的数据将会在安装的时候显示为操作系统的标题和描述等信息。我大体上将其改为如下形式：</p>
-<pre><code><div class="highlight"><pre>    <span class="p">{</span>
-      <span class="s2">&quot;name&quot;</span><span class="o">:</span> <span class="s2">&quot;retropie&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;version&quot;</span><span class="o">:</span> <span class="s2">&quot;2.3&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;release_date&quot;</span><span class="o">:</span> <span class="s2">&quot;2014-05-31&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;kernel&quot;</span><span class="o">:</span> <span class="s2">&quot;3.12&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;description&quot;</span><span class="o">:</span> <span class="s2">&quot;The RetroPie Project started with the idea of turning the Raspberry Pi into a retro-gaming console and evolved ever since.&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;url&quot;</span><span class="o">:</span> <span class="s2">&quot;http://blog.petrockblock.com/retropie/&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;username&quot;</span><span class="o">:</span> <span class="s2">&quot;pi&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;password&quot;</span><span class="o">:</span> <span class="s2">&quot;raspberry&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;feature_level&quot;</span><span class="o">:</span> <span class="mi">123900</span>
-    <span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>配置文件2.1 os.json</strong></p>
-<p>其中<code>name</code>肯定就是名称了，然后是<code>version</code>版本，<code>description</code>描述等信息。<br>同时，我们留意到文件<code>flavours.json</code>中的内容和<code>os</code>中很多重复，可以称作是<code>os.json</code>的简版，这个文件最终要被引导程序读取，显示引导菜单，供给用户选择安装哪些操作系统。注意由于我们的文件夹是复制产生的，所以这个文件也要相应的修改，否则引导菜单发现了两个一模一样的操作系统名称，就会忽略掉其中一个，这样你辛辛苦苦做出来的引导就不管用了。<br>6. 【可选】你可以放一个RetroPie.png来定义一下当前操作系统的logo。<br>7. 【可选】你可以在文件夹<code>slides_vga</code>中放一下说明性的图片，他会在安装过程中当成幻灯片播放出来。<br>8. 这一步是进行分区文件配置，先把做好的分区文件<code>partitions.json</code>贴出来：</p>
-<pre><code><div class="highlight"><pre><span class="p">{</span>
-  <span class="s2">&quot;partitions&quot;</span><span class="o">:</span> <span class="p">[</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;label&quot;</span><span class="o">:</span> <span class="s2">&quot;boot&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;filesystem_type&quot;</span><span class="o">:</span> <span class="s2">&quot;FAT&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;partition_size_nominal&quot;</span><span class="o">:</span> <span class="mi">60</span><span class="p">,</span>
-      <span class="s2">&quot;want_maximised&quot;</span><span class="o">:</span> <span class="kc">false</span><span class="p">,</span>
-      <span class="s2">&quot;uncompressed_tarball_size&quot;</span><span class="o">:</span> <span class="mi">11</span><span class="p">,</span>
-      <span class="s2">&quot;mkfs_options&quot;</span><span class="o">:</span> <span class="s2">&quot;-F 32&quot;</span>
-    <span class="p">},</span>
-    <span class="p">{</span>
-      <span class="s2">&quot;label&quot;</span><span class="o">:</span> <span class="s2">&quot;root&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;filesystem_type&quot;</span><span class="o">:</span> <span class="s2">&quot;ext4&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;partition_size_nominal&quot;</span><span class="o">:</span> <span class="mi">2700</span><span class="p">,</span>
-      <span class="s2">&quot;want_maximised&quot;</span><span class="o">:</span> <span class="kc">true</span><span class="p">,</span>
-      <span class="s2">&quot;mkfs_options&quot;</span><span class="o">:</span> <span class="s2">&quot;-O ^huge_file&quot;</span><span class="p">,</span>
-      <span class="s2">&quot;uncompressed_tarball_size&quot;</span><span class="o">:</span> <span class="mi">2203</span>
-    <span class="p">}</span>
-  <span class="p">]</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p><strong>配置文件2.2 partitions.json</strong></p>
-<p>可以看到在json文件中属性partitions是一个数组类型，数组每个元素定义的是一个分区信息。首先看label为boot的分区，这是一个FAT格式的分区，被用作操作系统启动分区；然后label为root的是ext4分区，里面存放linux操作系统分区。partition_size_nominal是说分区的大小，want_maximised是说当前分区是否需要被扩展，如果为false，则分区的大小就是partition_size_nominal的指定值，如果为true，则noobs会根据sd卡的大小尽量的分配尽可能多的空间给当前分区。<br>9. 之前说过，我们从retropie官网上下载下来它的安装文件，将其解压后我们得到一个img文件。按照noobs给出的文档，根据partitions.json中的配置的信息，我们应该生成两个压缩文件，分别为boot.tar.xz和root.tar.gz，文件名实际上对应的是配置文件中的label属性。那么我们现在得到的是img文件，怎样得到这两个文件呢？<br>如果你是用linux，这个问题很好解决，linux下可以使用mount命令直接把img文件挂载到指定目录上；如果使用windows，那就只能用虚拟机了。好吧，我就是用的windows，打开自己的虚拟机，通过vbox上的共享目录，来访问windows上的这个img文件。<br><img src="http://blog.whyun.com/images/select_share.png" alt="vbox共享"><br><strong>图2.1 共享文件夹设置1</strong><br>在弹出的界面中新增一个共享设置，我们假设img文件放在e:\sharing下，那么可以做如下设置：<br><img src="http://blog.whyun.com/images/add_new_vbox_share.png" alt="新建共享"><br><strong>图2.2 新建共享</strong><br>最后在ubuntu下通过命令<code>mount -t vboxsf sharing /mnt/share</code>来加载这个共享（这里假设/mnt/share目录已经存在了）。在/mnt/share下我们用fdisk命令来查看img文件内部的分区情况：</p>
-<pre><code><div class="highlight"><pre><span class="nx">fdisk</span> <span class="o">-</span><span class="nx">lu</span> <span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img</span>
-</pre></div>
-</code></pre>
-<p>该命令将会输出如下内容：</p>
-<pre><code><div class="highlight"><pre><span class="nx">Disk</span> <span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img</span><span class="o">:</span> <span class="mi">3460</span> <span class="nx">MB</span><span class="p">,</span> <span class="mi">3460300800</span> <span class="nx">bytes</span>
-<span class="mi">255</span> <span class="nx">heads</span><span class="p">,</span> <span class="mi">63</span> <span class="nx">sectors</span><span class="o">/</span><span class="nx">track</span><span class="p">,</span> <span class="mi">420</span> <span class="nx">cylinders</span><span class="p">,</span> <span class="nx">total</span> <span class="mi">6758400</span> <span class="nx">sectors</span>
-<span class="nx">Units</span> <span class="o">=</span> <span class="err">扇区</span> <span class="nx">of</span> <span class="mi">1</span> <span class="o">*</span> <span class="mi">512</span> <span class="o">=</span> <span class="mi">512</span> <span class="nx">bytes</span>
-<span class="nx">Sector</span> <span class="nx">size</span> <span class="p">(</span><span class="nx">logical</span><span class="o">/</span><span class="nx">physical</span><span class="p">)</span><span class="o">:</span> <span class="mi">512</span> <span class="nx">bytes</span> <span class="o">/</span> <span class="mi">512</span> <span class="nx">bytes</span>
-<span class="nx">I</span><span class="o">/</span><span class="nx">O</span> <span class="nx">size</span> <span class="p">(</span><span class="nx">minimum</span><span class="o">/</span><span class="nx">optimal</span><span class="p">)</span><span class="o">:</span> <span class="mi">512</span> <span class="nx">bytes</span> <span class="o">/</span> <span class="mi">512</span> <span class="nx">bytes</span>
-<span class="nx">Disk</span> <span class="nx">identifier</span><span class="o">:</span> <span class="mh">0x000981cb</span>
-
-                   <span class="err">设备</span> <span class="err">启动</span> <span class="err">起点</span> <span class="err">终点</span> <span class="err">块数</span> <span class="nx">Id</span> <span class="err">系统</span>
-<span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img1</span> <span class="mi">8192</span> <span class="mi">122879</span> <span class="mi">57344</span> <span class="nx">c</span> <span class="nx">W95</span> <span class="nx">FAT32</span> <span class="p">(</span><span class="nx">LBA</span><span class="p">)</span>
-<span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img2</span> <span class="mi">122880</span> <span class="mi">6676479</span> <span class="mi">3276800</span> <span class="mi">83</span> <span class="nx">Linux</span>
-</pre></div>
-</code></pre>
-<p>通过输出可以轻易的发现，img文件中有两个分区，第一个分区从8192扇区开始，第二个分区从122880扇区开始，然后输出信息还指示一个扇区是512字节。接下来我们创建两个目录来加载这两个目录：</p>
-<pre><code><div class="highlight"><pre><span class="nx">sudo</span> <span class="nx">mkdir</span> <span class="o">/</span><span class="nx">mnt</span><span class="o">/</span><span class="nx">share</span><span class="o">/</span><span class="nx">img1</span>
-<span class="nx">sudo</span> <span class="nx">mkdir</span> <span class="o">/</span><span class="nx">mnt</span><span class="o">/</span><span class="nx">share</span><span class="o">/</span><span class="nx">img2</span>
-</pre></div>
-</code></pre>
-<p>接下来是mount命令的使用，mount命令的<code>-o</code>参数可以指定从某一个字节处开始mount，那么加载第一个分区的命令就是如下所示了：</p>
-<pre><code><div class="highlight"><pre><span class="nx">sudo</span> <span class="nx">mount</span> <span class="o">-</span><span class="nx">o</span> <span class="nx">loop</span><span class="p">,</span><span class="nx">offset</span><span class="o">=</span><span class="nx">$</span><span class="p">((</span><span class="mi">8192</span><span class="o">*</span><span class="mi">512</span><span class="p">))</span> <span class="nx">RetroPieImage_ver2</span><span class="p">.</span><span class="mi">3</span><span class="p">.</span><span class="nx">img</span> <span class="o">/</span><span class="nx">mnt</span><span class="o">/</span><span class="nx">share</span><span class="o">/</span><span class="nx">img1</span>
-</pre></div>
-</code></pre>
-<p>现在我们进入img1目录，进行打包：</p>
-<pre><code><div class="highlight"><pre><span class="nx">tar</span> <span class="o">-</span><span class="nx">cvpf</span> <span class="p">..</span><span class="o">/</span><span class="nx">boot</span><span class="p">.</span><span class="nx">tar</span> <span class="p">.</span>
-</pre></div>
-</code></pre>
-<p>其中打包的时候我们制定了<code>p</code>参数，这里是告诉tar命令，在tar命令运行时，要保留原文件的权限属性不变。<br>接着就是使用xz命令就行压缩了：</p>
-<pre><code><div class="highlight"><pre><span class="nx">xz</span> <span class="o">-</span><span class="mi">9</span> <span class="o">-</span><span class="nx">e</span> <span class="nx">boot</span><span class="p">.</span><span class="nx">tar</span>
-</pre></div>
-</code></pre>
-<p>最终生成一个<code>boot.tar.xz</code>文件，拷贝到文件夹RetroPie中。同理我们可以再生成一个<code>root.tar.xz</code>文件。<strong>但是要注意，在生成<code>boot.tar</code>的时候要使用管理员权限，即运行<code>sudo tar -cvpf ../root.tar</code>，否某些文件会提示没有权限操作。</strong><br>10. noobs在进行分区的时候需要读取脚本<code>partition_setup.sh</code>来完成分区操作，如果当前系统是由<code>Raspbian</code>改装来的（比如<code>RetroPie</code>和<code>raspbmc</code>、<code>Pidora</code>），那么直接使用<code>Raspbian</code>文件夹中的<code>partition_setup.sh</code>即可，但是有一些系统不是标准linux，比如说<code>openelec</code>，这时候你可以从github项目<a href="https://github.com/procount/noobsconfig">procount/noobsconfig</a>找到相应的sh脚本文件。<br>11. 最后我们就是格式化SD卡了，使用SDFormatter（<a href="https://www.sdcard.org/chs/downloads/formatter_4/">下载页面地址</a>）将你的SD卡格式化，然后将制作好的noobs文件全部拷贝到sd卡中，保证recovery.img在sd卡根目录：</p>
-<p><img src="http://blog.whyun.com/images/noobs_files.jpg" alt="noobs根目录"><br><strong>图2.3 sd卡根目录</strong><br>至此一个自定义的操作系统已经成功制作完成，将sd卡插入树莓派就可以安装了。</p>
-]]></description><link>http://blog.whyun.com/posts/noobs/</link><guid isPermaLink="true">http://blog.whyun.com/posts/noobs/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Fri, 21 Nov 2014 00:00:00 GMT</pubDate></item></channel></rss>
+]]></description><link>http://blog.whyun.com/posts//</link><guid isPermaLink="true">http://blog.whyun.com/posts//</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Wed, 18 Feb 2015 00:00:00 GMT</pubDate></item></channel></rss>
