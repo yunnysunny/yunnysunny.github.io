@@ -400,7 +400,10 @@
 <span class="nx">node</span> <span class="nx">addon</span> <span class="nx">result</span> <span class="nx">good</span><span class="o">---&gt;</span><span class="nx">hello</span> <span class="nx">world</span> <span class="nx">from</span> <span class="nx">c</span><span class="o">++</span>
 </pre></div>
 </code></pre>
-<p><strong>输出2.5</strong><br>我们终于看到开篇提到的类似java代码的交叉输出的效果了。libuv在处理任务时根本就和js不在一个线程中，所以才出现了libuv线程和js线程交叉输出的效果。我们在梳理一下代码2.5的异步流程，那么可以用下面这个图来展示出来：<br><img src="http://blog.whyun.com/images/js_frame3.png" alt=""><br><strong>图2.3</strong><br>在node中维护了一个回调的队列，那为什么调用插件的回调排在队列的最后面呢，是有于我们在代码2.4中故意将其代码设置成15秒之后才执行完成，这要远远长于其他的那些回调，所以它只能被追加到回调队列的最后一位。在第二帧中，node中的事件轮询依次将这些回调队列中的任务取出来，进行触发调用。可以看出回调队列是个先进先出的结构。注意回调是按照队列中排队顺序执行的，同时它们执行的环境是js线程，要知道js线程可是个单线程，也就是说一旦某个回调中的同步代码耗时比较长，那么它后面的回调任务就得一直等着它运行完成，所以说一定不要在回调中写特别耗时的同步代码。</p>
+<p><strong>输出2.5</strong><br>我们终于看到开篇提到的类似java代码的交叉输出的效果了。libuv在处理任务时根本就和js不在一个线程中，所以才出现了libuv线程和js线程交叉输出的效果。我们在梳理一下代码2.5的异步流程，那么可以用下面这个图来展示出来：<br><img src="http://blog.whyun.com/images/js_frame3.png" alt=""><br><strong>图2.3</strong><br>在 node 中维护了一个回调的队列，那为什么调用插件的回调排在队列的最后面呢，是有于我们在<strong>代码2.4</strong>中故意将其代码设置成15秒之后才执行完成，这要远远长于其他的那些回调，所以它只能被追加到回调队列的最后一位。在第二帧中，node中的事件轮询依次将这些回调队列中的任务取出来，进行触发调用。可以看出回调队列是个先进先出的结构。注意回调是按照队列中排队顺序执行的，同时它们执行的环境是js线程，要知道js线程可是个单线程，也就是说一旦某个回调中的同步代码耗时比较长，那么它后面的回调任务就得一直等着它运行完成，所以说一定不要在回调中写特别耗时的同步代码。</p>
+<blockquote>
+<p>真实情况中，Node 的回调队列是有多个（例如 timer 回调在定时器回调队列中，文件操作和 C++ 插件操作的回调在 pending 回调队列中），本文为了表述起来更简单将其全部合并。关于 Node 回调队列的内部调用顺序的详解可以参见<a href="https://nodejs.org/en/docs/guides/event-loop-timers-and-nexttick/">官方网站上的说明</a>，或者是笔者写的另一篇教程<a href="https://github.com/yunnysunny/nodebook/blob/master/text/01_node_introduce.md">Node.js 体系结构</a>。</p>
+</blockquote>
 <h2><a name="3" class="anchor" href="#3"><span class="header-link"></span></a>3. 代码</h2>
 <p>本文用到代码发布在<a href="http://git.oschina.net/yunnysunny/async-tutorial-code"><a href="http://git.oschina.net/yunnysunny/async-tutorial-code">http://git.oschina.net/yunnysunny/async-tutorial-code</a></a></p>
 </div>
