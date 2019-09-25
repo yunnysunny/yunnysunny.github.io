@@ -1,5 +1,289 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Mon, 13 May 2019 05:22:42 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Mon, 13 May 2019 05:22:42 GMT</pubDate><copyright><![CDATA[2019 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[Node 缓存优化之路]]></title><description><![CDATA[<p>当今互联网，越来越往大数据的方向发展。大数据的背后是大用户，你的后端服务必须得有能力承载大用户、高并发的冲击。从宏观上讲，提高并发能力，无怪乎横向扩展（增加服务器节点个数）、纵向扩展（提高单点服务器的处理能力）。横向扩展，常见的有负载均衡，是一种部署的拓扑结构；纵向扩展，更多的体现的在应用程序本身性能提升。计算机中，我们常用拿空间换时间，来提升程序性能，缓存正是这种思想的体现。  </p>
+<rss xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:atom="http://www.w3.org/2005/Atom" version="2.0"><channel><title><![CDATA[白一梓的个人博客]]></title><description><![CDATA[A blog about tech.]]></description><link>http://blog.whyun.com</link><generator>RSS for Node</generator><lastBuildDate>Wed, 25 Sep 2019 14:12:33 GMT</lastBuildDate><atom:link href="http://blog.whyun.com/feed.xml" rel="self" type="application/rss+xml"/><author><![CDATA[白一梓]]></author><pubDate>Wed, 25 Sep 2019 14:12:33 GMT</pubDate><copyright><![CDATA[2019 白一梓]]></copyright><language><![CDATA[en]]></language><managingEditor><![CDATA[白一梓]]></managingEditor><webMaster><![CDATA[白一梓]]></webMaster><ttl>60</ttl><item><title><![CDATA[request 包中出现 DNS 解析超时的探究]]></title><description><![CDATA[<p>事情的起因是这样的，公司使用自建 dns 服务器，但是有一个致命缺陷，不支持 ipv6 格式的地址解析，而 node 的 DNS 解析默认是同时请求 v4 和 v6 的地址的，这样会导致偶尔在解析  v6 地址的时候出现超时。</p>
+<blockquote>
+<p>本文链接地址 <a href="https://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/index.html">https://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/index.html</a> ，转载请注明出处。</p>
+</blockquote>
+<p>我们的程序中是使用的 <a href="https://github.com/request/request">request</a> 这个包，查看了一下官方文档，请求 options 中并没有涉及跟 DNS 有关的配置，于是乎求教运维同事。运维同事告诉我在 docker run 的时候加参数 <code>--sysctl net.ipv6.conf.all.disable_ipv6=1</code>，试用了一下，并且写出来如下测试代码：</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dns</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;dns&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">domain</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">||</span> <span class="s1">&#39;baidu.com&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">begin</span> <span class="o">=</span> <span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">();</span>
+<span class="nx">dns</span><span class="p">.</span><span class="nx">lookup</span><span class="p">(</span><span class="nx">domain</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span> <span class="p">,</span><span class="nx">address</span> <span class="p">,</span> <span class="nx">family</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;耗时&#39;</span><span class="p">,</span><span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">()</span> <span class="o">-</span> <span class="nx">begin</span><span class="p">,</span> <span class="nx">err</span> <span class="p">,</span><span class="nx">address</span> <span class="p">,</span> <span class="nx">family</span><span class="p">);</span>
+<span class="p">});</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.1 DNS 查询测试代码</strong></p>
+<p>运行 <strong>代码 1.1</strong> ，同时使用命令 <code>tcpdump -i eth0 -n -s 500 port domain</code> 来抓取 DNS 解析的数据包：</p>
+<pre><code><div class="highlight"><pre><span class="mi">20</span><span class="o">:</span><span class="mi">47</span><span class="o">:</span><span class="mf">28.917563</span> <span class="nx">IP</span> <span class="mf">10.6</span><span class="p">.</span><span class="mf">13.67</span><span class="p">.</span><span class="mi">38050</span> <span class="o">&gt;</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.219</span><span class="p">.</span><span class="nx">domain</span><span class="o">:</span> <span class="mi">40621</span><span class="o">+</span> <span class="nx">A</span><span class="o">?</span> <span class="nx">baidu</span><span class="p">.</span><span class="nx">com</span><span class="p">.</span> <span class="p">(</span><span class="mi">27</span><span class="p">)</span>
+<span class="mi">20</span><span class="o">:</span><span class="mi">47</span><span class="o">:</span><span class="mf">28.917582</span> <span class="nx">IP</span> <span class="mf">10.6</span><span class="p">.</span><span class="mf">13.67</span><span class="p">.</span><span class="mi">38050</span> <span class="o">&gt;</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.219</span><span class="p">.</span><span class="nx">domain</span><span class="o">:</span> <span class="mi">32393</span><span class="o">+</span> <span class="nx">AAAA</span><span class="o">?</span> <span class="nx">baidu</span><span class="p">.</span><span class="nx">com</span><span class="p">.</span> <span class="p">(</span><span class="mi">27</span><span class="p">)</span>
+<span class="mi">20</span><span class="o">:</span><span class="mi">47</span><span class="o">:</span><span class="mf">28.921061</span> <span class="nx">IP</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.219</span><span class="p">.</span><span class="nx">domain</span> <span class="o">&gt;</span> <span class="mf">10.6</span><span class="p">.</span><span class="mf">13.67</span><span class="p">.</span><span class="mi">38050</span><span class="o">:</span> <span class="mi">40621</span> <span class="mi">2</span><span class="o">/</span><span class="mi">0</span><span class="o">/</span><span class="mi">0</span> <span class="nx">A</span> <span class="mf">220.181</span><span class="p">.</span><span class="mf">38.148</span><span class="p">,</span> <span class="nx">A</span> <span class="mf">39.156</span><span class="p">.</span><span class="mf">69.79</span> <span class="p">(</span><span class="mi">59</span><span class="p">)</span>
+<span class="mi">20</span><span class="o">:</span><span class="mi">47</span><span class="o">:</span><span class="mf">28.921114</span> <span class="nx">IP</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.219</span><span class="p">.</span><span class="nx">domain</span> <span class="o">&gt;</span> <span class="mf">10.6</span><span class="p">.</span><span class="mf">13.67</span><span class="p">.</span><span class="mi">38050</span><span class="o">:</span> <span class="mi">32393</span> <span class="mi">0</span><span class="o">/</span><span class="mi">1</span><span class="o">/</span><span class="mi">0</span> <span class="p">(</span><span class="mi">70</span><span class="p">)</span>
+</pre></div>
+</code></pre>
+<p>从输出来看依然会请求 ipv6 的地址解析，所以当时我的判断是运维的配置是不生效的。</p>
+<p>后来又有了些空闲的时间，所以研究了一下官方文档，看看是否有参数可以控制 http 请求的 DNS 协议版本，没有想到还真有，<a href="https://nodejs.org/dist/latest-v10.x/docs/api/http.html#http_http_request_options_callback">http.request</a> 的 options 中可以设置 family 参数，可选值为 <code>4</code> <code>6</code>, 即 ipv4 或者 ipv6，如果不指定这个参数，将同时使用 ipv4 和 ipv6。按理来说看到这里，我就应该死心了，如果不传这个参数，肯定会同时做 ipv4 和 ipv6 的地址解析，但是我还是抱着试试看的态度写下了如下测试代码：</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kd">var</span> <span class="nx">domain</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">||</span> <span class="s1">&#39;baidu.com&#39;</span><span class="p">;</span>
+<span class="nx">require</span><span class="p">(</span><span class="s1">&#39;http&#39;</span><span class="p">).</span><span class="nx">request</span><span class="p">(</span><span class="s1">&#39;http://&#39;</span> <span class="o">+</span> <span class="nx">domain</span><span class="p">,</span><span class="kd">function</span><span class="p">(</span><span class="nx">res</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="err">`</span><span class="nx">STATUS</span><span class="o">:</span> <span class="nx">$</span><span class="p">{</span><span class="nx">res</span><span class="p">.</span><span class="nx">statusCode</span><span class="p">}</span><span class="err">`</span><span class="p">);</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="err">`</span><span class="nx">HEADERS</span><span class="o">:</span> <span class="nx">$</span><span class="p">{</span><span class="nx">JSON</span><span class="p">.</span><span class="nx">stringify</span><span class="p">(</span><span class="nx">res</span><span class="p">.</span><span class="nx">headers</span><span class="p">)}</span><span class="err">`</span><span class="p">);</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">setEncoding</span><span class="p">(</span><span class="s1">&#39;utf8&#39;</span><span class="p">);</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;data&#39;</span><span class="p">,</span> <span class="p">(</span><span class="nx">chunk</span><span class="p">)</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="c1">//console.log(`BODY: ${chunk}`);</span>
+  <span class="p">});</span>
+  <span class="nx">res</span><span class="p">.</span><span class="nx">on</span><span class="p">(</span><span class="s1">&#39;end&#39;</span><span class="p">,</span> <span class="p">()</span> <span class="o">=&gt;</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;No more data in response.&#39;</span><span class="p">);</span>
+  <span class="p">});</span>
+<span class="p">}).</span><span class="nx">end</span><span class="p">();</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.2 http 请求测试</strong></p>
+<p>没有想到 <strong>代码 1.2</strong> 执行完成后竟然只做了 ipv4 的解析：</p>
+<pre><code><div class="highlight"><pre><span class="mi">21</span><span class="o">:</span><span class="mi">01</span><span class="o">:</span><span class="mf">04.247650</span> <span class="nx">IP</span> <span class="mf">10.6</span><span class="p">.</span><span class="mf">12.158</span><span class="p">.</span><span class="mi">51977</span> <span class="o">&gt;</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.219</span><span class="p">.</span><span class="nx">domain</span><span class="o">:</span> <span class="mi">21651</span><span class="o">+</span> <span class="nx">A</span><span class="o">?</span> <span class="nx">docker</span><span class="p">.</span><span class="mi">17</span><span class="nx">zuoye</span><span class="p">.</span><span class="nx">net</span><span class="p">.</span> <span class="p">(</span><span class="mi">36</span><span class="p">)</span>
+<span class="mi">21</span><span class="o">:</span><span class="mi">01</span><span class="o">:</span><span class="mf">04.248316</span> <span class="nx">IP</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.219</span><span class="p">.</span><span class="nx">domain</span> <span class="o">&gt;</span> <span class="mf">10.6</span><span class="p">.</span><span class="mf">12.158</span><span class="p">.</span><span class="mi">51977</span><span class="o">:</span> <span class="mi">21651</span><span class="o">*</span> <span class="mi">1</span><span class="o">/</span><span class="mi">0</span><span class="o">/</span><span class="mi">0</span> <span class="nx">A</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.98</span> <span class="p">(</span><span class="mi">52</span><span class="p">)</span>
+<span class="mi">21</span><span class="o">:</span><span class="mi">01</span><span class="o">:</span><span class="mf">06.593429</span> <span class="nx">IP</span> <span class="mf">10.6</span><span class="p">.</span><span class="mf">12.158</span><span class="p">.</span><span class="mi">48479</span> <span class="o">&gt;</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.219</span><span class="p">.</span><span class="nx">domain</span><span class="o">:</span> <span class="mi">10352</span><span class="o">+</span> <span class="nx">A</span><span class="o">?</span> <span class="nx">baidu</span><span class="p">.</span><span class="nx">com</span><span class="p">.</span> <span class="p">(</span><span class="mi">27</span><span class="p">)</span>
+<span class="mi">21</span><span class="o">:</span><span class="mi">01</span><span class="o">:</span><span class="mf">06.596978</span> <span class="nx">IP</span> <span class="mf">10.7</span><span class="p">.</span><span class="mf">11.219</span><span class="p">.</span><span class="nx">domain</span> <span class="o">&gt;</span> <span class="mf">10.6</span><span class="p">.</span><span class="mf">12.158</span><span class="p">.</span><span class="mi">48479</span><span class="o">:</span> <span class="mi">10352</span> <span class="mi">2</span><span class="o">/</span><span class="mi">0</span><span class="o">/</span><span class="mi">0</span> <span class="nx">A</span> <span class="mf">39.156</span><span class="p">.</span><span class="mf">69.79</span><span class="p">,</span> <span class="nx">A</span> <span class="mf">220.181</span><span class="p">.</span><span class="mf">38.148</span> <span class="p">(</span><span class="mi">59</span><span class="p">)</span>
+</pre></div>
+</code></pre>
+<p>这就很神奇了，node 的 http 的代码封装中肯定做了什么！带着这个疑问，我阅读了 node 的源码，首先看 ClientRequest 的初始化代码中，连接初始化部分：</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre>  <span class="c1">// initiate connection</span>
+  <span class="k">if</span> <span class="p">(</span><span class="k">this</span><span class="p">.</span><span class="nx">agent</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">agent</span><span class="p">.</span><span class="nx">addRequest</span><span class="p">(</span><span class="k">this</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="c1">// No agent, default to Connection:close.</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">_last</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="k">this</span><span class="p">.</span><span class="nx">shouldKeepAlive</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+    <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span> <span class="nx">options</span><span class="p">.</span><span class="nx">createConnection</span> <span class="o">===</span> <span class="s1">&#39;function&#39;</span><span class="p">)</span> <span class="p">{</span>
+      <span class="kr">const</span> <span class="nx">newSocket</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">createConnection</span><span class="p">(</span><span class="nx">options</span><span class="p">,</span> <span class="nx">oncreate</span><span class="p">);</span>
+      <span class="k">if</span> <span class="p">(</span><span class="nx">newSocket</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">called</span><span class="p">)</span> <span class="p">{</span>
+        <span class="nx">called</span> <span class="o">=</span> <span class="kc">true</span><span class="p">;</span>
+        <span class="k">this</span><span class="p">.</span><span class="nx">onSocket</span><span class="p">(</span><span class="nx">newSocket</span><span class="p">);</span>
+      <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+        <span class="k">return</span><span class="p">;</span>
+      <span class="p">}</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;CLIENT use net.createConnection&#39;</span><span class="p">,</span> <span class="nx">options</span><span class="p">);</span>
+      <span class="k">this</span><span class="p">.</span><span class="nx">onSocket</span><span class="p">(</span><span class="nx">net</span><span class="p">.</span><span class="nx">createConnection</span><span class="p">(</span><span class="nx">options</span><span class="p">));</span>
+    <span class="p">}</span>
+  <span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.3 <a href="https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/_http_client.js#L274">ClientRequest 类的连接初始化</a></strong></p>
+<p>http.request 没有加任何参数的情况，默认走到 <code>this.onSocket(net.createConnection(options));</code> 这句话，然后看 net 包的代码，其中一端跟 DNS 相关的代码：</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre>  <span class="k">if</span> <span class="p">(</span><span class="nx">dns</span> <span class="o">===</span> <span class="kc">undefined</span><span class="p">)</span> <span class="nx">dns</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;dns&#39;</span><span class="p">);</span>
+  <span class="kr">const</span> <span class="nx">dnsopts</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="nx">family</span><span class="o">:</span> <span class="nx">options</span><span class="p">.</span><span class="nx">family</span><span class="p">,</span>
+    <span class="nx">hints</span><span class="o">:</span> <span class="nx">options</span><span class="p">.</span><span class="nx">hints</span> <span class="o">||</span> <span class="mi">0</span>
+  <span class="p">};</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="nx">process</span><span class="p">.</span><span class="nx">platform</span> <span class="o">!==</span> <span class="s1">&#39;win32&#39;</span> <span class="o">&amp;&amp;</span>
+      <span class="nx">dnsopts</span><span class="p">.</span><span class="nx">family</span> <span class="o">!==</span> <span class="mi">4</span> <span class="o">&amp;&amp;</span>
+      <span class="nx">dnsopts</span><span class="p">.</span><span class="nx">family</span> <span class="o">!==</span> <span class="mi">6</span> <span class="o">&amp;&amp;</span>
+      <span class="nx">dnsopts</span><span class="p">.</span><span class="nx">hints</span> <span class="o">===</span> <span class="mi">0</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">dnsopts</span><span class="p">.</span><span class="nx">hints</span> <span class="o">=</span> <span class="nx">dns</span><span class="p">.</span><span class="nx">ADDRCONFIG</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;connect: find host&#39;</span><span class="p">,</span> <span class="nx">host</span><span class="p">);</span>
+  <span class="nx">debug</span><span class="p">(</span><span class="s1">&#39;connect: dns options&#39;</span><span class="p">,</span> <span class="nx">dnsopts</span><span class="p">);</span>
+  <span class="nx">self</span><span class="p">.</span><span class="nx">_host</span> <span class="o">=</span> <span class="nx">host</span><span class="p">;</span>
+  <span class="kr">const</span> <span class="nx">lookup</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">lookup</span> <span class="o">||</span> <span class="nx">dns</span><span class="p">.</span><span class="nx">lookup</span><span class="p">;</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.4 <a href="https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/net.js#L1010">net 包中 DNS 查询参数代码</a></strong></p>
+<p>然后我们再看 lookup 函数的源码：</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="c1">// Easy DNS A/AAAA look up</span>
+<span class="c1">// lookup(hostname, [options,] callback)</span>
+<span class="kd">function</span> <span class="nx">lookup</span><span class="p">(</span><span class="nx">hostname</span><span class="p">,</span> <span class="nx">options</span><span class="p">,</span> <span class="nx">callback</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kd">var</span> <span class="nx">hints</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">family</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">all</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+  <span class="kd">var</span> <span class="nx">verbatim</span> <span class="o">=</span> <span class="kc">false</span><span class="p">;</span>
+
+  <span class="c1">// Parse arguments</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">hostname</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span> <span class="nx">hostname</span> <span class="o">!==</span> <span class="s1">&#39;string&#39;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nx">ERR_INVALID_ARG_TYPE</span><span class="p">(</span><span class="s1">&#39;hostname&#39;</span><span class="p">,</span> <span class="s1">&#39;string&#39;</span><span class="p">,</span> <span class="nx">hostname</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span> <span class="nx">options</span> <span class="o">===</span> <span class="s1">&#39;function&#39;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">callback</span> <span class="o">=</span> <span class="nx">options</span><span class="p">;</span>
+    <span class="nx">family</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="k">typeof</span> <span class="nx">callback</span> <span class="o">!==</span> <span class="s1">&#39;function&#39;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nx">ERR_INVALID_CALLBACK</span><span class="p">(</span><span class="nx">callback</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="k">if</span> <span class="p">(</span><span class="nx">options</span> <span class="o">!==</span> <span class="kc">null</span> <span class="o">&amp;&amp;</span> <span class="k">typeof</span> <span class="nx">options</span> <span class="o">===</span> <span class="s1">&#39;object&#39;</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">hints</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">hints</span> <span class="o">&gt;&gt;&gt;</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="nx">family</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">family</span> <span class="o">&gt;&gt;&gt;</span> <span class="mi">0</span><span class="p">;</span>
+    <span class="nx">all</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">all</span> <span class="o">===</span> <span class="kc">true</span><span class="p">;</span>
+    <span class="nx">verbatim</span> <span class="o">=</span> <span class="nx">options</span><span class="p">.</span><span class="nx">verbatim</span> <span class="o">===</span> <span class="kc">true</span><span class="p">;</span>
+
+    <span class="nx">validateHints</span><span class="p">(</span><span class="nx">hints</span><span class="p">);</span>
+  <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+    <span class="nx">family</span> <span class="o">=</span> <span class="nx">options</span> <span class="o">&gt;&gt;&gt;</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="p">}</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="nx">family</span> <span class="o">!==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="nx">family</span> <span class="o">!==</span> <span class="mi">4</span> <span class="o">&amp;&amp;</span> <span class="nx">family</span> <span class="o">!==</span> <span class="mi">6</span><span class="p">)</span>
+    <span class="k">throw</span> <span class="k">new</span> <span class="nx">ERR_INVALID_OPT_VALUE</span><span class="p">(</span><span class="s1">&#39;family&#39;</span><span class="p">,</span> <span class="nx">family</span><span class="p">);</span>
+
+  <span class="k">if</span> <span class="p">(</span><span class="o">!</span><span class="nx">hostname</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">emitInvalidHostnameWarning</span><span class="p">(</span><span class="nx">hostname</span><span class="p">);</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">all</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="nx">callback</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="p">[]);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="nx">callback</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">family</span> <span class="o">===</span> <span class="mi">6</span> <span class="o">?</span> <span class="mi">6</span> <span class="o">:</span> <span class="mi">4</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">{};</span>
+  <span class="p">}</span>
+
+  <span class="kr">const</span> <span class="nx">matchedFamily</span> <span class="o">=</span> <span class="nx">isIP</span><span class="p">(</span><span class="nx">hostname</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">matchedFamily</span><span class="p">)</span> <span class="p">{</span>
+    <span class="k">if</span> <span class="p">(</span><span class="nx">all</span><span class="p">)</span> <span class="p">{</span>
+      <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span>
+        <span class="nx">callback</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="p">[{</span> <span class="nx">address</span><span class="o">:</span> <span class="nx">hostname</span><span class="p">,</span> <span class="nx">family</span><span class="o">:</span> <span class="nx">matchedFamily</span> <span class="p">}]);</span>
+    <span class="p">}</span> <span class="k">else</span> <span class="p">{</span>
+      <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="nx">callback</span><span class="p">,</span> <span class="kc">null</span><span class="p">,</span> <span class="nx">hostname</span><span class="p">,</span> <span class="nx">matchedFamily</span><span class="p">);</span>
+    <span class="p">}</span>
+    <span class="k">return</span> <span class="p">{};</span>
+  <span class="p">}</span>
+
+  <span class="kr">const</span> <span class="nx">req</span> <span class="o">=</span> <span class="k">new</span> <span class="nx">GetAddrInfoReqWrap</span><span class="p">();</span>
+  <span class="nx">req</span><span class="p">.</span><span class="nx">callback</span> <span class="o">=</span> <span class="nx">callback</span><span class="p">;</span>
+  <span class="nx">req</span><span class="p">.</span><span class="nx">family</span> <span class="o">=</span> <span class="nx">family</span><span class="p">;</span>
+  <span class="nx">req</span><span class="p">.</span><span class="nx">hostname</span> <span class="o">=</span> <span class="nx">hostname</span><span class="p">;</span>
+  <span class="nx">req</span><span class="p">.</span><span class="nx">oncomplete</span> <span class="o">=</span> <span class="nx">all</span> <span class="o">?</span> <span class="nx">onlookupall</span> <span class="o">:</span> <span class="nx">onlookup</span><span class="p">;</span>
+
+  <span class="kr">const</span> <span class="nx">err</span> <span class="o">=</span> <span class="nx">cares</span><span class="p">.</span><span class="nx">getaddrinfo</span><span class="p">(</span>
+    <span class="nx">req</span><span class="p">,</span> <span class="nx">toASCII</span><span class="p">(</span><span class="nx">hostname</span><span class="p">),</span> <span class="nx">family</span><span class="p">,</span> <span class="nx">hints</span><span class="p">,</span> <span class="nx">verbatim</span>
+  <span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="nx">err</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">process</span><span class="p">.</span><span class="nx">nextTick</span><span class="p">(</span><span class="nx">callback</span><span class="p">,</span> <span class="nx">dnsException</span><span class="p">(</span><span class="nx">err</span><span class="p">,</span> <span class="s1">&#39;getaddrinfo&#39;</span><span class="p">,</span> <span class="nx">hostname</span><span class="p">));</span>
+    <span class="k">return</span> <span class="p">{};</span>
+  <span class="p">}</span>
+  <span class="k">return</span> <span class="nx">req</span><span class="p">;</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.5 <a href="https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/dns.js#L88">lookup 函数源码</a></strong></p>
+<p>通过代码 1.5 发现最终 DNS 查询是要调用 C++ 绑定类的，于是我又查看了 C++ 的代码：</p>
+<pre><code class="lang-c++"><div class="highlight"><pre><span class="kt">void</span> <span class="nf">GetAddrInfo</span><span class="p">(</span><span class="k">const</span> <span class="n">FunctionCallbackInfo</span><span class="o">&lt;</span><span class="n">Value</span><span class="o">&gt;&amp;</span> <span class="n">args</span><span class="p">)</span> <span class="p">{</span>
+  <span class="n">Environment</span><span class="o">*</span> <span class="n">env</span> <span class="o">=</span> <span class="n">Environment</span><span class="o">::</span><span class="n">GetCurrent</span><span class="p">(</span><span class="n">args</span><span class="p">);</span>
+
+  <span class="n">CHECK</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">IsObject</span><span class="p">());</span>
+  <span class="n">CHECK</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">IsString</span><span class="p">());</span>
+  <span class="n">CHECK</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">IsInt32</span><span class="p">());</span>
+  <span class="n">CHECK</span><span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">IsBoolean</span><span class="p">());</span>
+  <span class="n">Local</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span> <span class="n">req_wrap_obj</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">0</span><span class="p">].</span><span class="n">As</span><span class="o">&lt;</span><span class="n">Object</span><span class="o">&gt;</span><span class="p">();</span>
+  <span class="n">node</span><span class="o">::</span><span class="n">Utf8Value</span> <span class="n">hostname</span><span class="p">(</span><span class="n">env</span><span class="o">-&gt;</span><span class="n">isolate</span><span class="p">(),</span> <span class="n">args</span><span class="p">[</span><span class="mi">1</span><span class="p">]);</span>
+
+  <span class="kt">int32_t</span> <span class="n">flags</span> <span class="o">=</span> <span class="mi">0</span><span class="p">;</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">3</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">IsInt32</span><span class="p">())</span> <span class="p">{</span>
+    <span class="n">flags</span> <span class="o">=</span> <span class="n">args</span><span class="p">[</span><span class="mi">3</span><span class="p">].</span><span class="n">As</span><span class="o">&lt;</span><span class="n">Int32</span><span class="o">&gt;</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">();</span>
+  <span class="p">}</span>
+
+  <span class="kt">int</span> <span class="n">family</span><span class="p">;</span>
+
+  <span class="k">switch</span> <span class="p">(</span><span class="n">args</span><span class="p">[</span><span class="mi">2</span><span class="p">].</span><span class="n">As</span><span class="o">&lt;</span><span class="n">Int32</span><span class="o">&gt;</span><span class="p">()</span><span class="o">-&gt;</span><span class="n">Value</span><span class="p">())</span> <span class="p">{</span>
+    <span class="k">case</span> <span class="mi">0</span>:
+      <span class="n">family</span> <span class="o">=</span> <span class="n">AF_UNSPEC</span><span class="p">;</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">4</span>:
+      <span class="n">family</span> <span class="o">=</span> <span class="n">AF_INET</span><span class="p">;</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="k">case</span> <span class="mi">6</span>:
+      <span class="n">family</span> <span class="o">=</span> <span class="n">AF_INET6</span><span class="p">;</span>
+      <span class="k">break</span><span class="p">;</span>
+    <span class="nl">default:</span>
+      <span class="n">CHECK</span><span class="p">(</span><span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="s">&quot;bad address family&quot;</span><span class="p">);</span>
+  <span class="p">}</span>
+
+  <span class="k">auto</span> <span class="n">req_wrap</span> <span class="o">=</span> <span class="n">std</span><span class="o">::</span><span class="n">make_unique</span><span class="o">&lt;</span><span class="n">GetAddrInfoReqWrap</span><span class="o">&gt;</span><span class="p">(</span><span class="n">env</span><span class="p">,</span>
+                                                       <span class="n">req_wrap_obj</span><span class="p">,</span>
+                                                       <span class="n">args</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span><span class="o">-&gt;</span><span class="n">IsTrue</span><span class="p">());</span>
+
+  <span class="k">struct</span> <span class="n">addrinfo</span> <span class="n">hints</span><span class="p">;</span>
+  <span class="n">memset</span><span class="p">(</span><span class="o">&amp;</span><span class="n">hints</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="k">sizeof</span><span class="p">(</span><span class="n">hints</span><span class="p">));</span>
+  <span class="n">hints</span><span class="p">.</span><span class="n">ai_family</span> <span class="o">=</span> <span class="n">family</span><span class="p">;</span>
+  <span class="n">hints</span><span class="p">.</span><span class="n">ai_socktype</span> <span class="o">=</span> <span class="n">SOCK_STREAM</span><span class="p">;</span>
+  <span class="n">hints</span><span class="p">.</span><span class="n">ai_flags</span> <span class="o">=</span> <span class="n">flags</span><span class="p">;</span>
+
+  <span class="n">TRACE_EVENT_NESTABLE_ASYNC_BEGIN2</span><span class="p">(</span>
+      <span class="n">TRACING_CATEGORY_NODE2</span><span class="p">(</span><span class="n">dns</span><span class="p">,</span> <span class="n">native</span><span class="p">),</span> <span class="s">&quot;lookup&quot;</span><span class="p">,</span> <span class="n">req_wrap</span><span class="p">.</span><span class="n">get</span><span class="p">(),</span>
+      <span class="s">&quot;hostname&quot;</span><span class="p">,</span> <span class="n">TRACE_STR_COPY</span><span class="p">(</span><span class="o">*</span><span class="n">hostname</span><span class="p">),</span>
+      <span class="s">&quot;family&quot;</span><span class="p">,</span>
+      <span class="n">family</span> <span class="o">==</span> <span class="n">AF_INET</span> <span class="o">?</span> <span class="s">&quot;ipv4&quot;</span> <span class="o">:</span> <span class="n">family</span> <span class="o">==</span> <span class="n">AF_INET6</span> <span class="o">?</span> <span class="s">&quot;ipv6&quot;</span> <span class="o">:</span> <span class="s">&quot;unspec&quot;</span><span class="p">);</span>
+
+  <span class="kt">int</span> <span class="n">err</span> <span class="o">=</span> <span class="n">req_wrap</span><span class="o">-&gt;</span><span class="n">Dispatch</span><span class="p">(</span><span class="n">uv_getaddrinfo</span><span class="p">,</span>
+                               <span class="n">AfterGetAddrInfo</span><span class="p">,</span>
+                               <span class="o">*</span><span class="n">hostname</span><span class="p">,</span>
+                               <span class="n">nullptr</span><span class="p">,</span>
+                               <span class="o">&amp;</span><span class="n">hints</span><span class="p">);</span>
+  <span class="k">if</span> <span class="p">(</span><span class="n">err</span> <span class="o">==</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="c1">// Release ownership of the pointer allowing the ownership to be transferred</span>
+    <span class="n">USE</span><span class="p">(</span><span class="n">req_wrap</span><span class="p">.</span><span class="n">release</span><span class="p">());</span>
+
+  <span class="n">args</span><span class="p">.</span><span class="n">GetReturnValue</span><span class="p">().</span><span class="n">Set</span><span class="p">(</span><span class="n">err</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.6 <a href="https://sourcegraph.com/github.com/nodejs/node/-/blob/src/cares_wrap.cc#L1940">C++ 中 DNS 的查询代码</a></strong></p>
+<p>注意 <strong>代码 1.5</strong> 中的 family hints 最终会分别转化为 结构体变量 struct addrinfo hints 中的 ai_family 和 ai_flags。</p>
+<p>最终这个结构体 hints 会层层传递到 libuv 中：</p>
+<pre><code class="lang-c"><div class="highlight"><pre><span class="k">static</span> <span class="kt">void</span> <span class="nf">uv__getaddrinfo_work</span><span class="p">(</span><span class="k">struct</span> <span class="n">uv__work</span><span class="o">*</span> <span class="n">w</span><span class="p">)</span> <span class="p">{</span>
+  <span class="kt">uv_getaddrinfo_t</span><span class="o">*</span> <span class="n">req</span><span class="p">;</span>
+  <span class="kt">int</span> <span class="n">err</span><span class="p">;</span>
+
+  <span class="n">req</span> <span class="o">=</span> <span class="n">container_of</span><span class="p">(</span><span class="n">w</span><span class="p">,</span> <span class="kt">uv_getaddrinfo_t</span><span class="p">,</span> <span class="n">work_req</span><span class="p">);</span>
+  <span class="n">err</span> <span class="o">=</span> <span class="n">getaddrinfo</span><span class="p">(</span><span class="n">req</span><span class="o">-&gt;</span><span class="n">hostname</span><span class="p">,</span> <span class="n">req</span><span class="o">-&gt;</span><span class="n">service</span><span class="p">,</span> <span class="n">req</span><span class="o">-&gt;</span><span class="n">hints</span><span class="p">,</span> <span class="o">&amp;</span><span class="n">req</span><span class="o">-&gt;</span><span class="n">addrinfo</span><span class="p">);</span>
+  <span class="n">req</span><span class="o">-&gt;</span><span class="n">retcode</span> <span class="o">=</span> <span class="n">uv__getaddrinfo_translate_error</span><span class="p">(</span><span class="n">err</span><span class="p">);</span>
+<span class="p">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.7 <a href="https://sourcegraph.com/github.com/nodejs/node@c5f5f84a33967862036c7d87f4bbde6a59d3820a/-/blob/deps/uv/src/unix/getaddrinfo.c#L101">libuv 中的 dns 查询函数代码</a></strong></p>
+<p>注意到我们在 <strong>代码 1.4</strong> 中的 hints 参数，最终会作为 req-&gt;hints-&gt;ai_flags 参数，最终我在 man7 文档上找到了<code>AI_ADDRCONFIG</code> 的这个参数的说明：</p>
+<pre><code><div class="highlight"><pre><span class="nx">If</span> <span class="nx">hints</span><span class="p">.</span><span class="nx">ai_flags</span> <span class="nx">includes</span> <span class="nx">the</span> <span class="nx">AI_ADDRCONFIG</span> <span class="nx">flag</span><span class="p">,</span> <span class="nx">then</span> <span class="nx">IPv4</span>
+<span class="nx">addresses</span> <span class="nx">are</span> <span class="nx">returned</span> <span class="k">in</span> <span class="nx">the</span> <span class="nx">list</span> <span class="nx">pointed</span> <span class="nx">to</span> <span class="nx">by</span> <span class="nx">res</span> <span class="nx">only</span> <span class="k">if</span> <span class="nx">the</span>
+<span class="nx">local</span> <span class="nx">system</span> <span class="nx">has</span> <span class="nx">at</span> <span class="nx">least</span> <span class="nx">one</span> <span class="nx">IPv4</span> <span class="nx">address</span> <span class="nx">configured</span><span class="p">,</span> <span class="nx">and</span> <span class="nx">IPv6</span>
+<span class="nx">addresses</span> <span class="nx">are</span> <span class="nx">returned</span> <span class="nx">only</span> <span class="k">if</span> <span class="nx">the</span> <span class="nx">local</span> <span class="nx">system</span> <span class="nx">has</span> <span class="nx">at</span> <span class="nx">least</span> <span class="nx">one</span> <span class="nx">IPv6</span>
+<span class="nx">address</span> <span class="nx">configured</span><span class="p">.</span>  <span class="nx">The</span> <span class="nx">loopback</span> <span class="nx">address</span> <span class="nx">is</span> <span class="nx">not</span> <span class="nx">considered</span> <span class="k">for</span> <span class="k">this</span>
+<span class="k">case</span> <span class="nx">as</span> <span class="nx">valid</span> <span class="nx">as</span> <span class="nx">a</span> <span class="nx">configured</span> <span class="nx">address</span><span class="p">.</span>  <span class="nx">This</span> <span class="nx">flag</span> <span class="nx">is</span> <span class="nx">useful</span> <span class="nx">on</span><span class="p">,</span> <span class="k">for</span>
+<span class="nx">example</span><span class="p">,</span> <span class="nx">IPv4</span><span class="o">-</span><span class="nx">only</span> <span class="nx">systems</span><span class="p">,</span> <span class="nx">to</span> <span class="nx">ensure</span> <span class="nx">that</span> <span class="nx">getaddrinfo</span><span class="p">()</span> <span class="nx">does</span> <span class="nx">not</span>
+<span class="k">return</span> <span class="nx">IPv6</span> <span class="nx">socket</span> <span class="nx">addresses</span> <span class="nx">that</span> <span class="nx">would</span> <span class="nx">always</span> <span class="nx">fail</span> <span class="k">in</span> <span class="nx">connect</span><span class="p">(</span><span class="mi">2</span><span class="p">)</span> <span class="nx">or</span>
+<span class="nx">bind</span><span class="p">(</span><span class="mi">2</span><span class="p">).</span>
+</pre></div>
+</code></pre>
+<p>大体意思是说，系统配置了 ipv4 才返回 ipv4的地址，系统配置了 ipv6 才返回 ipv6 的地址，而 docker 的启动参数 <code>--sysctl net.ipv6.conf.all.disable_ipv6=1</code> 等同于系统只支持 ipv4 的声明，所以操作系统函数 <code>getaddrinfo</code> 就只返回 ipv4 的地址。</p>
+<p>重新验证这个问题，将代码 1.1 做改造：</p>
+<pre><code class="lang-javascript"><div class="highlight"><pre><span class="kr">const</span> <span class="nx">dns</span> <span class="o">=</span> <span class="nx">require</span><span class="p">(</span><span class="s1">&#39;dns&#39;</span><span class="p">);</span>
+<span class="kr">const</span> <span class="nx">domain</span> <span class="o">=</span> <span class="nx">process</span><span class="p">.</span><span class="nx">argv</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span> <span class="o">||</span> <span class="s1">&#39;baidu.com&#39;</span><span class="p">;</span>
+<span class="kr">const</span> <span class="nx">begin</span> <span class="o">=</span> <span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">();</span>
+<span class="nx">dns</span><span class="p">.</span><span class="nx">lookup</span><span class="p">(</span><span class="nx">domain</span><span class="p">,{</span><span class="nx">hints</span><span class="o">:</span><span class="mi">32</span><span class="p">},</span><span class="kd">function</span><span class="p">(</span><span class="nx">err</span> <span class="p">,</span><span class="nx">address</span> <span class="p">,</span> <span class="nx">family</span><span class="p">)</span> <span class="p">{</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s1">&#39;耗时&#39;</span><span class="p">,</span><span class="nb">Date</span><span class="p">.</span><span class="nx">now</span><span class="p">()</span> <span class="o">-</span> <span class="nx">begin</span><span class="p">,</span> <span class="nx">err</span> <span class="p">,</span><span class="nx">address</span> <span class="p">,</span> <span class="nx">family</span><span class="p">);</span>
+<span class="p">});</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.8 使用 ADDRCONFIG 参数做 DNS 查询</strong></p>
+<blockquote>
+<p>这里面之所以取值的 hints:32，是因为 <code>AI_ADDRCONFIG</code> 的值为32。通过设置环境变量 NODE_DEBUG=net 后启动 <strong>代码1.2</strong> ，会发现 <code>debug(&#39;connect: dns options&#39;, dnsopts);</code> 打印的 hints 值为 32。</p>
+</blockquote>
+<p>重新运行，发现果然只查询了 ipv4 的地址。</p>
+<p>到此为止，其实可以算是圆满收官了，但是对于 request 包还是不死心，心想如果当前开源源码不支持，是否可以做一个 pull request  呢，于是我看了一下他们的官方源码，结果就发现了新大陆：</p>
+<pre><code class="lang-java"><div class="highlight"><pre>  <span class="n">var</span> <span class="n">reqOptions</span> <span class="o">=</span> <span class="n">copy</span><span class="o">(</span><span class="n">self</span><span class="o">)</span>
+  <span class="n">delete</span> <span class="n">reqOptions</span><span class="o">.</span><span class="na">auth</span>
+
+  <span class="nf">debug</span><span class="o">(</span><span class="err">&#39;</span><span class="n">make</span> <span class="n">request</span><span class="err">&#39;</span><span class="o">,</span> <span class="n">self</span><span class="o">.</span><span class="na">uri</span><span class="o">.</span><span class="na">href</span><span class="o">)</span>
+
+  <span class="c1">// node v6.8.0 now supports a `timeout` value in `http.request()`, but we</span>
+  <span class="c1">// should delete it for now since we handle timeouts manually for better</span>
+  <span class="c1">// consistency with node versions before v6.8.0</span>
+  <span class="n">delete</span> <span class="n">reqOptions</span><span class="o">.</span><span class="na">timeout</span>
+
+  <span class="k">try</span> <span class="o">{</span>
+    <span class="n">self</span><span class="o">.</span><span class="na">req</span> <span class="o">=</span> <span class="n">self</span><span class="o">.</span><span class="na">httpModule</span><span class="o">.</span><span class="na">request</span><span class="o">(</span><span class="n">reqOptions</span><span class="o">)</span>
+  <span class="o">}</span> <span class="k">catch</span> <span class="o">(</span><span class="n">err</span><span class="o">)</span> <span class="o">{</span>
+    <span class="n">self</span><span class="o">.</span><span class="na">emit</span><span class="o">(</span><span class="err">&#39;</span><span class="n">error</span><span class="err">&#39;</span><span class="o">,</span> <span class="n">err</span><span class="o">)</span>
+    <span class="k">return</span>
+  <span class="o">}</span>
+</pre></div>
+</code></pre>
+<p><strong>代码 1.9 request 源码片段</strong></p>
+<p><code>self.httpModule.request(reqOptions)</code> 等同于 <code>http.request(reqOptions)</code> 或者 <code>https.request(reqOptions)</code>，也就是说 http 模块的所有参数其实在 request 上也是适用的，但是 request 的官方文档却没有指出！</p>
+<p>最圆满的方案出炉了，在调用 request 函数的时候，指定 family 为 4，即可屏蔽 ipv6 解析。</p>
+]]></description><link>http://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/</link><guid isPermaLink="true">http://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Wed, 25 Sep 2019 00:00:00 GMT</pubDate></item><item><title><![CDATA[Node 缓存优化之路]]></title><description><![CDATA[<p>当今互联网，越来越往大数据的方向发展。大数据的背后是大用户，你的后端服务必须得有能力承载大用户、高并发的冲击。从宏观上讲，提高并发能力，无怪乎横向扩展（增加服务器节点个数）、纵向扩展（提高单点服务器的处理能力）。横向扩展，常见的有负载均衡，是一种部署的拓扑结构；纵向扩展，更多的体现的在应用程序本身性能提升。计算机中，我们常用拿空间换时间，来提升程序性能，缓存正是这种思想的体现。  </p>
 <blockquote>
 <p>本文链接地址 <a href="https://blog.whyun.com/posts/node/the-cache-design-in-node">https://blog.whyun.com/posts/node/the-cache-design-in-node</a> ,转载请注明出处。</p>
 </blockquote>
@@ -1227,76 +1511,4 @@ Nothing! <code>v8::String::AsciiValue</code>本来就有问题：它的名字告
 </blockquote>
 <h2><a name="3" class="anchor" href="#3"><span class="header-link"></span></a>3. 代码</h2>
 <p>本文用到代码发布在<a href="http://git.oschina.net/yunnysunny/async-tutorial-code"><a href="http://git.oschina.net/yunnysunny/async-tutorial-code">http://git.oschina.net/yunnysunny/async-tutorial-code</a></a></p>
-]]></description><link>http://blog.whyun.com/posts/js/</link><guid isPermaLink="true">http://blog.whyun.com/posts/js/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Fri, 20 Mar 2015 00:00:00 GMT</pubDate></item><item><title><![CDATA[同步和异步回调]]></title><description><![CDATA[<h1><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步和异步回调</h1>
-<p><em>作者：havoc (原文地址：<a href="http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/"><a href="http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/">http://blog.ometer.com/2011/07/24/callbacks-synchronous-and-asynchronous/</a></a>)</em></p>
-<p>这里讲两个使用callback设计API的指南，并且添加到我的杂记<a href="http://blog.ometer.com/2011/01/20/boolean-parameters-are-wrong/" title="作者显然是贴错地址了，译者注">posts about minor API design points</a>中。我之前多次在不同的场合发起过关于“sync vs. async”回调的问题。这个问题着实困扰着API设计者和使用者。<br>最近，这个问题在我处理<a href="https://github.com/bwmcadams/hammersmith">Hammersmith</a>（一个基于callback回调的MongoDB的Scale API）又被提起。我认为这（这里指基于回调的API，译者注）对大量的JVM代码编写者来说稍微有些 <em>不习惯（new consideration）</em> ，因为传统的JVM使用堵塞API和线程。对于我来说，已经很熟悉编写基于<a href="https://developer.gnome.org/glib/unstable/glib-The-Main-Event-Loop.html">事件循环</a>的客户端代码。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>介绍</h2>
-<ul>
-<li>一个<strong>同步（synchronous）</strong>回调在函数返回之前执行，也就是说， <em>当API在调用时callback也处在上下文中(这句话的原文是：while the API receiving the callback remains on the stack)</em> 。例子可以是这样的：<code>list.foreach(callback);</code>在<code>foreach()</code>返回时，你可以预期到callback已经在所有元素上都被执行了。</li>
-<li><p>一个<strong>异步（asynchronous）</strong>或者<strong>延迟（deferred）</strong>回调，在函数返回之后执行，或者至少在另一个线程的栈空间中执行。延迟（deferral）的架构包括线程和主循环【main loops】(其他名字包括event loops,dispatchers,executors)。异步回调在IO相关的API中很流行，例如<code>socket.connect(callback);</code>，你会预期在<code>connect（）</code>返回时，callback可能还没有被调用，因为他正在等待连接建立完毕。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>指南</h2>
-<p>基于过往经验，我使用这两条规则：</p>
-</li>
-<li><p>给出的回调不能一直是同步的或者异步的，而是应该将其作为API文档的一部分加以说明。</p>
-</li>
-<li>异步回调需要被主循环中或者 <em>中心分发组件（central dispatch mechanism）</em> 直接调用，也就是说，别在回调执行的栈中存在非必须的代码块，特别是这些代码块可能含有锁的时候。</li>
-</ul>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步回调和异步回调有啥不同？</h2>
-<p>同步和异步回调对于包括app和类库在内的开发者造成问题是不一样的。<br>同步回调：</p>
-<ul>
-<li>在 <em>原始（original）</em> 线程中执行（触发回调和回调执行是一个线程，这里原始线程被指做回调触发的线程，译者注），所以自身不需要关心线程安全。</li>
-<li>在类C/C++语言中，可以读取存储在栈上的数据，比如说本地变量。</li>
-<li>在任一语言中，他们可以访问绑定到当前线程上的数据，比如说thread-local类型变量。比如许多java web框架在当前事务或者请求中创建thread-local类型的变量。</li>
-<li><p>可以假定某些应用程序的状态不变，比如说对象存在、定时器没有被触发、IO访问没有发生，或者任一一个程序关联的结构的状态。
-异步回调：</p>
-</li>
-<li><p>可能会在另一个线程（在基于线程的异步架构中）中被调用，所以应用需要使回调同步访问的任意一个资源。</p>
-</li>
-<li>不能访问任意一个 <em>原始</em> 堆栈或者线程，比如说局部变量或者thread-local类型数据。</li>
-<li>如果 <em>原始</em> 线程中持有锁，那么回调应在锁的外面被调用。</li>
-<li>需要假定其他的线程或者事件可能已经修改了应用程序的状态。</li>
-</ul>
-<p>不能说哪个回调方式更好，都有其优点。试想一下：<br><code>list.foreach(callback)</code><br>大多数情况下，如果callback被延迟调用并且在当前线程中没有做任何操作，你可能会十分惊讶。<br>但是：<br><code>socket.connect(callback)</code><br>如果不延迟调用callback就显得完全没有意义了，为啥要设置一个callback呢？<br>这两个例子告诉我们为什么一个给出的回调要被定义为同步或者异步，它们是不可以互换的，同时也拥有不同的用途。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>选择同步或者异步，但是不能同时使用</h2>
-<p>显而易见，可能在某些场景中需要立即执行回调（当数据已经准备好了情况），在另外一些场景回调需要延迟调用（socket没有准备好的情况）。一个很诱人的做法是，在可能的情况下同步执行回调，在另外的情况的异步执行。但是不是一个好想法。<br>因为同步和异步拥有不同的规则，他们产生不同的bug。在测试环境下触发异步回调，但是生产环境的某些不常见场景下，按照同步来运行了，是很典型的。<br>要求应用程序开发者同时对同步和异步情况进行规划和测试是很困难的，所以最简单的就是用库函数来实现：<strong>如果一个回调在某些情况下延迟支持，那么一直使用延迟的方式</strong>。</p>
-<h2><a name="gio" class="anchor" href="#gio"><span class="header-link"></span></a>例子：GIO</h2>
-<p>在GIO库中的<a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html">GSimpleAsyncResult文档</a>有一个针对当前问题的典型例子，直接滑过描述章节，看异步烘烤蛋糕的例子。（GSimpleAsyncResult可以等同于一些框架中的future或者promise。）这个类中提供了两个方法， <a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html#g-simple-async-result-complete-in-idle">complete_in_idle() </a>函数将回调交由一个“空闲句柄”（ <em>是一个立即调度的一次性事件循环，原文是：just an immediately-dispatched one-shot main loop event</em> ）来延迟调用；普通的<a href="http://developer.gnome.org/gio/unstable/GSimpleAsyncResult.html#g-simple-async-result-complete">complete()</a>函数同步触发回调。文档中建议，尽量使用complete_in_idle()，除非你知道你已经处在一个没有持有任何锁的回调中（也就是说，你正好处在从一个异步回调到另一个函数的调用链上，那就没有必要再做异步处理了）。  </p>
-<p>GSimpleAsyncResult旨在实现类似于<a href="http://developer.gnome.org/gio/unstable/GFile.html#g-file-read-async" title=" g_file_read_async()">g_file_read_async()</a>这种IO API，开发者可以假定所有使用这些API的回调都是异步的。</p>
-<p>GIO使用这种方式并且在文档中强制声明出来，因为开发者开发的时候曾经（因为文档不明确，译者注）备受煎熬。</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>同步资源需要延迟运行所有它们触发的回调函数</h2>
-<p>事实上，这个规则是说，一个类库需要在回调触发之前释放掉它持有的所有锁。释放掉所有锁的最简单的方式就是使回调异步，延迟调用它直到上下文回到主循环或者在另一个线程的上下文中调用它。(也就是说在当前上下文环境中所有代码——包括释放掉锁的代码——执行完毕，然后才在主循环或者另一线程中执行回调，译者注)</p>
-<p>这一点很重要，因为不能预计到应用程序不在回调内部接触你的API。如果你持有锁并且程序（在回调内部，译者注）接触到了你的API，程序就会死锁。（或者如果你使用递归锁，你同样会遇到可怕的问题。）</p>
-<p>与其将回调延迟到主循环或者线程中，同步的资源可以尝试释放掉它所有的锁；但是他是<strong>非常</strong>痛苦的，因为锁可能恰好在上下文中，你最终需要使每个上下文中的函数返回回调函数，将回调函数一直留存给最外部锁的持有者，然后释放掉锁并且触发回调。呸。</p>
-<h2><a name="akkahammersmith" class="anchor" href="#akkahammersmith"><span class="header-link"></span></a>例子：不使用Akka的Hammersmith</h2>
-<p>在前面提到的Hammersmith中，下面给出的伪码会产生死锁：</p>
-<pre><code><div class="highlight"><pre><span class="nx">connection</span><span class="p">.</span><span class="nx">query</span><span class="p">({</span> <span class="nx">cursor</span> <span class="o">=&gt;</span> <span class="cm">/* iterate cursor here, touching connection again */</span> <span class="p">})</span>
-</pre></div>
-</code></pre>
-<p>遍历游标时会反过来访问MongoDB的connection。在connection对象的代码中触发query的回调函数...，而这个connection对象还持有连接锁。虽然不能正常工作，但是这种代码对于开发者来说是很顺手的。如果一个类库不延迟调用回调函数，应用开发者需要自己延迟调用它。大多数应用开发者在开始的时候都会出错，一旦他们捕获到错误并且修正，他们的代码就会被一些异步架构搞的乱七八糟。</p>
-<p>Hammersmith从Netty中继承了这个问题，Netty也是这样使用connection的；Netty没有试图去延迟调用回调函数（我可以立即这种行为，毕竟在java中没有一个明确的 默认/标准/通用/有效 方式来延迟调用回调函数）。</p>
-<p>起初，我对它的修正是添加<a href="https://github.com/havocp/hammersmith/commit/48c6d4b486357d9af17bf4ee5f8042a4944c41bf">一个线程池来运行程序的回调</a>。不幸的是，这个推荐的和Netty一起使用的线程池类并没有解决死锁问题，<a href="https://github.com/havocp/hammersmith/commit/16fb3103851af00d6aa7780c182169e68c41aa45">我只能接着修复它</a>。（所有解决死锁问题的线程池都得拥有无限的容量和资源……）</p>
-<p>最终它终于能用了，但是想想一下，如果基于回调的API流行起来之后，每个jar包你都在它的API中使用回调函数，那么就必须拥有一个线程池。想想也是醉了。这很有可能就是为啥Netty在这个问题上要赌一把。在一个底层网络类库上太难做策略控制了。</p>
-<h2><a name="akka-actor" class="anchor" href="#akka-actor"><span class="header-link"></span></a>例子：AKKA Actor</h2>
-<p>部分由于要寻找一个更有的解决方案，之后我将<a href="https://github.com/bwmcadams/hammersmith">Hammersmith</a> 迁移到 <a href="http://akka.io/">Akka</a> 上来。Akka实现了<a href="https://zh.wikipedia.org/wiki/%E5%8F%83%E8%88%87%E8%80%85%E6%A8%A1%E5%BC%8F">Actor模式</a>。Actor是基于消息而不是基于回调的，一般来说消息还<strong>必须</strong>得是延迟发送的。事实上，Akka还特意强制你使用一个<a href="http://akka.io/api/akka/snapshot/akka/actor/ActorRef.html">ActorRef</a>用来和actor进行通信，所有关联ActoRref的消息都经过一个dispatcher（事件循环）。假定你有两个actor进行通信，他们将使用<code>!</code>或者“发送消息”函数：</p>
-<pre><code><div class="highlight"><pre><span class="nx">actorOne</span> <span class="o">!</span> <span class="nx">Request</span><span class="p">(</span><span class="s2">&quot;Hello&quot;</span><span class="p">)</span>
-<span class="c1">// then in actorOne</span>
-<span class="nx">sender</span> <span class="o">!</span> <span class="nx">Reply</span><span class="p">(</span><span class="s2">&quot;World&quot;</span><span class="p">)</span>
-</pre></div>
-</code></pre>
-<p>这些消息都通过事件循环进行分发的。我希望我的死锁问题能够在这种模式下得到解决，但是我在调用带有锁的回调函数时，还是遇到了小麻烦——同样的问题又被触发了。这次的锁是在actor处理消息时锁住actor本身。</p>
-<p>Akka中的actor可以从其他actor或者从<code>Future</code>中接收消息，Akka将发送者封装在一个称作<code>Channel</code>的对象中。通过<code>!</code>来发送消息到一个actor时，就会将这个消息交给dispather来做延迟，但是发送到future就不会；因此，在API约定上，<code>Channel</code>上的<code>!</code>方法并没有决定是当前是使用同步还是异步。</p>
-<p>那么问题来了，actor模式中的一个重点就是一个actor在同一时间内仅仅只能运行在一个线程中；actor在处理某个消息的时候是不允许另一个消息再进入的。因此，在actor外部产生同步调用是很危险的；在actor上有锁，如果同步调用时试图在回调中再次使用actor本身，就会产生死锁。</p>
-<p>我将MongoDB connection包装成一个actor，立马就重现了和Netty中同样的死锁问题，也就是在query的回调中试图在遍历游标的时候再次访问connection。query的回调是由<code>!</code>方法在发送到future上时触发的。这个<code>Channel</code>上的<code>!</code>方法打破了我的第一条原则（它没有在API约定上定义成同步或者异步），但是我期望它能够一直都是异步的；结果我还意外的打破了我的第二条原则，触发回调时还持有锁。</p>
-<p>如果是我，我将在API约定中吧<code>Channel.!</code>置为延迟，来修正这个问题；但是，正如Akka写的那样，如果你实现这样一个actor，发送回复，并且你程序的回复处理句柄想反回来重新使用actor本身，你必须手动延迟发送这些回复。我偶然间发现了这个实现方式，然而应该还有一个更好的实现方式：</p>
-<pre><code><div class="highlight"><pre><span class="kr">private</span> <span class="nx">def</span> <span class="nx">asyncSend</span><span class="p">(</span><span class="nx">channel</span><span class="o">:</span> <span class="nx">AkkaChannel</span><span class="p">[</span><span class="nx">Any</span><span class="p">],</span> <span class="nx">message</span><span class="o">:</span> <span class="nx">Any</span><span class="p">)</span> <span class="o">=</span> <span class="p">{</span>
-    <span class="nx">Future</span><span class="p">(</span><span class="nx">channel</span> <span class="o">!</span> <span class="nx">message</span><span class="p">,</span> <span class="nx">self</span><span class="p">.</span><span class="nx">timeout</span><span class="p">)(</span><span class="nx">self</span><span class="p">.</span><span class="nx">dispatcher</span><span class="p">)</span>
-<span class="p">}</span>
-</pre></div>
-</code></pre>
-<p>这个解决方案令人不爽的地方是，为了将回复交给future做异步处理，那么对于actor的回复就是两次异步了。</p>
-<p>还好，对于Akka来说至少它<strong>拥有</strong>解决方案——使用dispatcher。如果使用纯Netty，我就不得不使用一个专门的线程池了。</p>
-<p>Akka给出了“如何是回调异步”的答案，但是它还需要一些特殊用途的（special-casing）future来保证它们确实是异步的。<br>（<strong>更新：</strong>Akka团队已经准备解决这个问题，<a href="https://www.assembla.com/spaces/akka/tickets/1054-complete-futures-asynchronously-when-replying-through-a-channel">详情查看</a>。）</p>
-<h2><a name="" class="anchor" href="#"><span class="header-link"></span></a>总结</h2>
-<p>相对于我发现的Akka的小麻烦，没有使用Akka的JVM环境下的情况将会更糟，因为这时是没有一个dispatcher可供使用的。<br><strong>基于回调的API在有事件循环的时候会运行的很好</strong> ，因为拥有异步触发回调的功能是很重要的。<br>这也就是为啥在客户端javascript和<a href="http://nodejs.org/">node.js</a>还有类似于<a href="http://www.gtk.org/">GTK+</a>的UI组件库中回调运行的很完美。但是如果你在JVM中开始编写基于回调的API，就是没有默认解决方案的。你不得不借鉴一些事件循环类库（Akka工作的很好），或者重新造轮子，或者随处使用线程池。</p>
-<p>鉴于基于回调的API如此的时髦……如果你准备写一个，我想前面的这个话题你也会遇到。打完收工。</p>
-]]></description><link>http://blog.whyun.com/posts//</link><guid isPermaLink="true">http://blog.whyun.com/posts//</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Wed, 18 Feb 2015 00:00:00 GMT</pubDate></item></channel></rss>
+]]></description><link>http://blog.whyun.com/posts/js/</link><guid isPermaLink="true">http://blog.whyun.com/posts/js/</guid><dc:creator><![CDATA[白一梓]]></dc:creator><pubDate>Fri, 20 Mar 2015 00:00:00 GMT</pubDate></item></channel></rss>
