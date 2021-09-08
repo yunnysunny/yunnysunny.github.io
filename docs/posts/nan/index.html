@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.whyun.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="node的c++ API在不同版本中差异是巨大的，那么怎么解决这个问题呢，幸好有nan这个模块，它通过宏定义的方式把不同版本的API统一起来，极大简化了代码编写过程。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="nan入门教程">
+<meta property="og:url" content="https://blog.whyun.com/posts/nan/">
+<meta property="og:site_name" content="白一梓的个人博客">
+<meta property="og:description" content="node的c++ API在不同版本中差异是巨大的，那么怎么解决这个问题呢，幸好有nan这个模块，它通过宏定义的方式把不同版本的API统一起来，极大简化了代码编写过程。">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2015-05-23T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-09-08T12:10:49.234Z">
+<meta property="article:author" content="yunnysunny">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.whyun.com/posts/nan/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>nan入门教程 | 白一梓的个人博客</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?628c040f31bc950845419d51d5cbebeb";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">白一梓的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+  <a title="又拍云" style="position:absolute;bottom:0;left:100px;" src="http://upyun.com"><img src="/images/upyun_logo_90x45.png"></a>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.whyun.com/posts/nan/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="yunnysunny">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="白一梓的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          nan入门教程
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2015-05-24 00:00:00" itemprop="dateCreated datePublished" datetime="2015-05-24T00:00:00+08:00">2015-05-24</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-09-08 20:10:49" itemprop="dateModified" datetime="2021-09-08T20:10:49+08:00">2021-09-08</time>
+              </span>
+
+          
+            <div class="post-description">node的c++ API在不同版本中差异是巨大的，那么怎么解决这个问题呢，幸好有nan这个模块，它通过宏定义的方式把不同版本的API统一起来，极大简化了代码编写过程。</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>{</p>
+<p>}<br>Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如果你之前的代码是按照0.10的API编写的，将其改成0.12的形式是需要耗费一番精力的，但是问题又来了，你如果改为0.12形式，0.10又不能够被兼容了。幸好有<a target="_blank" rel="noopener" href="https://github.com/nodejs/nan">nan</a>，其实它的核心是一个头文件，通过宏定义来做不同版本的node的c++ API的兼容。</p>
+<h2 id="1-配置"><a href="#1-配置" class="headerlink" title="1.配置"></a>1.配置</h2><p>首先你通过 <code>npm install nan --save</code> 来安装 nan ,然后在binding.gyp中配置：</p>
+<pre><code>&quot;include_dirs&quot; : [
+    &quot;&lt;!(node -e \&quot;require(&#39;nan&#39;)\&quot;)&quot;
+]
+</code></pre>
+<p> 最后在使用<code>nan</code>的c++文件中引入头文件<code>#include&lt;nan.h&gt;</code>。</p>
+<h2 id="2-demo"><a href="#2-demo" class="headerlink" title="2.demo"></a>2.demo</h2><p> 下面的demo摘自nan的readme文档</p>
+<pre><code> // addon.cc
+#include &lt;node.h&gt;
+#include &lt;nan.h&gt;
+// ..引入async.h或者sync.h
+
+using v8::FunctionTemplate;
+using v8::Handle;
+using v8::Object;
+using v8::String;
+
+void InitAll(Handle&lt;Object&gt; exports) &#123;
+  exports-&gt;Set(NanNew&lt;String&gt;(&quot;calculateSync&quot;),
+    NanNew&lt;FunctionTemplate&gt;(CalculateSync)-&gt;GetFunction());
+
+  exports-&gt;Set(NanNew&lt;String&gt;(&quot;calculateAsync&quot;),
+    NanNew&lt;FunctionTemplate&gt;(CalculateAsync)-&gt;GetFunction());
+&#125;
+
+NODE_MODULE(addon, InitAll)   
+</code></pre>
+<p><strong>代码2.1 addon.cc</strong></p>
+<p>首先就是导出函数部分，<code>nan</code>中写法为<code>exports-&gt;Set(NanNew&lt;String&gt;(&quot;calculateSync&quot;),         NanNew&lt;FunctionTemplate&gt;(CalculateSync)-&gt;GetFunction());</code>，对于c++ api来说，在nan中全部都要用<code>NanNew</code>来声明，在0.10中这句话被写作<code>exports-&gt;Set(String::NewSymbol(&quot;calculateSync&quot;),FunctionTemplate::New(CalculateAsync)-&gt;GetFunction());</code>在0.12中是<code>NODE_SET_METHOD(exports, &quot;calculateSync&quot;, CalculateAsync); </code>。<br> 正常情况下需要引入函数<code>CalculateAsync</code>所在的头文件的，但是官方文档给出了两个<code>CalculateAsync</code>函数的实现，一个同步版，一个异步版。同步版仅仅是直接调用：</p>
+<pre><code>// sync.h
+#include &lt;node.h&gt;
+#include &lt;nan.h&gt;
+
+NAN_METHOD(CalculateSync);
+</code></pre>
+<p><strong>代码2.2 sync.h</strong></p>
+<p>通过头文件就可以看出，函数声明的方式需要使用<code>NAN_METHOD(CalculateSync)</code>，这等同于0.10中的<code>Handle&lt;Value&gt; CalculateSync(const Arguments&amp; args)</code>,在0.12中要这么写<code>void CalculateSync(const FunctionCallbackInfo&lt;Value&gt;&amp; args)</code>。</p>
+<pre><code>// sync.cc
+#include &lt;node.h&gt;
+#include &lt;nan.h&gt;
+#include &quot;./sync.h&quot;
+// ...引入第三方类库头文件
+
+using v8::Number;
+
+// Simple synchronous access to the `Estimate()` function
+NAN_METHOD(CalculateSync) &#123;
+  NanScope();
+
+  // expect a number as the first argument
+  int points = args[0]-&gt;Uint32Value();
+  double est = Estimate(points);//Estimate是一个第三方类库的函数，这里可以不用理会
+
+  NanReturnValue(NanNew&lt;Number&gt;(est));
+&#125;
+</code></pre>
+<p><strong>代码2.3 sync.cc</strong><br>首先是函数<code>NanScope();</code>,他来完成node0.10中的<code>HandleScope scope;</code>的功能，在node0.12中是：</p>
+<pre><code>Isolate* isolate = Isolate::GetCurrent();
+HandleScope scope(isolate);
+</code></pre>
+<p>函数结束返回值操作也变成由函数（确切的说应该是宏定义）NanReturnValue来代替。</p>
+<p>更令人振奋的是，nan中还对libuv中的函数<code>uv_queue_work</code>进行了抽象，可以通过继承类<code>NanAsyncWorker</code>来实现异步话操作，省去了为了使用<code>uv_queue_work</code>而自定义数据结构的步骤。下面就是async.cc的代码：</p>
+<pre><code>// async.cc
+#include &lt;node.h&gt;
+#include &lt;nan.h&gt;
+#include &quot;./async.h&quot;
+
+// ...引入第三方类库
+
+using v8::Function;
+using v8::Local;
+using v8::Null;
+using v8::Number;
+using v8::Value;
+
+class PiWorker : public NanAsyncWorker &#123;
+ public:
+  PiWorker(NanCallback *callback, int points)
+    : NanAsyncWorker(callback), points(points) &#123;&#125;
+  ~PiWorker() &#123;&#125;
+
+  //这个函数运行在工作线程，而不是v8线程，所以不能访问v8的数据
+  void Execute () &#123;
+    estimate = Estimate(points);
+  &#125;
+
+  //这个是libuv的回调函数，在这里可以使用v8的数据
+  void HandleOKCallback () &#123;
+    NanScope();
+
+    Local&lt;Value&gt; argv[] = &#123;
+        NanNull()
+      , NanNew&lt;Number&gt;(estimate)
+    &#125;;
+
+    callback-&gt;Call(2, argv);
+  &#125;;
+
+ private:
+  int points;
+  double estimate;
+&#125;;
+
+// Asynchronous access to the `Estimate()` function
+NAN_METHOD(CalculateAsync) &#123;
+  NanScope();
+
+  int points = args[0]-&gt;Uint32Value();
+  NanCallback *callback = new NanCallback(args[1].As&lt;Function&gt;());
+
+  NanAsyncQueueWorker(new PiWorker(callback, points));
+  NanReturnUndefined();
+&#125;
+</code></pre>
+<p><strong>代码2.4 async.cc</strong><br><a target="_blank" rel="noopener" href="http://git.oschina.net/yunnysunny/async-tutorial-code/tree/master/addon">这里</a>有一个利用<a target="_blank" rel="noopener" href="https://github.com/nodejs/nan">nan</a>和node0.10/0.12来完成异步操作的对比。</p>
+<p>这篇教程仅仅是一个入门操作，就讲到这里了，详细的使用请参考nan的readme文档。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/node0-12capi/" rel="prev" title="即将面临的Node0.12中的C++API的改变">
+      <i class="fa fa-chevron-left"></i> 即将面临的Node0.12中的C++API的改变
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/posts/jni/" rel="next" title="JNI系列教程一——入门">
+      JNI系列教程一——入门 <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%85%8D%E7%BD%AE"><span class="nav-number">1.</span> <span class="nav-text">1.配置</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-demo"><span class="nav-number">2.</span> <span class="nav-text">2.demo</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yunnysunny</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/yunnysunny" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;yunnysunny" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/1261004702" title="Weibo → http:&#x2F;&#x2F;weibo.com&#x2F;1261004702" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      推广链接
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://upyun.com/" title="http:&#x2F;&#x2F;upyun.com" rel="noopener" target="_blank">又拍云</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yunnysunny</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>

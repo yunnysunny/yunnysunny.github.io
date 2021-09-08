@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 5.4.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/font-awesome.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"blog.whyun.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="request 请求时 DNS 解析超时的问题探究，包括若干 node 源码的解读">
+<meta property="og:type" content="article">
+<meta property="og:title" content="request 包中出现 DNS 解析超时的探究">
+<meta property="og:url" content="https://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/">
+<meta property="og:site_name" content="白一梓的个人博客">
+<meta property="og:description" content="request 请求时 DNS 解析超时的问题探究，包括若干 node 源码的解读">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2019-09-24T16:00:00.000Z">
+<meta property="article:modified_time" content="2021-09-08T12:15:07.330Z">
+<meta property="article:author" content="yunnysunny">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="https://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'zh-CN'
+  };
+</script>
+
+  <title>request 包中出现 DNS 解析超时的探究 | 白一梓的个人博客</title>
+  
+
+
+  <script>
+    var _hmt = _hmt || [];
+    (function() {
+      var hm = document.createElement("script");
+      hm.src = "https://hm.baidu.com/hm.js?628c040f31bc950845419d51d5cbebeb";
+      var s = document.getElementsByTagName("script")[0];
+      s.parentNode.insertBefore(hm, s);
+    })();
+  </script>
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="切换导航栏">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">白一梓的个人博客</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+  <a title="又拍云" style="position:absolute;bottom:0;left:100px;" src="http://upyun.com"><img src="/images/upyun_logo_90x45.png"></a>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-fw fa-home"></i>首页</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-fw fa-archive"></i>归档</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="zh-CN">
+    <link itemprop="mainEntityOfPage" href="https://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="yunnysunny">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="白一梓的个人博客">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          request 包中出现 DNS 解析超时的探究
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="fa fa-calendar-o"></i>
+              </span>
+              <span class="post-meta-item-text">发表于</span>
+
+              <time title="创建时间：2019-09-25 00:00:00" itemprop="dateCreated datePublished" datetime="2019-09-25T00:00:00+08:00">2019-09-25</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="fa fa-calendar-check-o"></i>
+                </span>
+                <span class="post-meta-item-text">更新于</span>
+                <time title="修改时间：2021-09-08 20:15:07" itemprop="dateModified" datetime="2021-09-08T20:15:07+08:00">2021-09-08</time>
+              </span>
+
+          
+            <div class="post-description">request 请求时 DNS 解析超时的问题探究，包括若干 node 源码的解读</div>
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <p>事情的起因是这样的，公司使用自建 dns 服务器，但是有一个致命缺陷，不支持 ipv6 格式的地址解析，而 node 的 DNS 解析默认是同时请求 v4 和 v6 的地址的，这样会导致偶尔在解析  v6 地址的时候出现超时。</p>
+<blockquote>
+<p>本文链接地址 <a href="https://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/index.html">https://blog.whyun.com/posts/request-dns/the-problem-of-dns-timeout-on-request-package/index.html</a> ，转载请注明出处。</p>
+</blockquote>
+<p>我们的程序中是使用的 <a target="_blank" rel="noopener" href="https://github.com/request/request">request</a> 这个包，查看了一下官方文档，请求 options 中并没有涉及跟 DNS 有关的配置，于是乎求教运维同事。运维同事告诉我在 docker run 的时候加参数 <code>--sysctl net.ipv6.conf.all.disable_ipv6=1</code>，试用了一下，并且写出来如下测试代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> dns = <span class="built_in">require</span>(<span class="string">&#x27;dns&#x27;</span>);</span><br><span class="line"><span class="keyword">const</span> domain = process.argv[<span class="number">2</span>] || <span class="string">&#x27;baidu.com&#x27;</span>;</span><br><span class="line"><span class="keyword">const</span> begin = <span class="built_in">Date</span>.now();</span><br><span class="line">dns.lookup(domain,<span class="function"><span class="keyword">function</span>(<span class="params">err ,address , family</span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">&#x27;耗时&#x27;</span>,<span class="built_in">Date</span>.now() - begin, err ,address , family);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p><strong>代码 1.1 DNS 查询测试代码</strong></p>
+<p>运行 <strong>代码 1.1</strong> ，同时使用命令 <code>tcpdump -i eth0 -n -s 500 port domain</code> 来抓取 DNS 解析的数据包：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">20:47:28.917563 IP 10.6.13.67.38050 &gt; 10.7.11.219.domain: 40621+ A? baidu.com. (27)</span><br><span class="line">20:47:28.917582 IP 10.6.13.67.38050 &gt; 10.7.11.219.domain: 32393+ AAAA? baidu.com. (27)</span><br><span class="line">20:47:28.921061 IP 10.7.11.219.domain &gt; 10.6.13.67.38050: 40621 2/0/0 A 220.181.38.148, A 39.156.69.79 (59)</span><br><span class="line">20:47:28.921114 IP 10.7.11.219.domain &gt; 10.6.13.67.38050: 32393 0/1/0 (70)</span><br></pre></td></tr></table></figure>
+
+<p>从输出来看依然会请求 ipv6 的地址解析，所以当时我的判断是运维的配置是不生效的。</p>
+<p>后来又有了些空闲的时间，所以研究了一下官方文档，看看是否有参数可以控制 http 请求的 DNS 协议版本，没有想到还真有，<a target="_blank" rel="noopener" href="https://nodejs.org/dist/latest-v10.x/docs/api/http.html#http_http_request_options_callback">http.request</a> 的 options 中可以设置 family 参数，可选值为 <code>4</code> <code>6</code>, 即 ipv4 或者 ipv6，如果不指定这个参数，将同时使用 ipv4 和 ipv6。按理来说看到这里，我就应该死心了，如果不传这个参数，肯定会同时做 ipv4 和 ipv6 的地址解析，但是我还是抱着试试看的态度写下了如下测试代码：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> domain = process.argv[<span class="number">2</span>] || <span class="string">&#x27;baidu.com&#x27;</span>;</span><br><span class="line"><span class="built_in">require</span>(<span class="string">&#x27;http&#x27;</span>).request(<span class="string">&#x27;http://&#x27;</span> + domain,<span class="function"><span class="keyword">function</span>(<span class="params">res</span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">`STATUS: <span class="subst">$&#123;res.statusCode&#125;</span>`</span>);</span><br><span class="line">  <span class="built_in">console</span>.log(<span class="string">`HEADERS: <span class="subst">$&#123;<span class="built_in">JSON</span>.stringify(res.headers)&#125;</span>`</span>);</span><br><span class="line">  res.setEncoding(<span class="string">&#x27;utf8&#x27;</span>);</span><br><span class="line">  res.on(<span class="string">&#x27;data&#x27;</span>, <span class="function">(<span class="params">chunk</span>) =&gt;</span> &#123;</span><br><span class="line">    <span class="comment">//console.log(`BODY: $&#123;chunk&#125;`);</span></span><br><span class="line">  &#125;);</span><br><span class="line">  res.on(<span class="string">&#x27;end&#x27;</span>, <span class="function">() =&gt;</span> &#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">&#x27;No more data in response.&#x27;</span>);</span><br><span class="line">  &#125;);</span><br><span class="line">&#125;).end();</span><br></pre></td></tr></table></figure>
+<p><strong>代码 1.2 http 请求测试</strong></p>
+<p>没有想到 <strong>代码 1.2</strong> 执行完成后竟然只做了 ipv4 的解析：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">21:01:06.593429 IP 10.6.12.158.48479 &gt; 10.7.11.219.domain: 10352+ A? baidu.com. (27)</span><br><span class="line">21:01:06.596978 IP 10.7.11.219.domain &gt; 10.6.12.158.48479: 10352 2/0/0 A 39.156.69.79, A 220.181.38.148 (59)</span><br></pre></td></tr></table></figure>
+
+<p>这就很神奇了，node 的 http 的代码封装中肯定做了什么！带着这个疑问，我阅读了 node 的源码，首先看 ClientRequest 的初始化代码中，连接初始化部分：</p>
+<pre>
+<code>
+  // initiate connection
+  if (this.agent) &#123;
+    this.agent.addRequest(this, options);
+  &#125; else &#123;
+    // No agent, default to Connection:close.
+    this._last = true;
+    this.shouldKeepAlive = false;
+    if (typeof options.createConnection === 'function') &#123;
+      const newSocket = options.createConnection(options, oncreate);
+      if (newSocket && !called) &#123;
+        called = true;
+        this.onSocket(newSocket);
+      &#125; else &#123;
+        return;
+      &#125;
+    &#125; else &#123;
+      debug('CLIENT use net.createConnection', options);
+      <b>this.onSocket(net.createConnection(options));</b>
+    &#125;
+  &#125;
+</code>
+</pre>
+
+<p><strong>代码 1.3 <a target="_blank" rel="noopener" href="https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/_http_client.js#L274">ClientRequest 类的连接初始化</a></strong></p>
+<p>http.request 没有加任何参数的情况，默认走到 <code>this.onSocket(net.createConnection(options));</code> 这句话，然后看 net 包的代码，其中一端跟 DNS 相关的代码：</p>
+<pre>
+<code>
+  if (dns === undefined) dns = require('dns');
+  const dnsopts = &#123;
+    family: options.family,
+    hints: options.hints || 0
+  &#125;;
+  if (process.platform !== 'win32' &&
+      dnsopts.family !== 4 &&
+      dnsopts.family !== 6 &&
+      dnsopts.hints === 0) &#123;
+    <b>dnsopts.hints = dns.ADDRCONFIG;</b>
+  &#125;
+  debug('connect: find host', host);
+  debug('connect: dns options', dnsopts);
+  self._host = host;
+  const lookup = options.lookup || dns.lookup;
+</code>
+</pre>
+
+<p><strong>代码 1.4 <a target="_blank" rel="noopener" href="https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/net.js#L1010">net 包中 DNS 查询参数代码</a></strong></p>
+<p>然后我们再看 lookup 函数的源码：</p>
+<pre>
+<code>
+// Easy DNS A/AAAA look up
+// lookup(hostname, [options,] callback)
+function lookup(hostname, options, callback) &#123;
+  var hints = 0;
+  var family = -1;
+  var all = false;
+  var verbatim = false;
+  // Parse arguments
+  if (hostname && typeof hostname !== 'string') &#123;
+    throw new ERR_INVALID_ARG_TYPE('hostname', 'string', hostname);
+  &#125; else if (typeof options === 'function') &#123;
+    callback = options;
+    family = 0;
+  &#125; else if (typeof callback !== 'function') &#123;
+    throw new ERR_INVALID_CALLBACK(callback);
+  &#125; else if (options !== null && typeof options === 'object') &#123;
+    hints = options.hints >>> 0;
+    family = options.family >>> 0;
+    all = options.all === true;
+    verbatim = options.verbatim === true;
+    validateHints(hints);
+  &#125; else &#123;
+    family = options >>> 0;
+  &#125;
+  if (family !== 0 && family !== 4 && family !== 6)
+    throw new ERR_INVALID_OPT_VALUE('family', family);
+  if (!hostname) &#123;
+    emitInvalidHostnameWarning(hostname);
+    if (all) &#123;
+      process.nextTick(callback, null, []);
+    &#125; else &#123;
+      process.nextTick(callback, null, null, family === 6 ? 6 : 4);
+    &#125;
+    return &#123;&#125;;
+  &#125;
+  const matchedFamily = isIP(hostname);
+  if (matchedFamily) &#123;
+    if (all) &#123;
+      process.nextTick(
+        callback, null, [&#123; address: hostname, family: matchedFamily &#125;]);
+    &#125; else &#123;
+      process.nextTick(callback, null, hostname, matchedFamily);
+    &#125;
+    return &#123;&#125;;
+  &#125;
+  const req = new GetAddrInfoReqWrap();
+  req.callback = callback;
+  req.family = family;
+  req.hostname = hostname;
+  req.oncomplete = all ? onlookupall : onlookup;    
+  <b>const err = cares.getaddrinfo(
+    req, toASCII(hostname), family, hints, verbatim
+  );</b>
+  if (err) &#123;
+    process.nextTick(callback, dnsException(err, 'getaddrinfo', hostname));
+    return &#123;&#125;;
+  &#125;
+  return req;
+&#125;
+</code>
+</pre>
+
+<p><strong>代码 1.5 <a target="_blank" rel="noopener" href="https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/dns.js#L88">lookup 函数源码</a></strong></p>
+<p>通过代码 1.5 发现最终 DNS 查询是要调用 C++ 绑定类的，于是我又查看了 C++ 的代码：</p>
+<pre>
+<code>
+void GetAddrInfo(const FunctionCallbackInfo<Value>& args) &#123;
+  Environment* env = Environment::GetCurrent(args);
+
+  CHECK(args[0]->IsObject());
+  CHECK(args[1]->IsString());
+  CHECK(args[2]->IsInt32());
+  CHECK(args[4]->IsBoolean());
+  Local<Object> req_wrap_obj = args[0].As<Object>();
+  node::Utf8Value hostname(env->isolate(), args[1]);
+
+  int32_t flags = 0;
+  if (args[3]->IsInt32()) &#123;
+    <b>flags = args[3].As<Int32>()->Value();</b>
+  &#125;
+
+  int family;
+
+  switch (args[2].As<Int32>()->Value()) &#123;
+    case 0:
+      family = AF_UNSPEC;
+      break;
+    case 4:
+      family = AF_INET;
+      break;
+    case 6:
+      family = AF_INET6;
+      break;
+    default:
+      CHECK(0 && "bad address family");
+  &#125;
+
+  auto req_wrap = std::make_unique<GetAddrInfoReqWrap>(env,
+                                                       req_wrap_obj,
+                                                       args[4]->IsTrue());
+
+  struct addrinfo hints;
+  memset(&hints, 0, sizeof(hints));
+  hints.ai_family = family;
+  hints.ai_socktype = SOCK_STREAM;
+  <b>hints.ai_flags = flags;</b>
+
+  TRACE_EVENT_NESTABLE_ASYNC_BEGIN2(
+      TRACING_CATEGORY_NODE2(dns, native), "lookup", req_wrap.get(),
+      "hostname", TRACE_STR_COPY(*hostname),
+      "family",
+      family == AF_INET ? "ipv4" : family == AF_INET6 ? "ipv6" : "unspec");
+
+  <b>int err = req_wrap->Dispatch(uv_getaddrinfo,
+                               AfterGetAddrInfo,
+                               *hostname,
+                               nullptr,
+                               &hints);</b>
+  if (err == 0)
+    // Release ownership of the pointer allowing the ownership to be transferred
+    USE(req_wrap.release());
+
+  args.GetReturnValue().Set(err);
+&#125;
+</code>
+</pre>
+<p><strong>代码 1.6 <a target="_blank" rel="noopener" href="https://sourcegraph.com/github.com/nodejs/node/-/blob/src/cares_wrap.cc#L1940">C++ 中 DNS 的查询代码</a></strong></p>
+<p>注意 <strong>代码 1.5</strong> 中的 family hints 最终会分别转化为 结构体变量 struct addrinfo hints 中的 ai_family 和 ai_flags。</p>
+<p>最终这个结构体 hints 会层层传递到 libuv 中：</p>
+<pre>
+<code>
+static void uv__getaddrinfo_work(struct uv__work* w) &#123;
+  uv_getaddrinfo_t* req;
+  int err;
+  req = container_of(w, uv_getaddrinfo_t, work_req);
+  <b>err = getaddrinfo(req->hostname, req->service, req->hints, &req->addrinfo);</b>
+  req->retcode = uv__getaddrinfo_translate_error(err);
+&#125;
+</code>
+</pre>
+
+<p><strong>代码 1.7 <a target="_blank" rel="noopener" href="https://sourcegraph.com/github.com/nodejs/node@c5f5f84a33967862036c7d87f4bbde6a59d3820a/-/blob/deps/uv/src/unix/getaddrinfo.c#L101">libuv 中的 dns 查询函数代码</a></strong></p>
+<p>注意到我们在 <strong>代码 1.4</strong> 中的 hints 参数，最终会作为 req-&gt;hints-&gt;ai_flags 参数，最终我在 man7 文档上找到了 <a target="_blank" rel="noopener" href="http://man7.org/linux/man-pages/man3/getaddrinfo.3.html">AI_ADDRCONFIG</a>  的这个参数的说明：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">If hints.ai_flags includes the AI_ADDRCONFIG flag, then IPv4</span><br><span class="line">addresses are returned in the list pointed to by res only if the</span><br><span class="line">local system has at least one IPv4 address configured, and IPv6</span><br><span class="line">addresses are returned only if the local system has at least one IPv6</span><br><span class="line">address configured.  The loopback address is not considered for this</span><br><span class="line">case as valid as a configured address.  This flag is useful on, for</span><br><span class="line">example, IPv4-only systems, to ensure that getaddrinfo() does not</span><br><span class="line">return IPv6 socket addresses that would always fail in connect(2) or</span><br><span class="line">bind(2).</span><br></pre></td></tr></table></figure>
+
+<p>大体意思是说，系统配置了 ipv4 才返回 ipv4的地址，系统配置了 ipv6 才返回 ipv6 的地址，而 docker 的启动参数 <code>--sysctl net.ipv6.conf.all.disable_ipv6=1</code> 等同于系统只支持 ipv4 的声明，所以操作系统函数 <code>getaddrinfo</code> 就只返回 ipv4 的地址。</p>
+<p>重新验证这个问题，将代码 1.1 做改造：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> dns = <span class="built_in">require</span>(<span class="string">&#x27;dns&#x27;</span>);</span><br><span class="line"><span class="keyword">const</span> domain = process.argv[<span class="number">2</span>] || <span class="string">&#x27;baidu.com&#x27;</span>;</span><br><span class="line"><span class="keyword">const</span> begin = <span class="built_in">Date</span>.now();</span><br><span class="line">dns.lookup(domain,&#123;<span class="attr">hints</span>:<span class="number">32</span>&#125;,<span class="function"><span class="keyword">function</span>(<span class="params">err ,address , family</span>) </span>&#123;</span><br><span class="line">    <span class="built_in">console</span>.log(<span class="string">&#x27;耗时&#x27;</span>,<span class="built_in">Date</span>.now() - begin, err ,address , family);</span><br><span class="line">&#125;);</span><br></pre></td></tr></table></figure>
+
+<p><strong>代码 1.8 使用 ADDRCONFIG 参数做 DNS 查询</strong></p>
+<blockquote>
+<p>这里面之所以取值的 hints:32，是因为 <code>AI_ADDRCONFIG</code> 的值为32。通过设置环境变量 NODE_DEBUG=net 后启动 <strong>代码1.2</strong> ，会发现 <code>debug(&#39;connect: dns options&#39;, dnsopts);</code> 打印的 hints 值为 32。</p>
+</blockquote>
+<p>重新运行，发现果然只查询了 ipv4 的地址。</p>
+<p>到此为止，其实可以算是圆满收官了，但是对于 request 包还是不死心，心想如果当前开源源码不支持，是否可以做一个 pull request  呢，于是我看了一下他们的官方源码，结果就发现了新大陆：</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">var</span> reqOptions = copy(self)</span><br><span class="line"><span class="keyword">delete</span> reqOptions.auth</span><br><span class="line"></span><br><span class="line">debug(<span class="string">&#x27;make request&#x27;</span>, self.uri.href)</span><br><span class="line"></span><br><span class="line"><span class="comment">// node v6.8.0 now supports a `timeout` value in `http.request()`, but we</span></span><br><span class="line"><span class="comment">// should delete it for now since we handle timeouts manually for better</span></span><br><span class="line"><span class="comment">// consistency with node versions before v6.8.0</span></span><br><span class="line"><span class="keyword">delete</span> reqOptions.timeout</span><br><span class="line"></span><br><span class="line"><span class="keyword">try</span> &#123;</span><br><span class="line">  self.req = self.httpModule.request(reqOptions)</span><br><span class="line">&#125; <span class="keyword">catch</span> (err) &#123;</span><br><span class="line">  self.emit(<span class="string">&#x27;error&#x27;</span>, err)</span><br><span class="line">  <span class="keyword">return</span></span><br><span class="line">&#125;</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><strong>代码 1.9 request 源码片段</strong></p>
+<p><code>self.httpModule.request(reqOptions)</code> 等同于 <code>http.request(reqOptions)</code> 或者 <code>https.request(reqOptions)</code>，也就是说 http 模块的所有参数其实在 request 上也是适用的，但是 request 的官方文档却没有指出！</p>
+<p>最圆满的方案出炉了，在调用 request 函数的时候，指定 family 为 4，也可以通过 node 代码层面屏蔽 ipv6 解析。不过鉴于启动 docker 时已经添加 <code>sysctl</code> 参数，即使 node 不指定使用  ipv4，请求 http 也会只返回 ipv4 的地址。</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/posts/node/the-cache-design-in-node/" rel="prev" title="Node 缓存优化之路">
+      <i class="fa fa-chevron-left"></i> Node 缓存优化之路
+    </a></div>
+      <div class="post-nav-item"></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          文章目录
+        </li>
+        <li class="sidebar-nav-overview">
+          站点概览
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">yunnysunny</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">15</span>
+          <span class="site-state-item-name">日志</span>
+        </a>
+      </div>
+  </nav>
+</div>
+  <div class="links-of-author motion-element">
+      <span class="links-of-author-item">
+        <a href="https://github.com/yunnysunny" title="GitHub → https:&#x2F;&#x2F;github.com&#x2F;yunnysunny" rel="noopener" target="_blank"><i class="fa fa-fw fa-github"></i>GitHub</a>
+      </span>
+      <span class="links-of-author-item">
+        <a href="http://weibo.com/1261004702" title="Weibo → http:&#x2F;&#x2F;weibo.com&#x2F;1261004702" rel="noopener" target="_blank"><i class="fa fa-fw fa-weibo"></i>Weibo</a>
+      </span>
+  </div>
+
+
+  <div class="links-of-blogroll motion-element">
+    <div class="links-of-blogroll-title">
+      <i class="fa fa-fw fa-link"></i>
+      推广链接
+    </div>
+    <ul class="links-of-blogroll-list">
+        <li class="links-of-blogroll-item">
+          <a href="http://upyun.com/" title="http:&#x2F;&#x2F;upyun.com" rel="noopener" target="_blank">又拍云</a>
+        </li>
+    </ul>
+  </div>
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2021</span>
+  <span class="with-love">
+    <i class="fa fa-user"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">yunnysunny</span>
+</div>
+  <div class="powered-by">由 <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  
+
+  
+
+</body>
+</html>
