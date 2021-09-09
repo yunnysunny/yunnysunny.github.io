@@ -3,6 +3,7 @@ abbrlink: request-dns/the-problem-of-dns-timeout-on-request-package
 title: request 包中出现 DNS 解析超时的探究
 date:  2019-09-25
 description: request 请求时 DNS 解析超时的问题探究，包括若干 node 源码的解读
+typora-copy-images-to: ..\images
 ---
 
 
@@ -60,205 +61,36 @@ require('http').request('http://' + domain,function(res) {
 ```
 
 这就很神奇了，node 的 http 的代码封装中肯定做了什么！带着这个疑问，我阅读了 node 的源码，首先看 ClientRequest 的初始化代码中，连接初始化部分：
-<pre>
-<code>
-  // initiate connection
-  if (this.agent) {
-    this.agent.addRequest(this, options);
-  } else {
-    // No agent, default to Connection:close.
-    this._last = true;
-    this.shouldKeepAlive = false;
-    if (typeof options.createConnection === 'function') {
-      const newSocket = options.createConnection(options, oncreate);
-      if (newSocket && !called) {
-        called = true;
-        this.onSocket(newSocket);
-      } else {
-        return;
-      }
-    } else {
-      debug('CLIENT use net.createConnection', options);
-      <b>this.onSocket(net.createConnection(options));</b>
-    }
-  }
-</code>
-</pre>
+
+![image-20210909150643988](/images/image-20210909150643988.png)
 
 **代码 1.3 [ClientRequest 类的连接初始化](https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/_http_client.js#L274)**
 
 http.request 没有加任何参数的情况，默认走到 `this.onSocket(net.createConnection(options));` 这句话，然后看 net 包的代码，其中一端跟 DNS 相关的代码：
 
-<pre>
-<code>
-  if (dns === undefined) dns = require('dns');
-  const dnsopts = {
-    family: options.family,
-    hints: options.hints || 0
-  };
-  if (process.platform !== 'win32' &&
-      dnsopts.family !== 4 &&
-      dnsopts.family !== 6 &&
-      dnsopts.hints === 0) {
-    <b>dnsopts.hints = dns.ADDRCONFIG;</b>
-  }
-  debug('connect: find host', host);
-  debug('connect: dns options', dnsopts);
-  self._host = host;
-  const lookup = options.lookup || dns.lookup;
-</code>
-</pre>
+![image-20210909145827042](/images/image-20210909145827042.png)
 
 **代码 1.4 [net 包中 DNS 查询参数代码](https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/net.js#L1010)**
 
 然后我们再看 lookup 函数的源码：
-<pre>
-<code>
-// Easy DNS A/AAAA look up
-// lookup(hostname, [options,] callback)
-function lookup(hostname, options, callback) {
-  var hints = 0;
-  var family = -1;
-  var all = false;
-  var verbatim = false;
-  // Parse arguments
-  if (hostname && typeof hostname !== 'string') {
-    throw new ERR_INVALID_ARG_TYPE('hostname', 'string', hostname);
-  } else if (typeof options === 'function') {
-    callback = options;
-    family = 0;
-  } else if (typeof callback !== 'function') {
-    throw new ERR_INVALID_CALLBACK(callback);
-  } else if (options !== null && typeof options === 'object') {
-    hints = options.hints >>> 0;
-    family = options.family >>> 0;
-    all = options.all === true;
-    verbatim = options.verbatim === true;
-    validateHints(hints);
-  } else {
-    family = options >>> 0;
-  }
-  if (family !== 0 && family !== 4 && family !== 6)
-    throw new ERR_INVALID_OPT_VALUE('family', family);
-  if (!hostname) {
-    emitInvalidHostnameWarning(hostname);
-    if (all) {
-      process.nextTick(callback, null, []);
-    } else {
-      process.nextTick(callback, null, null, family === 6 ? 6 : 4);
-    }
-    return {};
-  }
-  const matchedFamily = isIP(hostname);
-  if (matchedFamily) {
-    if (all) {
-      process.nextTick(
-        callback, null, [{ address: hostname, family: matchedFamily }]);
-    } else {
-      process.nextTick(callback, null, hostname, matchedFamily);
-    }
-    return {};
-  }
-  const req = new GetAddrInfoReqWrap();
-  req.callback = callback;
-  req.family = family;
-  req.hostname = hostname;
-  req.oncomplete = all ? onlookupall : onlookup;    
-  <b>const err = cares.getaddrinfo(
-    req, toASCII(hostname), family, hints, verbatim
-  );</b>
-  if (err) {
-    process.nextTick(callback, dnsException(err, 'getaddrinfo', hostname));
-    return {};
-  }
-  return req;
-}
-</code>
-</pre>
+
+![image-20210909145948090](/images/image-20210909145948090.png)
+
 
 **代码 1.5 [lookup 函数源码](https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/dns.js#L88)**
 
 通过代码 1.5 发现最终 DNS 查询是要调用 C++ 绑定类的，于是我又查看了 C++ 的代码：
 
-<pre>
-<code>
-void GetAddrInfo(const FunctionCallbackInfo<Value>& args) {
-  Environment* env = Environment::GetCurrent(args);
+![image-20210909150206942](/images/image-20210909150206942.png)
 
-  CHECK(args[0]->IsObject());
-  CHECK(args[1]->IsString());
-  CHECK(args[2]->IsInt32());
-  CHECK(args[4]->IsBoolean());
-  Local<Object> req_wrap_obj = args[0].As<Object>();
-  node::Utf8Value hostname(env->isolate(), args[1]);
-
-  int32_t flags = 0;
-  if (args[3]->IsInt32()) {
-    <b>flags = args[3].As<Int32>()->Value();</b>
-  }
-
-  int family;
-
-  switch (args[2].As<Int32>()->Value()) {
-    case 0:
-      family = AF_UNSPEC;
-      break;
-    case 4:
-      family = AF_INET;
-      break;
-    case 6:
-      family = AF_INET6;
-      break;
-    default:
-      CHECK(0 && "bad address family");
-  }
-
-  auto req_wrap = std::make_unique<GetAddrInfoReqWrap>(env,
-                                                       req_wrap_obj,
-                                                       args[4]->IsTrue());
-
-  struct addrinfo hints;
-  memset(&hints, 0, sizeof(hints));
-  hints.ai_family = family;
-  hints.ai_socktype = SOCK_STREAM;
-  <b>hints.ai_flags = flags;</b>
-
-  TRACE_EVENT_NESTABLE_ASYNC_BEGIN2(
-      TRACING_CATEGORY_NODE2(dns, native), "lookup", req_wrap.get(),
-      "hostname", TRACE_STR_COPY(*hostname),
-      "family",
-      family == AF_INET ? "ipv4" : family == AF_INET6 ? "ipv6" : "unspec");
-
-  <b>int err = req_wrap->Dispatch(uv_getaddrinfo,
-                               AfterGetAddrInfo,
-                               *hostname,
-                               nullptr,
-                               &hints);</b>
-  if (err == 0)
-    // Release ownership of the pointer allowing the ownership to be transferred
-    USE(req_wrap.release());
-
-  args.GetReturnValue().Set(err);
-}
-</code>
-</pre>
 **代码 1.6 [C++ 中 DNS 的查询代码](https://sourcegraph.com/github.com/nodejs/node/-/blob/src/cares_wrap.cc#L1940)**
 
 注意 **代码 1.5** 中的 family hints 最终会分别转化为 结构体变量 struct addrinfo hints 中的 ai_family 和 ai_flags。
 
 最终这个结构体 hints 会层层传递到 libuv 中：
 
-<pre>
-<code>
-static void uv__getaddrinfo_work(struct uv__work* w) {
-  uv_getaddrinfo_t* req;
-  int err;
-  req = container_of(w, uv_getaddrinfo_t, work_req);
-  <b>err = getaddrinfo(req->hostname, req->service, req->hints, &req->addrinfo);</b>
-  req->retcode = uv__getaddrinfo_translate_error(err);
-}
-</code>
-</pre>
+![image-20210909150312046](/images/image-20210909150312046.png)
+
 
 **代码 1.7 [libuv 中的 dns 查询函数代码](https://sourcegraph.com/github.com/nodejs/node@c5f5f84a33967862036c7d87f4bbde6a59d3820a/-/blob/deps/uv/src/unix/getaddrinfo.c#L101)**
 
