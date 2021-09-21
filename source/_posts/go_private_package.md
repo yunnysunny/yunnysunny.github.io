@@ -171,7 +171,7 @@ func main() {
 
 **代码 3.0**
 
-返回的**代码 3.0** 中，如果域名后面没有跟端口号，是比较简单的，调用者直接使用 `go get gitlab.your-company.com/your-account/your-mod-name` 进行安装就行。但如果含有端口号，则需要手动编辑调用项目的 go.mod 文件，保证有如下配置：
+返回的**代码 3.0** 中，如果域名后面没有跟端口号，是比较简单的，调用者直接使用 `go get gitlab.your-company.com/your-account/your-mod-name` 进行安装就行。但如果含有端口号，则需要手动编辑调用项目的 go.mod 文件，保证有如下 **代码 3.1** 配置，然后通过 go mod download 或者 go mod tidy 安装（后者需要起码在代码中有一处 import 该私有 module 中包的声明）
 
 ```
 # 这里假设你使用的版本号为v0.0.0
