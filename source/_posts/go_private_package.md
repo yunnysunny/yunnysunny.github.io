@@ -186,7 +186,17 @@ replace gitlab.your-company.com/your-account/your-mod-name v0.0.0 => gitlab.your
 
 最后需要留意的是，你的调用某一个 module 时，只能调用其非 main 包中的代码。
 
-初学者还容易搞混的一个概念，就是 go 中的 module 和 package 的概念，使用 go get 下载的单元为一个 module，在代码中调用的时候，是调用 module 中的某一个 package。换句话说，就是一个 module 可以包含多一个 package （每个 package 的代码放置在同一个文件夹中）。 
+> 初学者还容易搞混的一个概念，就是 go 中的 module 和 package 的概念，使用 go get 下载的单元为一个 module，在代码中调用的时候，是调用 module 中的某一个 package。换句话说，就是一个 module 可以包含多一个 package （每个 package 的代码放置在同一个文件夹中）。 
 
+## 其他问题
 
+如果在下载私有 module 的时候，出现如下问题：
+
+```
+go mod download: gitlab.your-company.com/your-account/mod-test.git@v0.0.3: invalid version: git ls-remote -q origin in /root/go/pkg/mod/cache/vcs/49e4f4ef52d3227f1c09bb8a8db5321ccf5cd277662d5a9ad607ffd2ff57b32d: exit status 128:
+        fatal: unable to connect to gitlab.17zuoye.net:
+        gitlab.your-company.com[0: 192.168.1.10]: errno=Connection refused
+```
+
+通过提示信息上来看是版本号找不到，但是真实的原因可能并不如此。需要做两方面的检查，一方面确认 git 仓库上是否有 `v0.0.3` 这个 tag；另一方面也需要确认当前系统中配置的 ssh 私钥（**代码 1.3** 中的配置）是否有访问 mod-test 这个项目的权限，如果没有权限，同样会报 `invalid version` 这个错误。
 
