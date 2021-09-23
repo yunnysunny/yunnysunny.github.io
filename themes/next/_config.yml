@@ -626,8 +626,8 @@ gitalk:
 # Utterances
 # For more information: https://utteranc.es
 utterances:
-  enable: false
-  repo: # Github repository name
+  enable: true
+  repo: yunnysunny/yunnysunny.github.io # Github repository name
   # Available values: pathname | url | title | og:title
   issue_term: pathname
   # Available values: github-light | github-dark | preferred-color-scheme | github-dark-orange | icy-dark | dark-blue | photon-dark | boxy-light
@@ -652,7 +652,7 @@ rating:
 
 # AddThis Share. See: https://www.addthis.com
 # Go to https://www.addthis.com/dashboard to customize your tools.
-add_this_id: 
+add_this_id: ra-614ace0bda715cc7
 
 
 # ---------------------------------------------------------------
