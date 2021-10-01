@@ -60,6 +60,9 @@
       <div class="header-inner"><div class="site-brand-container">
   <div class="site-nav-toggle">
     <div class="toggle" aria-label="切换导航栏" role="button">
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
+        <span class="toggle-line"></span>
     </div>
   </div>
 
@@ -80,6 +83,12 @@
 
 
 
+<nav class="site-nav">
+  <ul class="main-menu menu">
+        <li class="menu-item menu-item-home"><a href="/" rel="section"><i class="fa fa-home fa-fw"></i>首页</a></li>
+        <li class="menu-item menu-item-archives"><a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>归档</a></li>
+  </ul>
+</nav>
 
 
 
@@ -108,7 +117,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%94%9F%E5%87%BD%E6%95%B0%E7%9A%84%E5%8F%82%E6%95%B0%E5%B7%B2%E7%BB%8F%E8%A2%AB%E6%9B%B4%E6%94%B9"><span class="nav-number">1.</span> <span class="nav-text">原生函数的参数已经被更改</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%A7%E9%83%A8%E5%88%86V8-API%E7%8E%B0%E5%9C%A8%E9%9C%80%E8%A6%81%E4%BD%BF%E7%94%A8v8-Isolate"><span class="nav-number">2.</span> <span class="nav-text">大部分V8 API现在需要使用v8::Isolate*</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#V8-string%E5%87%BD%E6%95%B0%E7%8E%B0%E5%9C%A8%E9%9C%80%E8%A6%81%E6%98%BE%E5%BC%8F%E5%A3%B0%E6%98%8E%E7%BC%96%E7%A0%81"><span class="nav-number">3.</span> <span class="nav-text">V8 string函数现在需要显式声明编码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E9%99%A4%E4%BA%86v8-String-NewSymbol-%E5%92%8Cv8-String-NewUndetectable"><span class="nav-number">4.</span> <span class="nav-text">去除了v8::String::NewSymbol()和v8::String::NewUndetectable()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E9%99%A4%E4%BA%86v8-String-AsciiValue"><span class="nav-number">5.</span> <span class="nav-text">去除了v8::String::AsciiValue</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E9%99%A4%E4%BA%86v8-HandleScope-Close"><span class="nav-number">6.</span> <span class="nav-text">去除了v8::HandleScope::Close()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#v8-Persistent%E4%B8%8D%E5%86%8D%E7%BB%A7%E6%89%BF%E8%87%AAv8-Handle"><span class="nav-number">7.</span> <span class="nav-text">v8::Persistent不再继承自v8::Handle</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%B1%E5%BC%95%E7%94%A8persistent%E5%8F%A5%E6%9F%84%E7%9A%84%E5%9B%9E%E8%B0%83%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0%E6%9B%B4%E6%94%B9"><span class="nav-number">8.</span> <span class="nav-text">弱引用persistent句柄的回调函数参数更改</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#v8-ThrowException-%E7%8E%B0%E5%9C%A8%E5%8F%98%E6%88%90%E4%BA%86-v8-Isolate-ThrowException"><span class="nav-number">9.</span> <span class="nav-text">v8::ThrowException()现在变成了 v8::Isolate::ThrowException()</span></a></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%9F%E7%94%9F%E5%87%BD%E6%95%B0%E7%9A%84%E5%8F%82%E6%95%B0%E5%B7%B2%E7%BB%8F%E8%A2%AB%E6%9B%B4%E6%94%B9"><span class="nav-text">原生函数的参数已经被更改</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%A4%A7%E9%83%A8%E5%88%86V8-API%E7%8E%B0%E5%9C%A8%E9%9C%80%E8%A6%81%E4%BD%BF%E7%94%A8v8-Isolate"><span class="nav-text">大部分V8 API现在需要使用v8::Isolate*</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#V8-string%E5%87%BD%E6%95%B0%E7%8E%B0%E5%9C%A8%E9%9C%80%E8%A6%81%E6%98%BE%E5%BC%8F%E5%A3%B0%E6%98%8E%E7%BC%96%E7%A0%81"><span class="nav-text">V8 string函数现在需要显式声明编码</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E9%99%A4%E4%BA%86v8-String-NewSymbol-%E5%92%8Cv8-String-NewUndetectable"><span class="nav-text">去除了v8::String::NewSymbol()和v8::String::NewUndetectable()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E9%99%A4%E4%BA%86v8-String-AsciiValue"><span class="nav-text">去除了v8::String::AsciiValue</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%8E%BB%E9%99%A4%E4%BA%86v8-HandleScope-Close"><span class="nav-text">去除了v8::HandleScope::Close()</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#v8-Persistent%E4%B8%8D%E5%86%8D%E7%BB%A7%E6%89%BF%E8%87%AAv8-Handle"><span class="nav-text">v8::Persistent不再继承自v8::Handle</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%BC%B1%E5%BC%95%E7%94%A8persistent%E5%8F%A5%E6%9F%84%E7%9A%84%E5%9B%9E%E8%B0%83%E5%87%BD%E6%95%B0%E5%8F%82%E6%95%B0%E6%9B%B4%E6%94%B9"><span class="nav-text">弱引用persistent句柄的回调函数参数更改</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#v8-ThrowException-%E7%8E%B0%E5%9C%A8%E5%8F%98%E6%88%90%E4%BA%86-v8-Isolate-ThrowException"><span class="nav-text">v8::ThrowException()现在变成了 v8::Isolate::ThrowException()</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 

@@ -9,7 +9,7 @@ abbrlink: go-private-package
 
 按理来说通过 go get 就能下载托管在 github 上的包，但是很多时候，我们想将自己的某一部分代码抽离出来做成一个包，但是这部分代码又不能公开，最适合就是托管到公司代码仓库上去，比如说 gitlab。那么从私有镜像仓库下载 go 包，就成为一个特别紧迫的需求。
 
-## git 配置
+## 1. git 配置
 其实 go 官方是支持这种功能的。假设你公司的 gitlab 域名为 gitlab.your-company.com ，首先我们要设置环境变量 `GOPRIVATE`，通过命令 
 
  `go env -w GOPRIVATE=gitlab.your-company.com` 
@@ -55,7 +55,7 @@ debug1: client_input_channel_req: channel 0 rtype eow@openssh.com reply 0
 debug1: channel 0: free: client-session, nchannels 1
 ```
 
-## 编写模块
+## 2. 编写模块
 
 在内网 gitlab 上你的账号域下创建一个 mod-test 的项目，然后我们就得到了这么一个项目 http://gitlab.your-company.com/your-account/mod-test 其中 your-account 为你的内网 gitlab 账号名。
 
@@ -161,7 +161,7 @@ func main() {
 
 执行 go mod tidy 来安装依赖包，然后执行 go build 就能正常生成的可执行程序。
 
-## 总结
+## 3. 总结
 
 通过 **代码 1.0** 设置完 GO_PRIVATE 环境变量之后，go 在下载前缀符合 GO_PRIVATE 值的 module 的时候，会尝试请求地址 https://gitlab.your-company.com/your-account/your-mod-name?go-get=1 ，正常情况下会返回如下格式
 
@@ -188,7 +188,7 @@ replace gitlab.your-company.com/your-account/your-mod-name v0.0.0 => gitlab.your
 
 > 初学者还容易搞混的一个概念，就是 go 中的 module 和 package 的概念，使用 go get 下载的单元为一个 module，在代码中调用的时候，是调用 module 中的某一个 package。换句话说，就是一个 module 可以包含多一个 package （每个 package 的代码放置在同一个文件夹中）。 
 
-## 其他问题
+## 4. 其他问题
 
 如果在下载私有 module 的时候，出现如下问题：
 
