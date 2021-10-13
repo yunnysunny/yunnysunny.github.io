@@ -287,7 +287,7 @@ this is from entrypoint
 this is from cmd
 ```
 
-两个脚本的内容都输出了，难道是 ENTRYPOINT 和 CMD 两个指令先后被执行吗？注意代码 1.3.3 中的最后一行 `exec "$@"`，其意思是将脚本命令行中输入的参数当成命令来运行。对于 `both.Dockerfile` 来说其制作出来的镜像，最终启动的命令为 `/parent.sh /sub.sh`，这个命令中的`/sub.sh` 被当成了 `parent.sh` 的命令行参数，也就是 `$@` 的值为 `/sub.sh`。
+两个脚本的内容都输出了，难道是 ENTRYPOINT 和 CMD 两个指令先后被执行吗？注意代码 1.3.3 中的最后一行 `exec "$@"`，其意思是将脚本命令行中输入的参数当成命令来运行。对于 `both.Dockerfile` 来说其制作出来的镜像，最终启动的命令为 `/parent.sh /sub.sh`（CMD 指令被当成了 ENTRYPOINT 指令的参数），这个命令中的`/sub.sh` 被当成了 `parent.sh` 的命令行参数，也就是 `$@` 的值为 `/sub.sh`。
 
 总结一下，如果 ENTRYPOINT 和 CMD 同时出现时，最终运行效果为 CMD 中的指令会被当成 ENTRYPOINT 中脚本的参数。这个特性隐藏的比较深，可能好多初学者不清楚。同时它会给我们启发，我可以在父层镜像中指定 ENTRYPOINT 来做初始化操作，在最后一行加上 `exec "$@"`，然后子镜像中使用的 CMD 就可以执行个性化的命令了。
 
