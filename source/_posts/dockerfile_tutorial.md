@@ -180,6 +180,8 @@ ZOOKEEPER_DOWNLOAD_ADDRESS=https://mirrors.bfsu.edu.cn/apache/zookeeper/zookeepe
 # git update-index --chmod +x zookeeper
 ```
 
+> 存储在 git 仓库中文件的权限只有 644 和 755 两种，如果你在 docker 中需要使用一些比较特殊的权限，不如说 ~/.ssh 目录下的文件，必须是 600 权限，你还是必须在 dockerfile 中使用 RUN 指令强制将 ~/.ssh 下的目录 chmod 成 600。
+
 然后重新 commit，提交代码到远程 git 仓库，就可以保证在 Linux 下正常使用了。
 
 由于我们的安装操作比较复杂，我们这里做了一个 shell 文件来执行 RUN 指令，假设你想执行的命令并不负责也可以直接写在 dockerfile 中
@@ -365,7 +367,24 @@ DOCKER_BUILDKIT=1 docker build --file bin.Dockerfile --output bin .
 
 > 代码 1.4.1 和 代码 1.4.2 , 可以从项目 [use-my](https://gitlab.com/yunnysunny/use-my) 中找到。
 
+## 2 已知问题
 
+### 2.1 清理磁盘
+
+在 **1.1** 小节讲到 dockerfile 中的每一个命令都会创建一个临时 docker，但是如果你的 dockerfile 文件有问题，执行到一半退出了，那么这些临时 docker 不会被删除，同时这些临时 docker 还会对应临时镜像，也会被保留，素以我们需要定期清理。
+
+docker 1.13 版本开始提供了一个实用的命令, `docker system prune` 可以用来清理没有用的镜像，通过 `docker system df` 可以查看当前所有镜像占用的磁盘统计信息。
+
+如果你的 docker 版本低于 1.13，可以执行以下脚本来删除： 
+
+```shell
+#!/bin/bash
+docker stop $(docker ps -a | grep "Exited" | awk '{print $1 }')
+docker rm $(docker ps -a | grep "Exited" | awk '{print $1 }')
+docker rmi $(docker images | grep "none" | awk '{print $3}')
+```
+
+**代码 2.1.1 清理 docker 镜像脚本**
 
 
 

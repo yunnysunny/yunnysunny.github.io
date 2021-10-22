@@ -2,16 +2,30 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://blog.whyun.com/posts/gracefully-restart-on-docker/</loc>
+    <loc>https://blog.whyun.com/posts/dockerfile-tutorials/</loc>
     
-    <lastmod>2021-10-14</lastmod>
+    <lastmod>2021-10-22</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.whyun.com/posts/dockerfile-tutorials/</loc>
+    <loc>https://blog.whyun.com/posts/wsl-and-docker-desktop-install/</loc>
     
-    <lastmod>2021-10-12</lastmod>
+    <lastmod>2021-10-22</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.whyun.com/posts/docker-compose-tutorial/</loc>
+    
+    <lastmod>2021-10-22</lastmod>
+    
+  </url>
+  
+  <url>
+    <loc>https://blog.whyun.com/posts/gracefully-restart-on-docker/</loc>
+    
+    <lastmod>2021-10-14</lastmod>
     
   </url>
   
@@ -26,13 +40,6 @@
     <loc>https://blog.whyun.com/404</loc>
     
     <lastmod>2021-09-17</lastmod>
-    
-  </url>
-  
-  <url>
-    <loc>https://blog.whyun.com/posts/wsl-and-docker-desktop-install/</loc>
-    
-    <lastmod>2021-09-15</lastmod>
     
   </url>
   
@@ -137,7 +144,7 @@
 
   <url>
     <loc>https://blog.whyun.com/</loc>
-    <lastmod>2021-10-14</lastmod>
+    <lastmod>2021-10-22</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
