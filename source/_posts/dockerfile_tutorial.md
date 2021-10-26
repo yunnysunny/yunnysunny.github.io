@@ -386,5 +386,30 @@ docker rmi $(docker images | grep "none" | awk '{print $3}')
 
 **代码 2.1.1 清理 docker 镜像脚本**
 
+### 2.2 拉取基础镜像缓慢
 
+默认的镜像仓库地址是托管在 dockerhub 上，由于众所周知的原因，国外的网站在咱们这里访问并不稳定，并且 dockerhub 本身处于商业考量，还会对用户的访问进行限速，所以我们一般会在 docker 的配置文件中修改镜像仓库地址，将其指向国内地址。
+
+具体配置文件在 Linux 下是 /etc/docker/daemon.json，修改其中的 `registry-mirrors` 属性即可：
+
+```json
+{
+  "registry-mirrors": [
+    "https://docker.mirrors.ustc.edu.cn",
+    "https://hub-mirror.c.163.com",
+    "https://mirror.baidubce.com",
+    "https://registry.docker-cn.com"
+  ]
+}
+```
+
+ **代码 2.2.1**
+
+这个属性是一个数组，可以填入多个镜像仓库地址。修改完成之后，使用命令 `service docker restart` 重启守护进行即可。
+
+如果是在 Docker Desktop 中，则点击设置按钮，定位到 **Docker Engine** 选项卡，就可以看到 `registry-mirrors` 的属性配置了。修改完成后点击 **Apply & Restart** 重启即可。
+
+![image-20211026145858747](/images/image-20211026145858747.png)
+
+**图 2.2.1**
 
