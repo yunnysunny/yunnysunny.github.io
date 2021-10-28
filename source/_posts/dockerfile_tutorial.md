@@ -413,3 +413,77 @@ docker rmi $(docker images | grep "none" | awk '{print $3}')
 
 **图 2.2.1**
 
+### 2.3 生成的镜像个头大
+
+有的时候，明明你感觉 dockerfile 中做的操作很少，生成的镜像却出其意料的大，那么你就需要一款对于 dockerfile 中指令进行分析的工具。
+
+dockerfile 中首先会指定一个基础镜像（通过 FROM 指令指定），接着后面代码中每一个新指令都会在前面指令的基础上叠加一层，产生一个新的临时镜像，直到 dockerfile 中所有指令执行完成，得到一个新的完整的镜像。
+
+考虑下面一个 dockerfile
+
+```dockerfile
+FROM centos:7 as base
+
+# 更改 yum 源
+RUN mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+COPY docker/etc/yum.repos.d /etc/yum.repos.d
+RUN sed -i -e '/plugins=1/d' -e '/plugins=0/d' /etc/yum.conf
+
+RUN yum install epel-release -y 
+RUN yum install wget curl make tcpdump net-tools bind-utils telnet \
+    logrotate ca-certificates which crontabs -y
+```
+
+**代码 2.3.1 first.Dockerfile**
+
+我们想自己制作一个 centos 的基础镜像，以后在制作其他应用的镜像的时候，可以拿这个镜像做基础镜像。我们的需求也很简单，增加一些常用的依赖包即可。
+
+通过 `docker build . -f first.Dockerfile --progress=plain --no-cache -t first-centos` 来构建，运行完之后通过 `docker images first-centos`查看镜像体积，通过输出发现镜像有五百多 MB
+
+```
+REPOSITORY     TAG       IMAGE ID       CREATED          SIZE
+first-centos   latest    af7fadc07b7a   15 minutes ago   523MB
+```
+
+但是我们查看 centos 的镜像大小 `docker images centos:7`：
+
+```
+REPOSITORY   TAG       IMAGE ID       CREATED       SIZE
+centos       7         eeb6ee3f44bd   5 weeks ago   204MB
+```
+
+原始的镜像只有两百多 MB，那么到底是哪行命令导致的呢？这个时候，你可以使用 [dive](https://github.com/wagoodman/dive) 这个工具。将其安装完成之后直接用 dive first-centos 命令即可查看 first-centos 这个镜像中对应的 dockerfile 中每行指令所产生的“层”的大小。
+
+> 官方提供的使用 go get 安装的模式，经过笔者测试在 go 1.16+ 下无法运行(可以参见 [issue 371](https://github.com/wagoodman/dive/issues/371))。Windows 中安装二进制文件后，在命令行中排版有问题。推荐使用 Ubuntu 安装 deb 包的模式进行安装。
+
+使用 `dive first-centos` 来查看各个层的文件变动，加载完界面后，按 `Tab` 键激活左右命令行区域，切换到右侧区域后，按 `CTRL+U`键可以过滤掉未修改的文件，只显示被修改的文件。然后再通过 `Tab` 键回到左侧区域，通过方向键切换查看各个指令，对应右侧区域会显示镜像内有哪些文件被更改。
+
+![查看 first-centos 的各层空间占用](/images/dive-first.gif)
+
+**图 2.3.1 查看 first-centos 的各层空间占用**
+
+可以看到最后两个 yum 命令，会在 /var/cache 中生成大量缓存文件，是导致我们镜像内容变动的原因。yum 的在运行 install 命令时，会检测包元数据的缓存数据是否存在，如果不存在就会重新生成。所以我们在查看 yum install 命令的级联文件变动的时候，会在 /var/cache 下显示如此大的磁盘新增量。
+
+接着我们修改一下 **代码 2.3.1** ,增加缓存清理机制：
+
+```dockerfile
+FROM centos:7 as base
+
+# 更改 yum 源
+RUN mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup
+COPY docker/etc/yum.repos.d /etc/yum.repos.d
+RUN sed -i -e '/plugins=1/d' -e '/plugins=0/d' /etc/yum.conf
+
+RUN yum install epel-release -y && yum clean all && rm -rf /var/cache/yum
+RUN yum install wget curl make tcpdump net-tools bind-utils telnet \
+    logrotate ca-certificates which crontabs -y && yum clean all && rm -rf /var/cache/yum
+```
+
+**代码 2.3.2 second.Dockerfile**
+
+使用命令 `docker build . -f second.Dockerfile --progress=plain  -t second-centos` 构建完成之后，再用命令 `dive second-centos` 查看，可以发现各个层的文件大小正常了：
+
+![image-20211027162450032](/images/image-20211027162450032.png) 
+
+**图 2.3.2**
+
