@@ -3,6 +3,7 @@ abbrlink: socket
 title: 小议socket关闭
 date:  2014-02-08
 description: 介绍socket四次挥手
+typora-root-url: ..\
 ---
 
 socket编程过程中往往会遇到这样那样的问题，出现了这些问题，有的是由于并发访问量太大造成的，有些却是由于代码中编程不慎造成的。
@@ -11,11 +12,13 @@ socket编程过程中往往会遇到这样那样的问题，出现了这些问�
 ## CLOSE_WAIT分析 ##
 socket是一种全双工的通信方式，建立完socket连接后，连接的任何一方都可以发起关闭操作。这里不妨假设连接的关闭是客户端发起。客户端的代码如下：
 
-	ret = CS_GetConnect(&client,ipAddr,9010);
-	if (ret == 0) {
-		printf("connected success.");
-	}
-	CloseSocket(client);
+```c
+ret = CS_GetConnect(&client,ipAddr,9010);
+if (ret == 0) {
+	printf("connected success.");
+}
+CloseSocket(client);
+```
 代码片段1.1
 
 基本逻辑就是，连接建立后立即关闭。其中CloseSocket函数是自定义函数，仅仅封装了在windows和linux下关闭socket的不同实现而已
@@ -39,23 +42,25 @@ socket是一种全双工的通信方式，建立完socket连接后，连接的�
 
 那么怎样预防SOCKET处于CLOSE_WATI状态呢，答案在这里：
 
-		while(true) {
-			memset(getBuffer,0,MY_SOCKET_BUFFER_SIZE);
-			Ret = recv(client, getBuffer, MY_SOCKET_BUFFER_SIZE, 0);
-			if ( Ret == 0 || Ret == SOCKET_ERROR ) 
-			{
-				printf("对方socket已经退出,Ret【%d】!\n",Ret);
-				Ret = SOCKET_READE_ERROR;//接收服务器端信息失败
-				break;
-			}
+```c
+	while(true) {
+		memset(getBuffer,0,MY_SOCKET_BUFFER_SIZE);
+		Ret = recv(client, getBuffer, MY_SOCKET_BUFFER_SIZE, 0);
+		if ( Ret == 0 || Ret == SOCKET_ERROR ) 
+		{
+			printf("对方socket已经退出,Ret【%d】!\n",Ret);
+			Ret = SOCKET_READE_ERROR;//接收服务器端信息失败
+			break;
 		}
-	
-	clear:
-		if (getBuffer != NULL) {
-			free(getBuffer);
-			getBuffer = NULL;
-		}
-		closesocket(client);
+	}
+
+clear:
+	if (getBuffer != NULL) {
+		free(getBuffer);
+		getBuffer = NULL;
+	}
+	closesocket(client);
+```
 代码片段1.3
 
 这里摘录了服务器端部分代码，注意这个recv函数，这个函数在连接建立时，会堵塞住当前代码，等有数据接收成功后才返回，返回值为接收到的字节数；但是对于连接对方socket关闭情况，它能立即感应到，并且返回0.所以对于返回0的时候，可以跳出循环，结束当前socket处理，进行一些垃圾回收工作，注意最后一句closesocket操作是很重要的，假设没有写这句话，服务器端会一直处于CLOSE_WAIT状态。如果写了这句话，那么socket的流程就会是这样的：
@@ -79,11 +84,13 @@ socket是一种全双工的通信方式，建立完socket连接后，连接的�
 
 关于重用`TIME_WAIT`状态的句柄的操作，也可以在代码中设置：
 
-	int on = 1;
-	if (setsockopt(socketfd/*socket句柄*/,SOL_SOCKET,SO_REUSEADDR,(char *)&on,sizeof(on)))
-	{
-		return ERROR_SET_REUSE_ADDR;
-	}
+```c
+int on = 1;
+if (setsockopt(socketfd/*socket句柄*/,SOL_SOCKET,SO_REUSEADDR,(char *)&on,sizeof(on)))
+{
+	return ERROR_SET_REUSE_ADDR;
+}
+```
 代码片段2.1
 
 如果在代码中设置了关于重用的操作，程序中将使用代码中设置的选项决定重用或者不重用，/etc/sysctl.conf中`net.ipv4.tcp_tw_reuse`中的设置将不再其作用。
@@ -103,8 +110,10 @@ socket是一种全双工的通信方式，建立完socket连接后，连接的�
 
 这里代码将`TIME_WAIT`的时间设置为10秒（在BSD系统中，将会是0.01*10s）。TCP中的`TIME_WAIT`机制使得socket程序可以“优雅”的关闭，如果你想你的程序更优雅，最好不要设置`TIME_WAIT`的停留时间，让老的tcp数据包在合理的时间内自生自灭。当然对于`SO_LINGER`参数，它不仅仅能够自定义`TIME_WAIT`状态的时间，还能够将TCP的四次挥手直接禁用掉，假设对于so_linger结构体变量的设置是这个样子的：
 
-	so_linger.l_onoff = 1;
-	so_linger.l_linger = 0;
+```c
+so_linger.l_onoff = 1;
+so_linger.l_linger = 0;
+```
 
 如果客户端的socket是这么设置的那么socket的关闭流程就直接是这个样子了：
 ![socket的关闭流程3](http://git.oschina.net/yunnysunny/socket_close/raw/master/doc/close3.png)
@@ -117,36 +126,38 @@ socket是一种全双工的通信方式，建立完socket连接后，连接的�
 1.文中提到的修改/etc/sysctl.conf文件的情况，修改完成之后需要运行`/sbin/sysctl -p`后才能生效。
 2.图1中发送完FIN M信号后，被动关闭端的socket程序中输入流会接收到一个EOF标示，是在C代码中处理时recv函数返回0代表对方关闭，在java代码中会在InputStream的read函数中接收到-1：
 
-	Socket client = new Socket();//,9090
-		try {
-			client.connect(
-				new InetSocketAddress("192.168.56.101",9090));
-			
-			while(true){				
-				int c = client.getInputStream().read();
-				if (c > 0) {
-					System.out.print((char) c);
-				} else {//如果对方socket关闭，read函数返回-1
-					break;
-				}
-
-				try {
-					Thread.currentThread().sleep(2000);					
-				} catch (InterruptedException e) {
-					e.printStackTrace();
-				}
+```java
+Socket client = new Socket();//,9090
+	try {
+		client.connect(
+			new InetSocketAddress("192.168.56.101",9090));
+		
+		while(true){				
+			int c = client.getInputStream().read();
+			if (c > 0) {
+				System.out.print((char) c);
+			} else {//如果对方socket关闭，read函数返回-1
+				break;
 			}
-		} catch (IOException e2) {
-			e2.printStackTrace();
-		} finally {
+
 			try {
-				client.close();
-			} catch (IOException e) {
+				Thread.currentThread().sleep(2000);					
+			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
-
+	} catch (IOException e2) {
+		e2.printStackTrace();
+	} finally {
+		try {
+			client.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
 	}
+
+}
+```
 代码片段3.1
 
 3.如果主动关闭方已经发起了关闭的FIN信号，被动关闭方不予理睬，依然往主动关闭方发送数据，那么主动关闭方会直接返回RST新号，连接双方的句柄就被双方的操作系统回收，如果此时双方的路由节点之前还存在未到达的数据，将会被丢弃掉。

@@ -3,6 +3,7 @@ abbrlink: node
 title: node中调试子进程
 date:  2014-07-31
 description: 解决intellij idea中无法调试fork出来的子进程问题
+typora-root-url: ..\
 ---
 
 现在node.js在单步调试中做的最好的，就要数intellij idea了，但是node在使用cluster的时候，无法开启调试，stackoverflow上有对这个问题的描述与解答（点击[这里](http://stackoverflow.com/questions/16840623/how-to-debug-node-js-child-forked-process)查看）。但是这里要将的解决方案确实通过增加启动参数控制，摒弃多进程模式来实现调试，比如说在本地测试的时候启动单进程，在运营环境中使用多进程。

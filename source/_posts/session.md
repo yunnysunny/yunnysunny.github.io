@@ -3,6 +3,7 @@ abbrlink: session
 title: session的安全性
 date:  2014-05-25
 description: 介绍session的基本原理和安全性
+typora-root-url: ..\
 ---
 
 ## session原理
@@ -15,7 +16,7 @@ description: 介绍session的基本原理和安全性
 接着用户登录后台进行发表文章操作，登录用户填写文章的标题、内容，然后点击发送。这时候浏览器会生成一条到服务器的http请求，注意这个请求的头部会将存储sessionid的cookie内容发送过去，也就是说请求的http头部信息中应该会有这么一段数据：`cookie:PHPSESSID=xxxxxxx;other_cookie_name=yyyyyy`；服务器接收到这个http请求之后，解析到cookie存在，且cookie中存在PHPSESSID这个cookie名字，然后就将PHPSESSID的值（也就是sessionid的值）取出来，根据这个PHPSESSID查询服务器上有没有对应的session内容，如果有则将其对应的值取出来进行反序列序列化（也就是将其转成编程语言中的一个数据结果，比如在php中会得到一个`$_SESSION`数组，在j2ee中会得到类型为`javax.servlet.http.HttpSession`），方便在程序中进行读取，最终服务器认定session中储存的值存在，并且从反序列化得到的对象中读取到了用户ID属性，然后就往cms数据库的文章表中插入了一条数据，最终返回http响应，告诉浏览器操作成功了。
 ![发表文章时序图](http://git.oschina.net/yunnysunny/hack/raw/master/session/img/publish.png)
 **图1.2 发表文章时序图**
- 
+
 ## 入侵示例
 关于cookie的一些属性，可以参考我的另一篇博文[关于cookie的一些事](http://blog.csdn.net/yunnysunny/article/details/7748106 "关于cookie的一些事")，里面会提到一个httponly的属性，也就是是否禁止js读取cookie。不幸的是很多常见的服务器（比如apache和tomcat）在生成这个存储sessionid的cookie的时候，没有设置httponly这个属性，也就是说js是可以将这个sessionid读取出来的。  
 js读取到sessionid，这会有问题吗？如果没有问题，我就不在这里啰嗦了。你网站上的运行的js代码并不一定是你写的，比如说一般网站都有一个发表文章或者说发帖的功能，如果别有用心的人在发表的时候填写了html代码（这些html一般是超链接或者图片），但是你的后台又没有将其过滤掉，发表出来的文章，被其他人点击了其中恶意链接时，就出事了。这也就是我们常说的XSS。 
