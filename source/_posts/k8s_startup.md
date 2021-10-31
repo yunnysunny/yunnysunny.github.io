@@ -1,13 +1,13 @@
 ---
 abbrlink: k8s-startup
-title: k8s 入门
+title: k8s 原理入门
 date:  2021-10-26
 description: 之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。
 typora-copy-images-to: ../images
 typora-root-url: ..\
 ---
 
-之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。
+之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。本文主要讲解 kubernetes 的安装和内部原理。
 
 ## 1. 安装
 
@@ -109,15 +109,19 @@ kubernetes 将若干容器进行编排，形成一个集群，但是这个集群
 
 整个 `NAT` 过程如上图所示。
 
-考虑到高可靠性的问题，一个服务不可能部署为单节点，为了展示数据流向，我们在 **图 2.2** 只画了一个节点，实际情况应该是多个节点（对于 kubernetes 来说，这个 “节点” 就称之为 pod）的拓扑结构。而在 kubernetes 中我们并不是需要一台专门的机器做路由，我们的路由被内置到了集群中的没一台机器中，对于集群中的每个服务来说在系统中都会映射出一个 `虚拟 IP`。用户编写代码如果要连接一个特定服务，只需要提供`虚拟 IP` 和服务端口号即可，内核层会自动查找到当前 `虚拟 IP` 对应的某一个 pod 节点，把你的网络数据包转发过去。这个转发过程，全都是在发起请求的 pod 上完成的（整个蓝色区域都是 `PodClient` 这台区域，虽然里面画了一个路由器，但是仅仅是用来类比**路由表**的功能），效率比较高。上面所说的转发，也就是完成了 **图2.2** 中的第 2 步。不过 `PodClient` `Pod1` - `PodN` 一系列机器都在一个网络中，在 **图 2.2** 中第 `3` `4` 步也就不需要了，某一个 `PodX` 在处理完数据之后请求者的源地址是直接可达的，所以不再需要做地址转化。`PodClient` 的内核态具体选择哪个 pod，kubernetes 内置了若干[算法](https://kubernetes.io/zh/docs/concepts/services-networking/service/#proxy-mode-ipvs)，比如说 `Round-Robin` `Least Connection`，更多说明参见算法链接（使用 IPVS 模式时支持若干算法，但是使用 iptables 时，支支持 `Round-Robin` 算法）。
+考虑到高可靠性的问题，一个服务不可能部署为单节点，为了展示数据流向，我们在 **图 2.2** 只画了一个节点，实际情况应该是多个节点（对于 kubernetes 来说，这个 “节点” 就称之为 pod）的拓扑结构。而在 kubernetes 中我们并不是需要一台专门的机器做路由，我们的路由被内置到了集群中的没一台机器中，对于集群中的每个服务来说在系统中都会映射出一个 `虚拟 IP`。用户编写代码如果要连接一个特定服务，只需要提供`虚拟 IP` 和服务端口号即可，内核层会自动查找到当前 `虚拟 IP` 对应的某一个 pod 节点，把你的网络数据包转发过去。这个转发过程，全都是在一台主机上完成的（橙色区域写的内核空间，由于我们描述的是一台主机的情况，所以各个 pod 是共享的内核。里面画了一个路由器，但是仅仅是用来类比**路由表**的功能。），效率比较高。上面所说的转发，也就是完成了 **图2.2** 中的第 2 步。不过 `PodClient` `Pod1` - `PodN` 一系列机器都在一个网络中，在 **图 2.2** 中第 `3` `4` 步也就不需要了，某一个 `PodX` 在处理完数据之后请求者的源地址是直接可达的，所以不再需要做地址转化。`PodClient` 的内核态具体选择哪个 pod，kubernetes 内置了若干[算法](https://kubernetes.io/zh/docs/concepts/services-networking/service/#proxy-mode-ipvs)，比如说 `Round-Robin` `Least Connection`，更多说明参见算法链接（使用 IPVS 模式时支持若干算法，但是使用 iptables 时，支支持 `Round-Robin` 算法）。
+
+> 真实的情况下，kubernetes 集群中肯定会部署多台主机，网络情况比当前举例的要更复杂。简单起见这里仅仅描述一台主机的情况。
 
 ![](/images/route_in_k8s.png)
 
 **图 2.3**
 
-同时由于集群内部服务的 pod 个数是动态增减的，这样才能灵活应对流量的激增和回退。所以**图 2.3** 中的路由表信息如果写死肯定不能应对这种情况。kubernetes 中使用 etcd 来存储数据，它通过 raft 一致性算法来保证数据一致性。一个关联的 pod 有增减之后，就会更改 etcd 数据，kubernetes 中的 kube-proxy 程序会自动监听节点变动，然后把数据同步到各个 pod 节点。
+同时由于集群内部服务的 pod 个数是动态增减的，这样才能灵活应对流量的激增和回退。所以**图 2.3** 中的路由表信息如果写死肯定不能应对这种情况。kubernetes 中使用 etcd 来存储数据，它通过 raft 一致性算法来保证数据一致性。一个关联的 pod 有增减之后，就会更改 etcd 数据，kubernetes 中的 kube-proxy 程序会自动监听节点变动，然后把同步修改主机上的路由表（或者 IPVS 信息）。
 
 
 ## 参考资料
 
 1. https://segmentfault.com/a/1190000022685244
+2. https://blog.51cto.com/u_14359196/2424034
+3. https://arthurchiao.art/blog/cracking-k8s-node-proxy/
