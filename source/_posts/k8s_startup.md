@@ -43,7 +43,7 @@ minikube start --driver=none --image-mirror-country='cn' --image-repository=regi
 
 **代码 1.1.3**
 
-> 笔者在实验过程中发现即使指定了image-repository 参数，minikube 依然会从 https://k8s.gcr.io 上拉取镜像。所以当前在 Linux 上暂时没有调试成功。
+> 笔者在实验过程中发现即使指定了image-repository 参数，minikube 依然会从 https://k8s.gcr.io 上拉取镜像。所以当前在 Linux 上暂时没有调试成功。具体参见这个 [issue](https://github.com/kubernetes/minikube/issues/12413) 。
 
 
 ### 1.2 Windows 下安装
@@ -118,6 +118,10 @@ kubernetes 将若干容器进行编排，形成一个集群，但是这个集群
 **图 2.3**
 
 同时由于集群内部服务的 pod 个数是动态增减的，这样才能灵活应对流量的激增和回退。所以**图 2.3** 中的路由表信息如果写死肯定不能应对这种情况。kubernetes 中使用 etcd 来存储数据，它通过 raft 一致性算法来保证数据一致性。一个关联的 pod 有增减之后，就会更改 etcd 数据，kubernetes 中的 kube-proxy 程序会自动监听节点变动，然后把同步修改主机上的路由表（或者 IPVS 信息）。
+
+![](/images/pod_meta_update.png)
+
+**图 2.4**
 
 
 ## 参考资料
