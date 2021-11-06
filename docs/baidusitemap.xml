@@ -1,15 +1,23 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://blog.whyun.com/posts/service-discovery-start/</loc>
+    <lastmod>2021-11-06</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.whyun.com/posts//the-design-of-sso-between-diffrent-domain/</loc>
+    <lastmod>2021-11-04</lastmod>
+  </url>
+  <url>
+    <loc>https://blog.whyun.com/posts/node/the-cache-design-in-node/</loc>
+    <lastmod>2021-11-04</lastmod>
+  </url>
+  <url>
     <loc>https://blog.whyun.com/posts/k8s-startup/</loc>
     <lastmod>2021-11-01</lastmod>
   </url>
   <url>
     <loc>https://blog.whyun.com/posts/wsl-and-docker-desktop-install/</loc>
-    <lastmod>2021-10-30</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.whyun.com/posts//the-design-of-sso-between-diffrent-domain/</loc>
     <lastmod>2021-10-30</lastmod>
   </url>
   <url>
@@ -51,10 +59,6 @@
   <url>
     <loc>https://blog.whyun.com/posts/go-private-package/</loc>
     <lastmod>2021-10-01</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.whyun.com/posts/node/the-cache-design-in-node/</loc>
-    <lastmod>2021-09-08</lastmod>
   </url>
   <url>
     <loc>https://blog.whyun.com/posts/jnindk/use-thrid-part-library-in-ndk/</loc>

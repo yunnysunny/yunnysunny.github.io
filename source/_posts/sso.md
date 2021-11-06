@@ -15,7 +15,7 @@ typora-root-url: ..\
 
 用户在一个节点登陆完成之后，我们在前端需要将登陆凭证写入 cookie ，这样用户再在这个节点上发起请求的时候，会把 cookie 带入请求头发给这个节点的服务器端，服务器端就能判断用户是否在线了。不过现在用户在节点 A 登陆后，根本就没法将 cookie 写入 B 节点，好像问题陷入了死结。我们再来从头分析一下，问题的症结是 cookie 不能跨一级域名写入，那么我们就让它写入一个节点好了，解决问题的关键就是增加一个中心节点，专门用来记录 cookie，哪个节点需要读取 cookie，就从这个中心节点读取即可了。
 
-![sso登陆时序图](https://blog.whyun.com/images/sso.png)
+![sso登陆时序图](/images/sso.png)
 
 关键的一个步骤，就是第 2 步，jsonp 的原理其实就是生成一个异域的 script 标签，但是这里请求 sso.com 的时候，会在请求上带入 sso.com 本身的 cookie！然后我们再在 JavaScript 代码中将这个 cookie 信息赋值给 js 变量，这样 tao.com 就能通过 js 得到 sso.com 的 cookie 了。
 
