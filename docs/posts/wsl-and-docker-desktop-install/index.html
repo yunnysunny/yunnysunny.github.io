@@ -32,7 +32,7 @@
 <meta property="og:image" content="https://blog.whyun.com/images/enable_docker_for_wsl.png">
 <meta property="og:image" content="https://blog.whyun.com/images/insecure_registries.png">
 <meta property="article:published_time" content="2021-09-08T16:00:00.000Z">
-<meta property="article:modified_time" content="2021-10-30T09:28:18.123Z">
+<meta property="article:modified_time" content="2021-11-08T07:59:57.140Z">
 <meta property="article:author" content="yunnysunny">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://blog.whyun.com/images/install_wsl_ubuntu.png">
@@ -230,7 +230,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-10-30 17:28:18" itemprop="dateModified" datetime="2021-10-30T17:28:18+08:00">2021-10-30</time>
+        <time title="修改时间：2021-11-08 15:59:57" itemprop="dateModified" datetime="2021-11-08T15:59:57+08:00">2021-11-08</time>
       </span>
 
   
@@ -299,14 +299,14 @@
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">conf-dir=/etc/dnsmasq.d/,*.conf</span><br></pre></td></tr></table></figure>
 
 <p> 这样我们自定义的域名配置，就可以都放在 /etc/dnsmasq.d 目录下，在这个目录下创建一个文件 mydns.conf ，然后写入如下配置</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">server=/your_inner_domian/your_inner_dns_server</span><br><span class="line">server=/your_inner_domian/::</span><br><span class="line">server=114.114.114.114</span><br></pre></td></tr></table></figure>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">server=/your_inner_domian/your_inner_dns_server</span><br><span class="line">server=/your_inner_domian/::</span><br><span class="line">server=119.29.29.29</span><br><span class="line">server=223.5.5.5</span><br></pre></td></tr></table></figure>
 
-<p>上面配置文件的第一行代表如果要解析的域名中包含 your_inner_domian 字符，则使用 dns 服务器 your_inner_dns_server 进行解析。这是一个子字符串匹配，不论你的域名为 <code>your_inner_domian.com</code> 或者 <code>your_inner_domain.net</code>，使用 your_inner_domian 都可匹配成功。 如果你的 your_inner_dns_server 不支持 ipv6，记得要加入第二行配置，它是用来禁用 ipv6 dns 解析用的（如果你的内网 DNS 服务器不支持 ipv6 协议的话，这个配置特别有用），不过这个功能仅支持 dnsmasq 2.80 及以上版本（使用 Ubuntu 20.02 安装的 Dnsmasq 是 2.80 版本，可以放心使用）。最后一行是留一个默认的 DNS 服务器，用来解析公网域名。</p>
+<p>上面配置文件的第一行代表如果要解析的域名中包含 your_inner_domian 字符，则使用 dns 服务器 your_inner_dns_server 进行解析。这是一个子字符串匹配，不论你的域名为 <code>your_inner_domian.com</code> 或者 <code>your_inner_domain.net</code>，使用 your_inner_domian 都可匹配成功。 如果你的 your_inner_dns_server 不支持 ipv6，记得要加入第二行配置，它是用来禁用 ipv6 dns 解析用的（如果你的内网 DNS 服务器不支持 ipv6 协议的话，这个配置特别有用），不过这个功能仅支持 dnsmasq 2.80 及以上版本（使用 Ubuntu 20.02 安装的 Dnsmasq 是 2.80 版本，可以放心使用）。最后一行是留一个默认的 DNS 服务器（<code>119.29.29.29</code> 是腾讯的公共 DNS，<code>223.5.5.5</code> 是阿里的公共 DNS，这里之所有没有使用常用的 114 DNS，是由于它解析国外域名的时候，经常会失败），用来解析公网域名。</p>
 <p>配置完成后，修改 /etc/resolv.conf，将里面的 <code>nameserver</code> 修改为 <code>127.0.0.1</code>。最后执行  <code>service dnsmasq start</code> 来启动 dnsmasq，就可以测试我们的配置了。执行 <code>dig baidu.com</code>，正常情况下会有如下输出：</p>
 <figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line">; &lt;&lt;&gt;&gt; DiG 9.16.1-Ubuntu &lt;&lt;&gt;&gt; baidu.com</span><br><span class="line">;; global options: +cmd</span><br><span class="line">;; Got answer:</span><br><span class="line">;; -&gt;&gt;HEADER&lt;&lt;- opcode: QUERY, status: NOERROR, id: 56800</span><br><span class="line">;; flags: qr rd ra; QUERY: 1, ANSWER: 2, AUTHORITY: 0, ADDITIONAL: 1</span><br><span class="line"></span><br><span class="line">;; OPT PSEUDOSECTION:</span><br><span class="line">; EDNS: version: 0, flags:; udp: 4096</span><br><span class="line">;; QUESTION SECTION:</span><br><span class="line">;baidu.com.                     IN      A</span><br><span class="line"></span><br><span class="line">;; ANSWER SECTION:</span><br><span class="line">baidu.com.              200     IN      A       220.181.38.148</span><br><span class="line">baidu.com.              200     IN      A       220.181.38.251</span><br><span class="line"></span><br><span class="line">;; Query time: 0 msec</span><br><span class="line">;; SERVER: 127.0.0.1#53(127.0.0.1)</span><br><span class="line">;; WHEN: Mon Sep 13 14:52:44 CST 2021</span><br><span class="line">;; MSG SIZE  rcvd: 70</span><br></pre></td></tr></table></figure>
 
 <p>上面输出中 <code>ANSWER SECTION</code> 中列出来了解析出来的 IP，代表解析成功。同样执行 dig 内网域名，也能被正常解析则证明配置正确。</p>
-<p>最后需要说明的是 wsl 不好做 service 的开机自启动，下次启动后需要手动执行 <code>sudo service dnsmasq start</code> 才能启动 dnsmasq 。这样就显得不是很友好，可以修改 /etc/resolv.conf，在 <code>nameserver 127.0.0.1</code> 的后面再追加一行 <code>nameserver 114.114.114.114</code> 这样 dnsmasq 没有启动时，可以保证公网域名能解析。</p>
+<p>最后需要说明的是 wsl 不好做 service 的开机自启动，下次启动后需要手动执行 <code>sudo service dnsmasq start</code> 才能启动 dnsmasq 。这样就显得不是很友好，可以修改 /etc/resolv.conf，在 <code>nameserver 127.0.0.1</code> 的后面再追加一行 <code>nameserver 119.29.29.29</code> 这样 dnsmasq 没有启动时，可以保证公网域名能解析。</p>
 
     </div>
 

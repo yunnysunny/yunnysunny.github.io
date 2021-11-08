@@ -146,10 +146,11 @@ conf-dir=/etc/dnsmasq.d/,*.conf
 ```
 server=/your_inner_domian/your_inner_dns_server
 server=/your_inner_domian/::
-server=114.114.114.114
+server=119.29.29.29
+server=223.5.5.5
 ```
 
-上面配置文件的第一行代表如果要解析的域名中包含 your_inner_domian 字符，则使用 dns 服务器 your_inner_dns_server 进行解析。这是一个子字符串匹配，不论你的域名为 `your_inner_domian.com` 或者 `your_inner_domain.net`，使用 your_inner_domian 都可匹配成功。 如果你的 your_inner_dns_server 不支持 ipv6，记得要加入第二行配置，它是用来禁用 ipv6 dns 解析用的（如果你的内网 DNS 服务器不支持 ipv6 协议的话，这个配置特别有用），不过这个功能仅支持 dnsmasq 2.80 及以上版本（使用 Ubuntu 20.02 安装的 Dnsmasq 是 2.80 版本，可以放心使用）。最后一行是留一个默认的 DNS 服务器，用来解析公网域名。
+上面配置文件的第一行代表如果要解析的域名中包含 your_inner_domian 字符，则使用 dns 服务器 your_inner_dns_server 进行解析。这是一个子字符串匹配，不论你的域名为 `your_inner_domian.com` 或者 `your_inner_domain.net`，使用 your_inner_domian 都可匹配成功。 如果你的 your_inner_dns_server 不支持 ipv6，记得要加入第二行配置，它是用来禁用 ipv6 dns 解析用的（如果你的内网 DNS 服务器不支持 ipv6 协议的话，这个配置特别有用），不过这个功能仅支持 dnsmasq 2.80 及以上版本（使用 Ubuntu 20.02 安装的 Dnsmasq 是 2.80 版本，可以放心使用）。最后一行是留一个默认的 DNS 服务器（`119.29.29.29` 是腾讯的公共 DNS，`223.5.5.5` 是阿里的公共 DNS，这里之所有没有使用常用的 114 DNS，是由于它解析国外域名的时候，经常会失败），用来解析公网域名。
 
 配置完成后，修改 /etc/resolv.conf，将里面的 `nameserver` 修改为 `127.0.0.1`。最后执行  `service dnsmasq start` 来启动 dnsmasq，就可以测试我们的配置了。执行 `dig baidu.com`，正常情况下会有如下输出：
 
@@ -177,7 +178,7 @@ baidu.com.              200     IN      A       220.181.38.251
 
 上面输出中 `ANSWER SECTION` 中列出来了解析出来的 IP，代表解析成功。同样执行 dig 内网域名，也能被正常解析则证明配置正确。
 
-最后需要说明的是 wsl 不好做 service 的开机自启动，下次启动后需要手动执行 `sudo service dnsmasq start` 才能启动 dnsmasq 。这样就显得不是很友好，可以修改 /etc/resolv.conf，在 `nameserver 127.0.0.1` 的后面再追加一行 `nameserver 114.114.114.114` 这样 dnsmasq 没有启动时，可以保证公网域名能解析。
+最后需要说明的是 wsl 不好做 service 的开机自启动，下次启动后需要手动执行 `sudo service dnsmasq start` 才能启动 dnsmasq 。这样就显得不是很友好，可以修改 /etc/resolv.conf，在 `nameserver 127.0.0.1` 的后面再追加一行 `nameserver 119.29.29.29` 这样 dnsmasq 没有启动时，可以保证公网域名能解析。
 
 
 
