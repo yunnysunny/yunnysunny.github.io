@@ -36,7 +36,7 @@
 <meta property="og:image" content="https://blog.whyun.com/images/private_line_with_service_discovery.png">
 <meta property="og:image" content="https://blog.whyun.com/images/consul_with_openresty.png">
 <meta property="article:published_time" content="2021-11-04T16:00:00.000Z">
-<meta property="article:modified_time" content="2021-11-07T13:54:05.503Z">
+<meta property="article:modified_time" content="2021-11-12T09:08:29.991Z">
 <meta property="article:author" content="yunnysunny">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://blog.whyun.com/images/balancer_classic.png">
@@ -234,7 +234,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-11-07 21:54:05" itemprop="dateModified" datetime="2021-11-07T21:54:05+08:00">2021-11-07</time>
+        <time title="修改时间：2021-11-12 17:08:29" itemprop="dateModified" datetime="2021-11-12T17:08:29+08:00">2021-11-12</time>
       </span>
 
   
@@ -271,6 +271,9 @@
 <p>可以参照笔者写的 <a target="_blank" rel="noopener" href="https://github.com/yunnysunny/consul-register">consul-register</a> 项目来做服务注册。这个项目就是通过单独应用来注册服务，不需要修改原有项目代码。</p>
 </blockquote>
 <p>客户端的改造要复杂些，因为要在客户端本身实现负载均衡算法。</p>
+<blockquote>
+<p>客户端负载均衡的实现，可以参见笔者写的 <a target="_blank" rel="noopener" href="https://github.com/yunnysunny/consul-balancer">consul-balancer</a> 项目。</p>
+</blockquote>
 <p><strong>图 1.2</strong> 适合的是在集群内部服务器之间相互调用的情况，但是一个服务如果是对公网暴漏访问的，情况会大不同。对于公网访问的服务，我们需要提供 https 支持（这里仅仅考虑七层 HTTP 协议，不考虑四层 socket 长连接的情况）。这时候，我们不得不在公网入口处部署一处 nginx 服务器（也可以是其他类似服务器，这里仅仅来 nginx 举例），配置好 SSL 证书，完成 https 的握手。考虑到这个 nginx 是直接和用户建立连接，如果这个 nginx 只有一台机器，而你的用户群体又分布在全国各地，肯定会出现一定概率某个地域的用户访问这台单节点的 nginx 服务速率慢的问题。所以更优化的方案是全国几个重要的地区各自建立入口点 nginx，最终入口点和业务集群之间的网络拓扑结构会是这样。</p>
 <p><img src="/images/edge_to_cluster.png"></p>
 <p><strong>图 1.3</strong></p>

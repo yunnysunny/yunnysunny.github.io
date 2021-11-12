@@ -2,16 +2,16 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>https://blog.whyun.com/posts/wsl-and-docker-desktop-install/</loc>
+    <loc>https://blog.whyun.com/posts/service-discovery-start/</loc>
     
-    <lastmod>2021-11-08</lastmod>
+    <lastmod>2021-11-12</lastmod>
     
   </url>
   
   <url>
-    <loc>https://blog.whyun.com/posts/service-discovery-start/</loc>
+    <loc>https://blog.whyun.com/posts/wsl-and-docker-desktop-install/</loc>
     
-    <lastmod>2021-11-07</lastmod>
+    <lastmod>2021-11-08</lastmod>
     
   </url>
   
@@ -158,7 +158,7 @@
 
   <url>
     <loc>https://blog.whyun.com/</loc>
-    <lastmod>2021-11-08</lastmod>
+    <lastmod>2021-11-12</lastmod>
     <changefreq>daily</changefreq>
     <priority>1.0</priority>
   </url>
