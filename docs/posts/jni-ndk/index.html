@@ -139,7 +139,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-count">22</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -251,7 +251,19 @@
 <p>本文源地址：<a href="http://blog.whyun.com/posts/jni-ndk/">http://blog.whyun.com/posts/jni-ndk/</a> 转载请注明出处。</p>
 </blockquote>
 <h2 id="3-2-Android-mk"><a href="#3-2-Android-mk" class="headerlink" title="3.2 Android.mk"></a>3.2 Android.mk</h2><p>mk后缀的文件是makefile文件，mk文件一般通过<code>include</code>语法被引入到其它makefile中。在NDK中Android.mk里存储的都是编译相关的配置信息，我们先举一个例子：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line">LOCAL_PATH := $(call my-dir)</span><br><span class="line"></span><br><span class="line">include $(CLEAR_VARS)</span><br><span class="line"></span><br><span class="line">LOCAL_MODULE := chapter3</span><br><span class="line">LOCAL_CFLAGS := -DJNI_ANDROID</span><br><span class="line">LOCAL_LDLIBS := -llog -lm</span><br><span class="line">TARGET_ARCH := arm</span><br><span class="line">TARGET_PLATFORM := android-7</span><br><span class="line">LOCAL_SRC_FILES := chapter3.c </span><br><span class="line"></span><br><span class="line">$(info $(SYSROOT))</span><br><span class="line">include $(BUILD_SHARED_LIBRARY)</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">LOCAL_PATH :&#x3D; $(call my-dir)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE :&#x3D; chapter3
+LOCAL_CFLAGS :&#x3D; -DJNI_ANDROID
+LOCAL_LDLIBS :&#x3D; -llog -lm
+TARGET_ARCH :&#x3D; arm
+TARGET_PLATFORM :&#x3D; android-7
+LOCAL_SRC_FILES :&#x3D; chapter3.c 
+
+$(info $(SYSROOT))
+include $(BUILD_SHARED_LIBRARY)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>文件第一行中<code>my-dir</code>是一个函数，通过调用它返回当前路径，<code>CLEAR_VARS</code>变量指向一个mk文件，它会清除所有除了<code>LOCAL_PATH</code>之外的<code>LOCAL_</code>开头的变量，下面是一些列的对于<code>LOCAL_</code>开头的变量的定义：</p>
 <ul>
 <li>LOCAL_MODULE 定义当前生成模板的名称，注意到文件最后一行<code>include $(BUILD_SHARED_LIBRARY)</code>代表当前是要生成一个动态库，所以说将LOCAL_MODULE定义成<code>chapter3</code>后，将会得到一个<code>libchapter3.so</code>文件。</li>

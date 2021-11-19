@@ -134,7 +134,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-count">22</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -245,13 +245,73 @@
 <p>本文源地址：<a href="http://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/">http://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/</a> 转载请注明出处。</p>
 </blockquote>
 <h2 id="4-2-使用第三方库源码"><a href="#4-2-使用第三方库源码" class="headerlink" title="4.2 使用第三方库源码"></a>4.2 使用第三方库源码</h2><p>假设你将第三方库做成动态库，并且你在JNI中还引用了这个动态库，不要企盼着把你的JNI库和这个第三方库放到同一个目录（比如说android项目的<code>libs/armeabi</code>目录）下就万事大吉了，很不幸的告诉你，JNI代码在被运行在android上时不能引用非<code>/system/lib</code>下的动态库。安卓操作系统的系统库文件都是放到<code>/system/lib</code>下的，如果你的JNI代码想引用一些第三方库的功能，就得考虑将第三方库做成静态库，继而打入你生成的jni库中。<br>再假设你就是第三方库的提供方，你需要将你写的代码提供给你的客户，而且你还想在做完库文件后还有一个测试程序，那么你可以在<code>Android.mk</code>中先编译出来一个静态库，然后再编译一个测试用的JNI动态库。你可能会有疑问，同一个<code>Android.mk</code>可以生成多个文件吗，答案是肯定的。<br>还是先看一个官方的例子，在NDK路径下，进入目录<code>sample\two-libs</code>,然后打开<code>jni</code>目录中的<code>Android.mk</code>：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line">LOCAL_PATH:= $(call my-dir)</span><br><span class="line"></span><br><span class="line"># first lib, which will be built statically</span><br><span class="line">#</span><br><span class="line">include $(CLEAR_VARS)</span><br><span class="line"></span><br><span class="line">LOCAL_MODULE    := libtwolib-first</span><br><span class="line">LOCAL_SRC_FILES := first.c</span><br><span class="line"></span><br><span class="line">include $(BUILD_STATIC_LIBRARY)</span><br><span class="line"></span><br><span class="line"># second lib, which will depend on and include the first one</span><br><span class="line">#</span><br><span class="line">include $(CLEAR_VARS)</span><br><span class="line"></span><br><span class="line">LOCAL_MODULE    := libtwolib-second</span><br><span class="line">LOCAL_SRC_FILES := second.c</span><br><span class="line"></span><br><span class="line">LOCAL_STATIC_LIBRARIES := libtwolib-first</span><br><span class="line"></span><br><span class="line">include $(BUILD_SHARED_LIBRARY)</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">LOCAL_PATH:&#x3D; $(call my-dir)
+
+# first lib, which will be built statically
+#
+include $(CLEAR_VARS)
+
+LOCAL_MODULE    :&#x3D; libtwolib-first
+LOCAL_SRC_FILES :&#x3D; first.c
+
+include $(BUILD_STATIC_LIBRARY)
+
+# second lib, which will depend on and include the first one
+#
+include $(CLEAR_VARS)
+
+LOCAL_MODULE    :&#x3D; libtwolib-second
+LOCAL_SRC_FILES :&#x3D; second.c
+
+LOCAL_STATIC_LIBRARIES :&#x3D; libtwolib-first
+
+include $(BUILD_SHARED_LIBRARY)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p><strong>代码4.2.1 Android.mk</strong><br>一般情况下，我们都会写<code>include $(BUILD_SHARED_LIBRARY)</code>来生成JNI库，但是这个项目在编译动态库之前先编译生成了一个静态库，编译静态库的时候同样指定了参数<code>LOCAL_MODULE</code>和<code>LOCAL_SRC_FILES</code>参数，但是下面编译动态库的时候也指定了这两个参数啊，难道不冲突？当然不冲突，因为我们用了这句话——<code>include $(CLEAR_VARS)</code>,调用了它就会把之前所有定义的<code>LOCAL_</code>开头的变量全部清空。配置的前半部分生成了静态库<code>libtwolib-first.a</code>，配置的后半部分注意<code>LOCAL_STATIC_LIBRARIES</code>这个变量，其值正是静态库的<code>LOCAL_MODULE</code>名称。  </p>
 <h2 id="4-3-使用第三方库文件"><a href="#4-3-使用第三方库文件" class="headerlink" title="4.3 使用第三方库文件"></a>4.3 使用第三方库文件</h2><p>我们在4.2中做出来了一个静态库（那个静态库在项目的<code>obj\local\&#123;abi&#125;</code>目录可以得到，abi为具体的cpu类型），本意是给客户提供一个可以调用的库文件，现在假设你就是那个客户，手里拿到了库文件，但是没有源码，该怎么使用来？这就要提到<code>PREBUILD_</code>类型变量，先看例子：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">LOCAL_PATH:= $(call my-dir)</span><br><span class="line"></span><br><span class="line"># first lib, which will be built statically</span><br><span class="line">#</span><br><span class="line">include $(CLEAR_VARS)</span><br><span class="line"></span><br><span class="line">#$(info $(TARGET_ARCH_ABI))</span><br><span class="line"></span><br><span class="line">LOCAL_MODULE := libtwolib-first</span><br><span class="line">LOCAL_SRC_FILES := ../obj/local/$(TARGET_ARCH_ABI)/libtwolib-first.a</span><br><span class="line">include $(PREBUILT_STATIC_LIBRARY)</span><br><span class="line"></span><br><span class="line"># second lib, which will depend on and include the first one</span><br><span class="line">#</span><br><span class="line">include $(CLEAR_VARS)</span><br><span class="line"></span><br><span class="line">LOCAL_MODULE    := libtwolib-second</span><br><span class="line">LOCAL_SRC_FILES := second.c</span><br><span class="line"></span><br><span class="line">LOCAL_STATIC_LIBRARIES := libtwolib-first</span><br><span class="line"></span><br><span class="line">include $(BUILD_SHARED_LIBRARY)</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">LOCAL_PATH:&#x3D; $(call my-dir)
+
+# first lib, which will be built statically
+#
+include $(CLEAR_VARS)
+
+#$(info $(TARGET_ARCH_ABI))
+
+LOCAL_MODULE :&#x3D; libtwolib-first
+LOCAL_SRC_FILES :&#x3D; ..&#x2F;obj&#x2F;local&#x2F;$(TARGET_ARCH_ABI)&#x2F;libtwolib-first.a
+include $(PREBUILT_STATIC_LIBRARY)
+
+# second lib, which will depend on and include the first one
+#
+include $(CLEAR_VARS)
+
+LOCAL_MODULE    :&#x3D; libtwolib-second
+LOCAL_SRC_FILES :&#x3D; second.c
+
+LOCAL_STATIC_LIBRARIES :&#x3D; libtwolib-first
+
+include $(BUILD_SHARED_LIBRARY)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p><strong>代码 4.3.1 Android-static.mk</strong><br>一般<code>LOCAL_SRC_FILES</code>是要写c/c++文件的，现在却直接写了一个动态库文件，然后引入<code>PREBUILT_STATIC_LIBRARY</code>来使用NDK的预编译功能，告诉编译器这个库文件已经编译好了，可以直接在下面的编译的中引用。我们看到最终在编译<code>twolib-second</code>库中，使用变量<code>LOCAL_STATIC_LIBRARIES</code>来将其引入。<br>最后运行<code>ndk-build APP_BUILD_SCRIPT=Android-static.mk</code>进行编译，因为我们这里没有使用默认的mk文件名，所以使用参数<code>APP_BUILD_SCRIPT</code>来指定使用的mk文件。</p>
 <h2 id="4-4-指定预编译库的头文件路径"><a href="#4-4-指定预编译库的头文件路径" class="headerlink" title="4.4 指定预编译库的头文件路径"></a>4.4 指定预编译库的头文件路径</h2><p>一些成熟的开源库提供了对于安卓环境的编译支持，你可以使用<code>ndk-build</code>来生成库文件。然后使用4.3的方法引入预编译库，但是对于这种开源库，我们引入头文件都是采用<code>#include&lt;xxx.h&gt;</code>这种方式，这时候就需要指定一个头文件的搜索路径，这就是<code>LOCAL_EXPORT_C_INCLUDES </code>变量的作用。下面是一个引用openssl的例子:</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">LOCAL_PATH := $(call my-dir)</span><br><span class="line"></span><br><span class="line">include $(CLEAR_VARS)</span><br><span class="line">LOCAL_MODULE := crypto</span><br><span class="line">LOCAL_SRC_FILES := libcrypto.so</span><br><span class="line">LOCAL_EXPORT_C_INCLUDES := $(LOCAL_PATH)/include</span><br><span class="line">include $(PREBUILT_SHARED_LIBRARY)</span><br><span class="line"></span><br><span class="line">include $(CLEAR_VARS)</span><br><span class="line"></span><br><span class="line">LOCAL_MODULE    := libchapter4</span><br><span class="line">#LOCAL_C_INCLUDES := $(SYSROOT)/usr/include</span><br><span class="line">LOCAL_LDLIBS := -L$(SYSROOT)/usr/lib -llog</span><br><span class="line"></span><br><span class="line">LOCAL_SRC_FILES := chapter4.c</span><br><span class="line"></span><br><span class="line">LOCAL_SHARED_LIBRARIES := crypto</span><br><span class="line">include $(BUILD_SHARED_LIBRARY)</span><br><span class="line"></span><br><span class="line">TARGET_PLATFORM := android-3</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">LOCAL_PATH :&#x3D; $(call my-dir)
+
+include $(CLEAR_VARS)
+LOCAL_MODULE :&#x3D; crypto
+LOCAL_SRC_FILES :&#x3D; libcrypto.so
+LOCAL_EXPORT_C_INCLUDES :&#x3D; $(LOCAL_PATH)&#x2F;include
+include $(PREBUILT_SHARED_LIBRARY)
+
+include $(CLEAR_VARS)
+
+LOCAL_MODULE    :&#x3D; libchapter4
+#LOCAL_C_INCLUDES :&#x3D; $(SYSROOT)&#x2F;usr&#x2F;include
+LOCAL_LDLIBS :&#x3D; -L$(SYSROOT)&#x2F;usr&#x2F;lib -llog
+
+LOCAL_SRC_FILES :&#x3D; chapter4.c
+
+LOCAL_SHARED_LIBRARIES :&#x3D; crypto
+include $(BUILD_SHARED_LIBRARY)
+
+TARGET_PLATFORM :&#x3D; android-3<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 <p>这里在和<code>chapter4.c</code>同级的目录下，须有有个<code>include</code>文件夹，然后在里面放openssl文件夹，当然这个openssl文件夹里就是一堆openssl的头文件。这样我们在代码中就可以这么写了：<br><code>#include &lt;openssl/pkcs12.h&gt;</code><br>在编译的时候，编译器就会去加载jni目录下的<code>include/openssl/pkcs12.h</code>文件。  </p>
 <blockquote>
 <p>其实libcrypto.so在安卓系统的<code>/system/lib</code>就存在了，虽然编译完成之后libcrypto.so会被拷贝到安卓项目的libs目录的armeabi下，但是在APP运行时读取的还是<code>/system/lib</code>下的libcrypto.so。可以把libcrypto.so和openssl文件目录分别拷贝到NDK目录下的<code>platforms\android-3\arch-arm\usr</code>中的<code>lib</code>和<code>include</code>目录，这样不需要写<code>include $(PREBUILT_SHARED_LIBRARY)</code>代码块了。</p>

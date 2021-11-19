@@ -137,7 +137,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-count">22</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -245,11 +245,22 @@
     <div class="post-body" itemprop="articleBody">
         <p>docker 容器提供了一种封装格式，可以将应用和其运行环境封装在一起，但是在线上实践过程中，应用和应用之间难免要产生依赖，一个上游的应用，可能会依赖于下游的一个或者几个应用给其提供数据。正所谓一个好汉三个帮，现实情况中，一个服务部署完成之后，对外不产生依赖的情况还是比较少的，但是 docker 在开始设计的时候没有过多考虑到容器之间依赖关系的处理。为了解决这个问题，在后续的发展中，一系列的容器编排的技术出现，比如说 <code>Docker Swarm</code> <code>Marathon</code> <code>Kubernetes</code> 等。上面提到的编排工具都是可以用在生产环境上的解决方案，不过本文要讲一下 <code>Docker Compose</code> 这个官方给出的编排解决方案，由于其功能比较简单，一般出于测试目的来使用，不过正式由于其简单，对于理解更高级的编排工具来说，算是一个好的入门。</p>
 <h2 id="1-安装"><a href="#1-安装" class="headerlink" title="1. 安装"></a>1. 安装</h2><p>由于在 Mac 和 Windows 的桌面程序 Docker Desktop 上，docker compose 是自带的，下面仅给出 Linux 下的安装命令：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">sudo curl -L &quot;https://github.com/docker/compose/releases/download/1.29.2/docker-compose-$(uname -s)-$(uname -m)&quot; -o /usr/local/bin/docker-compose</span><br><span class="line">sudo chmod +x /usr/local/bin/docker-compose</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">sudo curl -L &quot;https:&#x2F;&#x2F;github.com&#x2F;docker&#x2F;compose&#x2F;releases&#x2F;download&#x2F;1.29.2&#x2F;docker-compose-$(uname -s)-$(uname -m)&quot; -o &#x2F;usr&#x2F;local&#x2F;bin&#x2F;docker-compose
+sudo chmod +x &#x2F;usr&#x2F;local&#x2F;bin&#x2F;docker-compose<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 <p><strong>代码 1.1</strong></p>
 <p>确保 /usr/local/bin 处在 PATH 环境变量中，就可以在命令行中使用  docker-compose 命令了，正常情况下运行 <code>docker-compose --version</code> 会显示当前的版本号。</p>
 <h2 id="2-使用"><a href="#2-使用" class="headerlink" title="2. 使用"></a>2. 使用</h2><h3 id="2-1-服务依赖"><a href="#2-1-服务依赖" class="headerlink" title="2.1 服务依赖"></a>2.1 服务依赖</h3><p>为了方便举例，这里使用 kafka 这款软件来做演示，因为这款软件天生要依赖于 zookeeper 。简单起见，还是先做一个只启动 zookeeper 的配置文件：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3&quot;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">my-zookeeper:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">&#x27;bitnami/zookeeper:latest&#x27;</span></span><br><span class="line">    <span class="attr">user:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">my-zk</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;2981:2181&#x27;</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">ALLOW_ANONYMOUS_LOGIN=yes</span></span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">"3"</span>
+<span class="token key atrule">services</span><span class="token punctuation">:</span>
+  <span class="token key atrule">my-zookeeper</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> <span class="token string">'bitnami/zookeeper:latest'</span>
+    <span class="token key atrule">user</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> always
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> my<span class="token punctuation">-</span>zk
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> <span class="token string">'2981:2181'</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> ALLOW_ANONYMOUS_LOGIN=yes<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 2.1.1</strong></p>
 <p>将 代码 2.1 保存为文件 docker-compose.yml ，然后再其所在目录中执行 <code>docker-compose up</code> 即可成功启动配置文件中的 docker。运行完成之后会在控制台有如下输出：</p>
@@ -258,7 +269,32 @@
 <p>由于 docker 镜像中部署的应用大都是在前台运行的，使用 docker-compose 的时候也沿袭了这一个特性，使用 CTRL + C 才可退出当前容器。如果想在后台运行，使用  <code>docker-compose up -d</code> 即可。</p>
 <p>其实看 <strong>代码 2.1.1</strong> 转化成 docker run 命令的话，就是  <code>docker run --name my-zk --restart always --user root -e ALLOW_ANONYMOUS_LOGIN=yes -p 2981:2181  bitnami/zookeeper:latest</code>。如果 docker-compose 配置文件中只有一个 docker 容器的配置的话，其优势不大。</p>
 <p>下面在刚才的 docker-compose.yml 中再添加 kafka 的配置：</p>
-<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">version:</span> <span class="string">&quot;3&quot;</span></span><br><span class="line"><span class="attr">services:</span></span><br><span class="line">  <span class="attr">my-zookeeper:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">&#x27;bitnami/zookeeper:latest&#x27;</span></span><br><span class="line">    <span class="attr">user:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">my-zk</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;2981:2181&#x27;</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">ALLOW_ANONYMOUS_LOGIN=yes</span></span><br><span class="line">  <span class="attr">my-kafka:</span></span><br><span class="line">    <span class="attr">image:</span> <span class="string">&#x27;bitnami/kafka:latest&#x27;</span></span><br><span class="line">    <span class="attr">user:</span> <span class="string">root</span></span><br><span class="line">    <span class="attr">restart:</span> <span class="string">always</span></span><br><span class="line">    <span class="attr">container_name:</span> <span class="string">my-kfk</span></span><br><span class="line">    <span class="attr">ports:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">&#x27;9892:9892&#x27;</span></span><br><span class="line">    <span class="attr">environment:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_BROKER_ID=1</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_LISTENERS=PLAINTEXT://:9892</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://localhost:9892</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">KAFKA_ZOOKEEPER_CONNECT=my-zookeeper:2181</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">ALLOW_PLAINTEXT_LISTENER=yes</span></span><br><span class="line">    <span class="attr">depends_on:</span></span><br><span class="line">      <span class="bullet">-</span> <span class="string">my-zookeeper</span></span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-yaml" data-language="yaml"><code class="language-yaml"><span class="token key atrule">version</span><span class="token punctuation">:</span> <span class="token string">"3"</span>
+<span class="token key atrule">services</span><span class="token punctuation">:</span>
+  <span class="token key atrule">my-zookeeper</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> <span class="token string">'bitnami/zookeeper:latest'</span>
+    <span class="token key atrule">user</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> always
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> my<span class="token punctuation">-</span>zk
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> <span class="token string">'2981:2181'</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> ALLOW_ANONYMOUS_LOGIN=yes
+  <span class="token key atrule">my-kafka</span><span class="token punctuation">:</span>
+    <span class="token key atrule">image</span><span class="token punctuation">:</span> <span class="token string">'bitnami/kafka:latest'</span>
+    <span class="token key atrule">user</span><span class="token punctuation">:</span> root
+    <span class="token key atrule">restart</span><span class="token punctuation">:</span> always
+    <span class="token key atrule">container_name</span><span class="token punctuation">:</span> my<span class="token punctuation">-</span>kfk
+    <span class="token key atrule">ports</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> <span class="token string">'9892:9892'</span>
+    <span class="token key atrule">environment</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> KAFKA_BROKER_ID=1
+      <span class="token punctuation">-</span> KAFKA_LISTENERS=PLAINTEXT<span class="token punctuation">:</span>//<span class="token punctuation">:</span><span class="token number">9892</span>
+      <span class="token punctuation">-</span> KAFKA_ADVERTISED_LISTENERS=PLAINTEXT<span class="token punctuation">:</span>//localhost<span class="token punctuation">:</span><span class="token number">9892</span>
+      <span class="token punctuation">-</span> KAFKA_ZOOKEEPER_CONNECT=my<span class="token punctuation">-</span>zookeeper<span class="token punctuation">:</span><span class="token number">2181</span>
+      <span class="token punctuation">-</span> ALLOW_PLAINTEXT_LISTENER=yes
+    <span class="token key atrule">depends_on</span><span class="token punctuation">:</span>
+      <span class="token punctuation">-</span> my<span class="token punctuation">-</span>zookeeper<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 2.1.2</strong></p>
 <p>注意上述代码中的 depends_on 属性，这里填写了 my-zookeeper，则代表 my-kafka 这个 service 将会在 my-zookeeper 启动之后再启动。</p>
@@ -275,10 +311,22 @@
 <p>docker-compose 的 network 在底层会使用 docker network create 命令进行创建网络。使用教程可以参见<a target="_blank" rel="noopener" href="https://docs.docker.com/engine/reference/commandline/network_create/">官方文档</a>。</p>
 </blockquote>
 <p>我们通过 <code>docker network ls</code> 可以查看当前系统的 docker 创建的网卡：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">PS C:\Users\lenovo&gt; docker network ls</span><br><span class="line">NETWORK ID     NAME                   DRIVER    SCOPE</span><br><span class="line">f81f27e241f7   2_default              bridge    local</span><br><span class="line">9dea2e94021d   bridge                 bridge    local</span><br><span class="line">2dff57895828   host                   host      local</span><br><span class="line">a9e1acde9ceb   multi_cluster_consul   bridge    local</span><br><span class="line">c85a7f7e1a68   none                   null      local</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">PS C:\Users\lenovo&gt; docker network ls
+NETWORK ID     NAME                   DRIVER    SCOPE
+f81f27e241f7   2_default              bridge    local
+9dea2e94021d   bridge                 bridge    local
+2dff57895828   host                   host      local
+a9e1acde9ceb   multi_cluster_consul   bridge    local
+c85a7f7e1a68   none                   null      local<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>其中 <code>2_default</code> 是通过 <strong>代码 2.1.2</strong> 启动的 docker 组件生成的网络配置。其格式为 <code>$&#123;project-name&#125;_default</code>，其中 <code>$&#123;project-name&#125;</code> 默认为 docker-compose 的所在文件夹的名字（不过如果你的文件夹名中有 <code>.</code> 的话，会取 <code>.</code> 前部的名字）。你也可以运行 docker-compose 命令时使用 <code>--project-name</code> 参数来指定项目名称，使用 <code>docker-compose up --project mycs</code> 重新运行 <strong>代码 2.1.2</strong>（如果之前已经运行了，需要先运行 <code>docker-compose down</code>，否则会启动报错，提示容器已经存在）。重复运行 <code>docker network ls</code> 可以发现网络名称已经更换了：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">PS C:\Users\lenovo&gt; docker network ls</span><br><span class="line">NETWORK ID     NAME                   DRIVER    SCOPE</span><br><span class="line">9dea2e94021d   bridge                 bridge    local</span><br><span class="line">2dff57895828   host                   host      local</span><br><span class="line">a9e1acde9ceb   multi_cluster_consul   bridge    local</span><br><span class="line">029b23c6ff51   mycs_default           bridge    local</span><br><span class="line">c85a7f7e1a68   none                   null      local</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">PS C:\Users\lenovo&gt; docker network ls
+NETWORK ID     NAME                   DRIVER    SCOPE
+9dea2e94021d   bridge                 bridge    local
+2dff57895828   host                   host      local
+a9e1acde9ceb   multi_cluster_consul   bridge    local
+029b23c6ff51   mycs_default           bridge    local
+c85a7f7e1a68   none                   null      local<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>当然你也可以在 docker-compose.yml 文件中手动指定 network 名称，假设 docker-compose 中有三个容器，可以把 容器 1 和容器 2 使用一个网络，容器 2 和容器 3 使用一个网络，容器 1 和 容器 3 之间网络不能直接访问。上述用法在实践中用的比较少，这里省略不讲。如果读者比较关心，可以参考官方文档的<a target="_blank" rel="noopener" href="https://docs.docker.com/compose/networking/#specify-custom-networks">例子</a>。</p>
 <p>由于大家的使用习惯是在 docker-compose.yml 文件中直接使用 <code>docker-compose up -d</code> 来拉起一组 docker 容器，这时候一定要留意你不同 yml 文件所在的文件名要做成不一样的，否则它在创建 network 名称的时候会冲突。</p>

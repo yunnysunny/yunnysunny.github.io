@@ -140,7 +140,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-count">22</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -248,18 +248,20 @@
     <div class="post-body" itemprop="articleBody">
         <p>之前通过讲 <a href="https://blog.whyun.com/posts/docker-compose-tutorial/">docker compose 教程</a> 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 <a target="_blank" rel="noopener" href="https://docs.docker.com/engine/swarm/">docker swarm</a> 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 <a target="_blank" rel="noopener" href="https://kubernetes.io/zh/">kubernetes</a> 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。本文主要讲解 kubernetes 的安装和内部原理。</p>
 <h2 id="1-安装"><a href="#1-安装" class="headerlink" title="1. 安装"></a>1. 安装</h2><h3 id="1-1-Linux-下安装"><a href="#1-1-Linux-下安装" class="headerlink" title="1.1 Linux 下安装"></a>1.1 Linux 下安装</h3><p>处于演示目的，我们依然选择安装单机版 kubernets，在 Linux 下可以选择安装 <a target="_blank" rel="noopener" href="https://github.com/kubernetes/minikube">minikube</a> 这个工具。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">wget https://github.com/kubernetes/minikube/releases/download/v1.23.2/minikube-linux-amd64</span><br><span class="line">chmod +x minikube-linux-amd64</span><br><span class="line">mv minikube-linux-amd64 /usr/local/bin/minikube</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">wget</span> https://github.com/kubernetes/minikube/releases/download/v1.23.2/minikube-linux-amd64
+<span class="token function">chmod</span> +x minikube-linux-amd64
+<span class="token function">mv</span> minikube-linux-amd64 /usr/local/bin/minikube<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 <p><strong>代码 1.1.1</strong></p>
 <blockquote>
 <p>上述代码中的下载地址，是从 minikube 的 github 项目的 release 页中找到的。你可以根据自己需要选择安装最新版本。</p>
 </blockquote>
 <p>通过 <code>minikube start</code> 命令可以启动 minikube 服务，不过 minikube 默认不支持使用 root 用户启动，如果想使用 root 启动，可以使用</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">minikube start ----driver=none</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">minikube start ----driver<span class="token operator">=</span>none<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 <p><strong>代码  1.1.2</strong></p>
 <p>来启动（前提是你的宿主机中安装了 docker ，并且含有 systemd 守护服务）。</p>
 <p>如果启动过程中报错 <code> Exiting due to GUEST_MISSING_CONNTRACK: Sorry, Kubernetes 1.22.2 requires conntrack to be installed in root&#39;s path</code>，则证明你的系统中缺少 conntrack 组件，需要通过 <code>yum install conntrack -y</code> 来修复（debain 内核使用 <code>apt-get install conntrack -y</code>）。</p>
 <p>不过使用<strong>代码  1.1.2</strong>后发现，初始化过程中需要下载依赖组件，而这些依赖组件由于众所周知的原因，我们下载不下来，通过在启动过程中改用阿里源即可解决</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">minikube start --driver=none --image-mirror-country=&#x27;cn&#x27; --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">minikube start --driver<span class="token operator">=</span>none --image-mirror-country<span class="token operator">=</span><span class="token string">'cn'</span> --image-repository<span class="token operator">=</span>registry.cn-hangzhou.aliyuncs.com/google_containers<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p><strong>代码 1.1.3</strong></p>
 <blockquote>
@@ -270,17 +272,22 @@
 <p><img src="/images/docker_desktop_k8s.png"></p>
 <p><strong>图 1.2.1</strong></p>
 <p>笔者安装的是 1.21.5 版本，clone 一下 k8s-for-docker-desktop 项目，切换到 v1.21.5 分支</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">git clone https://github.com/AliyunContainerService/k8s-for-docker-desktop.git</span><br><span class="line">git checkout v1.21.5</span><br><span class="line">.\load_images.ps1</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">git</span> clone https://github.com/AliyunContainerService/k8s-for-docker-desktop.git
+<span class="token function">git</span> checkout v1.21.5
+.<span class="token punctuation">\</span>load_images.ps1<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.2.1</strong></p>
 <p>接着还是在项目 k8s-for-docker-desktop 目录中，执行下述命令来配置 kubernetes 控制台：</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">kubectl create -f kubernetes-dashboard.yaml</span><br><span class="line">kubectl proxy</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">kubectl create -f kubernetes-dashboard.yaml
+kubectl proxy<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.2.2</strong></p>
 <p><code>kubectl proxy</code> 命令，会输出如下提示 <code>Starting to serve on 127.0.0.1:8001</code>，说明启动控制台成功，然后你需要在浏览器中访问下面地址</p>
 <p><a target="_blank" rel="noopener" href="http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/">http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/</a></p>
 <p>这个地址会提示输入 token，在 Windows 中 token 可以通过在 powsershell 中执行如下命令获得：</p>
-<figure class="highlight powershell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="variable">$TOKEN</span>=((kubectl <span class="literal">-n</span> kube<span class="literal">-system</span> describe secret default | <span class="built_in">Select-String</span> <span class="string">&quot;token:&quot;</span>) <span class="operator">-split</span> <span class="string">&quot; +&quot;</span>)[<span class="number">1</span>]</span><br><span class="line">kubectl config <span class="built_in">set-credentials</span> docker<span class="literal">-for</span><span class="literal">-desktop</span> -<span class="literal">-token</span>=<span class="string">&quot;<span class="variable">$</span>&#123;TOKEN&#125;&quot;</span></span><br><span class="line"><span class="built_in">echo</span> <span class="variable">$TOKEN</span></span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-powershell" data-language="powershell"><code class="language-powershell"><span class="token variable">$TOKEN</span>=<span class="token punctuation">(</span><span class="token punctuation">(</span>kubectl <span class="token operator">-</span>n kube<span class="token operator">-</span>system describe secret default <span class="token punctuation">|</span> <span class="token function">Select-String</span> <span class="token string">"token:"</span><span class="token punctuation">)</span> <span class="token operator">-</span>split <span class="token string">" +"</span><span class="token punctuation">)</span><span class="token punctuation">[</span>1<span class="token punctuation">]</span>
+kubectl config <span class="token function">set-credentials</span> docker<span class="token operator">-</span><span class="token keyword">for</span><span class="token operator">-</span>desktop <span class="token operator">--</span>token=<span class="token string">"$&#123;TOKEN&#125;"</span>
+<span class="token function">echo</span> <span class="token variable">$TOKEN</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
 <h2 id="2-原理"><a href="#2-原理" class="headerlink" title="2 原理"></a>2 原理</h2><p>kubernetes 将若干容器进行编排，形成一个集群，但是这个集群最终要对外提供访问能力，才能被使用。kubernetes 自带了 NodePort 和 LoadBalancer 两种模式来让使用者从外部访问集群内的机器。其中 NodePort 和原理和我们路由器中用到的<a target="_blank" rel="noopener" href="https://zh.wikipedia.org/wiki/%E7%BD%91%E7%BB%9C%E5%9C%B0%E5%9D%80%E8%BD%AC%E6%8D%A2">网络地址转化</a>（<strong>N</strong>etwork <strong>A</strong>ddress <strong>T</strong>ranslation，简称 <code>NAT</code>）是一样的。kubernetes 会对外提供一个端口，用来支持外部应用来访问内部的某一个服务。同时对于内部 pod 来说，每个部署当前服务的节点都会被分配一个特定端口，用来接收“路由器”转发过来的请求。</p>
 <blockquote>

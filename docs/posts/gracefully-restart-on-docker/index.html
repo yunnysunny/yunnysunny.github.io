@@ -134,7 +134,7 @@
   <nav class="site-state">
       <div class="site-state-item site-state-posts">
         <a href="/archives/">
-          <span class="site-state-item-count">21</span>
+          <span class="site-state-item-count">22</span>
           <span class="site-state-item-name">日志</span>
         </a>
       </div>
@@ -249,24 +249,99 @@
 <blockquote>
 <p>当前例子的代码都可以从<a target="_blank" rel="noopener" href="https://gitlab.com/yunnysunny/docker-start/-/tree/main/start_always">这里</a>找到</p>
 </blockquote>
-<figure class="highlight go"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">package</span> main</span><br><span class="line"></span><br><span class="line"><span class="keyword">import</span> (</span><br><span class="line">	<span class="string">&quot;fmt&quot;</span></span><br><span class="line">	<span class="string">&quot;os&quot;</span></span><br><span class="line">	<span class="string">&quot;strconv&quot;</span></span><br><span class="line">	<span class="string">&quot;time&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">func</span> <span class="title">main</span><span class="params">()</span></span> &#123;</span><br><span class="line">	fmt.Println(<span class="string">&quot;begin&quot;</span>, time.Now().Format(<span class="string">&quot;2006-01-02 15:04:05&quot;</span>))</span><br><span class="line">	seconds := <span class="number">11</span></span><br><span class="line">	<span class="keyword">if</span> <span class="built_in">len</span> (os.Args) == <span class="number">2</span> &#123;</span><br><span class="line">		secondsFromCli, _ := strconv.Atoi( os.Args[<span class="number">1</span>] )</span><br><span class="line">		<span class="keyword">if</span> secondsFromCli &gt; <span class="number">0</span> &#123;</span><br><span class="line">			seconds = secondsFromCli</span><br><span class="line">		&#125;</span><br><span class="line">	&#125;</span><br><span class="line">	time.Sleep(time.Duration(seconds) * time.Second)</span><br><span class="line">	fmt.Println(<span class="string">&quot;exit&quot;</span>, time.Now().Format(<span class="string">&quot;2006-01-02 15:04:05&quot;</span>))</span><br><span class="line">	os.Exit(<span class="number">1</span>)</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-go" data-language="go"><code class="language-go"><span class="token keyword">package</span> main
+
+<span class="token keyword">import</span> <span class="token punctuation">(</span>
+	<span class="token string">"fmt"</span>
+	<span class="token string">"os"</span>
+	<span class="token string">"strconv"</span>
+	<span class="token string">"time"</span>
+<span class="token punctuation">)</span>
+
+<span class="token keyword">func</span> <span class="token function">main</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">"begin"</span><span class="token punctuation">,</span> time<span class="token punctuation">.</span><span class="token function">Now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">"2006-01-02 15:04:05"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+	seconds <span class="token operator">:=</span> <span class="token number">11</span>
+	<span class="token keyword">if</span> <span class="token builtin">len</span> <span class="token punctuation">(</span>os<span class="token punctuation">.</span>Args<span class="token punctuation">)</span> <span class="token operator">==</span> <span class="token number">2</span> <span class="token punctuation">&#123;</span>
+		secondsFromCli<span class="token punctuation">,</span> <span class="token boolean">_</span> <span class="token operator">:=</span> strconv<span class="token punctuation">.</span><span class="token function">Atoi</span><span class="token punctuation">(</span> os<span class="token punctuation">.</span>Args<span class="token punctuation">[</span><span class="token number">1</span><span class="token punctuation">]</span> <span class="token punctuation">)</span>
+		<span class="token keyword">if</span> secondsFromCli <span class="token operator">></span> <span class="token number">0</span> <span class="token punctuation">&#123;</span>
+			seconds <span class="token operator">=</span> secondsFromCli
+		<span class="token punctuation">&#125;</span>
+	<span class="token punctuation">&#125;</span>
+	time<span class="token punctuation">.</span><span class="token function">Sleep</span><span class="token punctuation">(</span>time<span class="token punctuation">.</span><span class="token function">Duration</span><span class="token punctuation">(</span>seconds<span class="token punctuation">)</span> <span class="token operator">*</span> time<span class="token punctuation">.</span>Second<span class="token punctuation">)</span>
+	fmt<span class="token punctuation">.</span><span class="token function">Println</span><span class="token punctuation">(</span><span class="token string">"exit"</span><span class="token punctuation">,</span> time<span class="token punctuation">.</span><span class="token function">Now</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">Format</span><span class="token punctuation">(</span><span class="token string">"2006-01-02 15:04:05"</span><span class="token punctuation">)</span><span class="token punctuation">)</span>
+	os<span class="token punctuation">.</span><span class="token function">Exit</span><span class="token punctuation">(</span><span class="token number">1</span><span class="token punctuation">)</span>
+<span class="token punctuation">&#125;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.1 delay_exit.go</strong></p>
 <p>我们制作一个 <a target="_blank" rel="noopener" href="https://gitlab.com/yunnysunny/docker-start/-/blob/main/start_always/start_always.Dockerfile">dockerfile</a> (详细代码参见<a target="_blank" rel="noopener" href="https://gitlab.com/yunnysunny/docker-start/-/blob/main/start_always/start_always.Dockerfile">链接</a>)，指定 entrypoint 脚本内容如下</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line"></span><br><span class="line">date</span><br><span class="line">/opt/delay-exit &quot;$@&quot;</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">#!&#x2F;bin&#x2F;bash
+
+date
+&#x2F;opt&#x2F;delay-exit &quot;$@&quot;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.2 start.sh</strong></p>
 <p>将 <strong>代码 1.1</strong> 构建，生成可执行文件，放置于 /opt/delay-exit 。我们在 docker run 的时候可以指定任意一个进程退出的等待时间，如果不指定则 11s 后退出。</p>
-<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#</span><span class="bash">!/bin/bash</span></span><br><span class="line"></span><br><span class="line">source ./common.sh</span><br><span class="line">docker run --restart always --name always-test $TAG_LATEST &quot;$@&quot;</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">#!&#x2F;bin&#x2F;bash
+
+source .&#x2F;common.sh
+docker run --restart always --name always-test $TAG_LATEST &quot;$@&quot;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.3 test_always.sh</strong></p>
 <p><strong>代码 1.3</strong> 是我们准备好的测试文件，其中 <code>$TAG_LATEST</code> 是制作好的，含有 delay_exit.go 的编译生成可执行程序的镜像。</p>
 <p>首先看正常 11s 退出的情况，<code>./test_always.sh</code> 即可启动容器，然后通过 <code>docker logs always-test</code> 来看启动容器的运行日志：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line">Tue Oct 12 16:20:24 CST 2021</span><br><span class="line">begin 2021-10-12 16:20:24</span><br><span class="line">exit 2021-10-12 16:20:35</span><br><span class="line">Tue Oct 12 16:20:35 CST 2021</span><br><span class="line">begin 2021-10-12 16:20:35</span><br><span class="line">exit 2021-10-12 16:20:46</span><br><span class="line">Tue Oct 12 16:20:47 CST 2021</span><br><span class="line">begin 2021-10-12 16:20:47</span><br><span class="line">exit 2021-10-12 16:20:58</span><br><span class="line">Tue Oct 12 16:20:59 CST 2021</span><br><span class="line">begin 2021-10-12 16:20:59</span><br><span class="line">exit 2021-10-12 16:21:10</span><br><span class="line">Tue Oct 12 16:21:10 CST 2021</span><br><span class="line">begin 2021-10-12 16:21:10</span><br><span class="line">exit 2021-10-12 16:21:21</span><br><span class="line">Tue Oct 12 16:21:22 CST 2021</span><br><span class="line">begin 2021-10-12 16:21:22</span><br><span class="line">exit 2021-10-12 16:21:33</span><br><span class="line">Tue Oct 12 16:21:33 CST 2021</span><br><span class="line">begin 2021-10-12 16:21:33</span><br><span class="line">exit 2021-10-12 16:21:44</span><br><span class="line">Tue Oct 12 16:21:45 CST 2021</span><br><span class="line">begin 2021-10-12 16:21:45</span><br><span class="line">exit 2021-10-12 16:21:56</span><br><span class="line">Tue Oct 12 16:21:56 CST 2021</span><br><span class="line">begin 2021-10-12 16:21:56</span><br><span class="line">exit 2021-10-12 16:22:07</span><br><span class="line">Tue Oct 12 16:22:08 CST 2021</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">Tue Oct 12 16:20:24 CST 2021
+begin 2021-10-12 16:20:24
+exit 2021-10-12 16:20:35
+Tue Oct 12 16:20:35 CST 2021
+begin 2021-10-12 16:20:35
+exit 2021-10-12 16:20:46
+Tue Oct 12 16:20:47 CST 2021
+begin 2021-10-12 16:20:47
+exit 2021-10-12 16:20:58
+Tue Oct 12 16:20:59 CST 2021
+begin 2021-10-12 16:20:59
+exit 2021-10-12 16:21:10
+Tue Oct 12 16:21:10 CST 2021
+begin 2021-10-12 16:21:10
+exit 2021-10-12 16:21:21
+Tue Oct 12 16:21:22 CST 2021
+begin 2021-10-12 16:21:22
+exit 2021-10-12 16:21:33
+Tue Oct 12 16:21:33 CST 2021
+begin 2021-10-12 16:21:33
+exit 2021-10-12 16:21:44
+Tue Oct 12 16:21:45 CST 2021
+begin 2021-10-12 16:21:45
+exit 2021-10-12 16:21:56
+Tue Oct 12 16:21:56 CST 2021
+begin 2021-10-12 16:21:56
+exit 2021-10-12 16:22:07
+Tue Oct 12 16:22:08 CST 2021<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>exit 语句下面是 /start.sh 脚本中 <code>date</code> 命令的输出内容，可以看到容器退出到重启在 1s 之内完成，说明还是挺高效的。</p>
 <p>使用 <code>docker stop always-test &amp;&amp; docker rm always-test</code>，删除当前容器，重新启动，这次增加一个启动参数 <code>./test_always.sh 2</code>，即更改默认退出等待时间为 2s 。再次查看容器日志：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">Tue Oct 12 16:16:14 CST 2021</span><br><span class="line">begin 2021-10-12 16:16:14</span><br><span class="line">exit 2021-10-12 16:16:16</span><br><span class="line">Tue Oct 12 16:16:16 CST 2021</span><br><span class="line">begin 2021-10-12 16:16:16</span><br><span class="line">exit 2021-10-12 16:16:18</span><br><span class="line">Tue Oct 12 16:16:19 CST 2021</span><br><span class="line">begin 2021-10-12 16:16:19</span><br><span class="line">exit 2021-10-12 16:16:21</span><br><span class="line">Tue Oct 12 16:16:21 CST 2021</span><br><span class="line">begin 2021-10-12 16:16:21</span><br><span class="line">exit 2021-10-12 16:16:23 #从这一次开始重启等待时间被拉长</span><br><span class="line">Tue Oct 12 16:16:25 CST 2021</span><br><span class="line">begin 2021-10-12 16:16:25</span><br><span class="line">exit 2021-10-12 16:16:27</span><br><span class="line">Tue Oct 12 16:16:29 CST 2021</span><br><span class="line">begin 2021-10-12 16:16:29</span><br><span class="line">exit 2021-10-12 16:16:31</span><br><span class="line">Tue Oct 12 16:16:34 CST 2021</span><br><span class="line">begin 2021-10-12 16:16:34</span><br><span class="line">exit 2021-10-12 16:16:36</span><br><span class="line">Tue Oct 12 16:16:43 CST 2021</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">Tue Oct 12 16:16:14 CST 2021
+begin 2021-10-12 16:16:14
+exit 2021-10-12 16:16:16
+Tue Oct 12 16:16:16 CST 2021
+begin 2021-10-12 16:16:16
+exit 2021-10-12 16:16:18
+Tue Oct 12 16:16:19 CST 2021
+begin 2021-10-12 16:16:19
+exit 2021-10-12 16:16:21
+Tue Oct 12 16:16:21 CST 2021
+begin 2021-10-12 16:16:21
+exit 2021-10-12 16:16:23 #从这一次开始重启等待时间被拉长
+Tue Oct 12 16:16:25 CST 2021
+begin 2021-10-12 16:16:25
+exit 2021-10-12 16:16:27
+Tue Oct 12 16:16:29 CST 2021
+begin 2021-10-12 16:16:29
+exit 2021-10-12 16:16:31
+Tue Oct 12 16:16:34 CST 2021
+begin 2021-10-12 16:16:34
+exit 2021-10-12 16:16:36
+Tue Oct 12 16:16:43 CST 2021<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p>会发现启动时间不足 10s，docker 不会立即重启退出的容器，随着重启次数增多，会逐渐拉长启动时间。</p>
 <h2 id="2-宿主机守护进程"><a href="#2-宿主机守护进程" class="headerlink" title="2. 宿主机守护进程"></a>2. 宿主机守护进程</h2><p>docker 容器启动时，会在启动 docker 容器的宿主机上产生一个进程，如果 docker 容器异常退出，这个进程也会退出，所以我们也可以在宿主机上使用 <a target="_blank" rel="noopener" href="https://freedesktop.org/wiki/Software/systemd/">systemd</a> <a target="_blank" rel="noopener" href="http://upstart.ubuntu.com/">upstart</a> <a target="_blank" rel="noopener" href="http://supervisord.org/">supervisor</a> 等工具通过监听进程状态来达到重启目的，但是从使用便捷性上来说不如直接使用 <code>docker run</code> 的 <code>--restart always</code> 参数。</p>
@@ -275,20 +350,78 @@
 <blockquote>
 <p>本小节中的代码都能从<a href="">这里</a>找到源代码</p>
 </blockquote>
-<figure class="highlight dockerfile"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">FROM</span> centos:<span class="number">7</span> as base</span><br><span class="line"></span><br><span class="line"><span class="comment"># 更改 yum 源</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> mv /etc/yum.repos.d/CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo.backup</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> docker/etc/yum.repos.d /etc/yum.repos.d</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> sed -i -e <span class="string">&#x27;/plugins=1/d&#x27;</span> -e <span class="string">&#x27;/plugins=0/d&#x27;</span> /etc/yum.conf</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum clean all</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install epel-release -y</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> yum install wget curl make tcpdump net-tools bind-utils telnet python3 python3-pip logrotate ca-certificates <span class="built_in">which</span> crontabs -y</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装 supervisor</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> docker/root/.pip /root/.pip</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> pip3 install supervisor</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> mkdir -p /data/supervisor/<span class="built_in">log</span></span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> docker/etc/supervisord.conf /etc</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> docker/etc/supervisor.d /etc/supervisor.d</span></span><br><span class="line"><span class="comment"># 配置 logrotate</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> docker/etc/logrotate.d /etc/logrotate.d</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用东八区时区</span></span><br><span class="line"><span class="keyword">RUN</span><span class="bash"> ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime</span></span><br><span class="line"><span class="comment"># 必须添加这两个环境变量，否则 supervisor 无法在 python3 下启动</span></span><br><span class="line"><span class="keyword">ENV</span> LC_ALL <span class="string">&quot;en_US.UTF-8&quot;</span></span><br><span class="line"><span class="keyword">ENV</span> LANG <span class="string">&quot;en_US.UTF-8&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加启动脚本</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> docker/app_init.sh /</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> docker/app.init.d  /app.init.d</span></span><br><span class="line"><span class="keyword">COPY</span><span class="bash"> docker/entrypoint.sh /</span></span><br><span class="line"><span class="keyword">ENTRYPOINT</span><span class="bash"> [ <span class="string">&quot;/entrypoint.sh&quot;</span> ]</span></span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-dockerfile" data-language="dockerfile"><code class="language-dockerfile">FROM centos:7 as base
+
+# 更改 yum 源
+RUN mv &#x2F;etc&#x2F;yum.repos.d&#x2F;CentOS-Base.repo &#x2F;etc&#x2F;yum.repos.d&#x2F;CentOS-Base.repo.backup
+COPY docker&#x2F;etc&#x2F;yum.repos.d &#x2F;etc&#x2F;yum.repos.d
+RUN sed -i -e &#39;&#x2F;plugins&#x3D;1&#x2F;d&#39; -e &#39;&#x2F;plugins&#x3D;0&#x2F;d&#39; &#x2F;etc&#x2F;yum.conf
+RUN yum clean all
+
+RUN yum install epel-release -y
+RUN yum install wget curl make tcpdump net-tools bind-utils telnet python3 python3-pip logrotate ca-certificates which crontabs -y
+
+# 安装 supervisor
+COPY docker&#x2F;root&#x2F;.pip &#x2F;root&#x2F;.pip
+RUN pip3 install supervisor
+RUN mkdir -p &#x2F;data&#x2F;supervisor&#x2F;log
+COPY docker&#x2F;etc&#x2F;supervisord.conf &#x2F;etc
+COPY docker&#x2F;etc&#x2F;supervisor.d &#x2F;etc&#x2F;supervisor.d
+# 配置 logrotate
+COPY docker&#x2F;etc&#x2F;logrotate.d &#x2F;etc&#x2F;logrotate.d
+
+# 使用东八区时区
+RUN ln -sf &#x2F;usr&#x2F;share&#x2F;zoneinfo&#x2F;Asia&#x2F;Shanghai &#x2F;etc&#x2F;localtime
+# 必须添加这两个环境变量，否则 supervisor 无法在 python3 下启动
+ENV LC_ALL &quot;en_US.UTF-8&quot;
+ENV LANG &quot;en_US.UTF-8&quot;
+
+# 添加启动脚本
+COPY docker&#x2F;app_init.sh &#x2F;
+COPY docker&#x2F;app.init.d  &#x2F;app.init.d
+COPY docker&#x2F;entrypoint.sh &#x2F;
+ENTRYPOINT [ &quot;&#x2F;entrypoint.sh&quot; ]<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 3.1</strong></p>
 <p>supervisor 是一个 python 2.7 编写的工具，由于 python 2.7 已经处在停止维护阶段，这里选择安装了 python 3。但是发现如果不设置 <code>LC_ALL</code> <code>LANG</code> 这两个环境变量的话，会报错：</p>
-<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Error: &#x27;ascii&#x27; codec can&#x27;t decode byte</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-none"><code class="language-none">Error: &#39;ascii&#39; codec can&#39;t decode byte<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <p>所以在 <strong>代码 3.1</strong> 中专门设置了这两个环境变量。</p>
 <p>接着看入口文件 entrypoint.sh:</p>
-<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">#!/bin/bash</span></span><br><span class="line"></span><br><span class="line">/app_init.sh</span><br><span class="line"></span><br><span class="line"><span class="string">&quot;<span class="variable">$@</span>&quot;</span></span><br><span class="line"><span class="comment"># 前台 启动 supervisor 的守护进程 supervisord</span></span><br><span class="line"><span class="built_in">exec</span> supervisord -c /etc/supervisord.conf -n</span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-bash" data-language="bash"><code class="language-bash"><span class="token shebang important">#!/bin/bash</span>
+
+/app_init.sh
+
+<span class="token string">"<span class="token variable">$@</span>"</span>
+<span class="token comment"># 前台 启动 supervisor 的守护进程 supervisord</span>
+<span class="token builtin class-name">exec</span> supervisord -c /etc/supervisord.conf -n<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 3.2 entrypoint.sh</strong></p>
 <p>首先看最后一行 exec 的用法。我们使用 supervisor 作为守护进程，也就是说对于使用这个镜像的容器来说，它所运行的应用是 supervisor，那么在 supervisor 异常退出之后，当前容器是不可用的，也就是说我们应该让 docker 感知到当前 supervisor 是否可用。docker 感知容器是否正常的方式，就是容器内部 pid 为 1 的进程是否退出，这个 pid 为 1 的进程，就是通过 ENTRYPOINT （如果没有 ENTRYPOINT 的话，是CMD ）指令指定的程序运行后产生的。显然这里我们要做的是要将 supervisord 的运行进程 ID 置为 1。如果我们在 entrypoint.sh 脚本中运行 supervisord 时没有使用 exec 的话，进程 ID 为 1 的进程，将是 entrypoint.sh ，而使用 exec 后，entrypoint.sh 进程将会被 supervisord 替代，也就是说 supervisord 就会成为 1 号进程。最终也就实现了 supervisord 进程退出能被 docker 感知到的目的。</p>
 <p>我们将所有通过 supervisor 收录的应用的配置文件统一放置在目录 /etc/supervisor.d 中，在我们的镜像中安装了 crontabs ，并通过 supervisor 对其守护，下面是它的配置文件：</p>
-<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># crond 为项目名，可以根据实际情况制定</span></span><br><span class="line"><span class="section">[program:crond]</span></span><br><span class="line"><span class="comment">#脚本目录</span></span><br><span class="line"><span class="attr">directory</span>=/usr/sbin</span><br><span class="line"><span class="comment">#脚本执行命令</span></span><br><span class="line"><span class="attr">command</span>=/usr/sbin/crond -n</span><br><span class="line"></span><br><span class="line"><span class="comment">#supervisor启动的时候是否随着同时启动，默认true</span></span><br><span class="line"><span class="attr">autostart</span>=<span class="literal">true</span></span><br><span class="line"><span class="comment">#当程序exit的时候，这个program不会自动重启,默认unexpected，设置子进程挂掉后自动重启的情况，有三个选项，false,unexpected和true。如果为false的时候，无论什么情况下，都不会被重新启动，如果为unexpected，只有当进程的退出码不在下面的exitcodes里面定义的</span></span><br><span class="line"><span class="attr">autorestart</span>=<span class="literal">true</span></span><br><span class="line"><span class="comment">#这个选项是子进程启动多少秒之后，此时状态如果是running，则我们认为启动成功了。默认值为1</span></span><br><span class="line"><span class="attr">startsecs</span>=<span class="number">1</span></span><br><span class="line"></span><br><span class="line"><span class="comment">#设置日志输出 </span></span><br><span class="line"><span class="attr">stdout_logfile</span>=/data/supervisor/log/crond.log </span><br><span class="line"><span class="attr">stderr_logfile</span>=/data/supervisor/log/crond.log </span><br><span class="line"><span class="comment">#把stderr重定向到stdout，默认 false</span></span><br><span class="line"><span class="comment"># redirect_stderr = false</span></span><br><span class="line"><span class="comment">#stdout日志文件大小，由于我们配置了 logrotate 进行日志拆分，所以这里设置为 0</span></span><br><span class="line"><span class="attr">stdout_logfile_maxbytes</span> = <span class="number">0</span></span><br><span class="line"><span class="comment">#stdout日志文件备份数</span></span><br><span class="line"><span class="attr">stdout_logfile_backups</span> = <span class="number">0</span></span><br></pre></td></tr></table></figure>
+<pre class="line-numbers language-ini" data-language="ini"><code class="language-ini"><span class="token comment"># crond 为项目名，可以根据实际情况制定</span>
+<span class="token header"><span class="token punctuation">[</span><span class="token section-name selector">program:crond</span><span class="token punctuation">]</span></span>
+<span class="token comment">#脚本目录</span>
+<span class="token key attr-name">directory</span><span class="token punctuation">=</span><span class="token value attr-value">/usr/sbin</span>
+<span class="token comment">#脚本执行命令</span>
+<span class="token key attr-name">command</span><span class="token punctuation">=</span><span class="token value attr-value">/usr/sbin/crond -n</span>
+
+<span class="token comment">#supervisor启动的时候是否随着同时启动，默认true</span>
+<span class="token key attr-name">autostart</span><span class="token punctuation">=</span><span class="token value attr-value">true</span>
+<span class="token comment">#当程序exit的时候，这个program不会自动重启,默认unexpected，设置子进程挂掉后自动重启的情况，有三个选项，false,unexpected和true。如果为false的时候，无论什么情况下，都不会被重新启动，如果为unexpected，只有当进程的退出码不在下面的exitcodes里面定义的</span>
+<span class="token key attr-name">autorestart</span><span class="token punctuation">=</span><span class="token value attr-value">true</span>
+<span class="token comment">#这个选项是子进程启动多少秒之后，此时状态如果是running，则我们认为启动成功了。默认值为1</span>
+<span class="token key attr-name">startsecs</span><span class="token punctuation">=</span><span class="token value attr-value">1</span>
+
+<span class="token comment">#设置日志输出 </span>
+<span class="token key attr-name">stdout_logfile</span><span class="token punctuation">=</span><span class="token value attr-value">/data/supervisor/log/crond.log</span> 
+<span class="token key attr-name">stderr_logfile</span><span class="token punctuation">=</span><span class="token value attr-value">/data/supervisor/log/crond.log</span> 
+<span class="token comment">#把stderr重定向到stdout，默认 false</span>
+<span class="token comment"># redirect_stderr = false</span>
+<span class="token comment">#stdout日志文件大小，由于我们配置了 logrotate 进行日志拆分，所以这里设置为 0</span>
+<span class="token key attr-name">stdout_logfile_maxbytes</span> <span class="token punctuation">=</span> <span class="token value attr-value">0</span>
+<span class="token comment">#stdout日志文件备份数</span>
+<span class="token key attr-name">stdout_logfile_backups</span> <span class="token punctuation">=</span> <span class="token value attr-value">0</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 3.3 crontab.ini</strong></p>
 <p>首先要留意 command 属性，我们在启动 crond 程序的时候添加了 <code>-n</code> 参数，这代表 crond 要在前台运行，也就是说如果你手动在命令行中运行 <code>crond -n</code> 时，当前命令行不退出，必须手动执行 CTRL + C 才能退出当前程序。supervisor 是应用级别的守护进程，跟 systemd 这种系统级别的守护进程还是有区别的，后者启动程序后在后台运行也能识别出来运行状态，但是 supervisor 如果启动程序在后台运行，它是识别不出来运行的程序是哪个的，这也导致你的应用必须得在前台运行。具体到 <strong>代码 3.3</strong>，我们给 crond 的启动加 <code>-n</code> 参数，就是这个原因。再举一个例子，如果你用 supervisor 启动 nginx 的话，也需要指定参数 <code>-g &quot;daemon off;&quot;</code> 让其在前台启动，否则你就会发现 supervisor 会报 nginx 启动失败。</p>
