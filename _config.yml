@@ -104,3 +104,16 @@ theme: next
 ## Docs: https://hexo.io/docs/one-command-deployment
 deploy:
   type: ''
+
+giscus:
+  enable: true
+  repo: yunnysunny/yunnysunny.github.io # Github repository name
+  repo_id: MDEwOlJlcG9zaXRvcnkyMDU4ODk4Ng== # Github repository id
+  category: Q&A # Github discussion category
+  category_id: DIC_kwDOATopus4B_4of # Github discussion category id
+  # Available values: pathname | url | title | og:title
+  mapping: pathname
+  # Available values: 0 | 1 
+  reactions_enabled: 1
+  # Available values: light | dark | dark_high_contrast | transparent_dark | preferred-color-scheme
+  theme: light

@@ -4,21 +4,21 @@ title: Node 的缺陷
 date:  2021-11-17
 description: 提起 Node.js ，大家可能认为对其的优劣已经分辨的很清楚：由于其默认单线程，所以不适合做计算密集型操作；由于其异步 IO 特性，所以对于 IO 处理比较友好。但这其实是一种误解，当 IO 并发到一定的量级，一样会损耗 CPU 资源。在 Node.js 引以为豪的 IO 处理方面，依然有其做的不完善的地方，本篇文章就给大家一一解密。
 typora-copy-images-to: ..\images
-typora-root-url: ..\
+typora-root-url: ..
 ---
 提起 Node.js ，大家可能认为对其的优劣已经分辨的很清楚：由于其默认单线程，所以不适合做计算密集型操作；由于其异步 IO 特性，所以对于 IO 处理比较友好。但这其实是一种误解，当 IO 并发到一定的量级，一样会损耗 CPU 资源。在 Node.js 引以为豪的 IO 处理方面，依然有其做的不完善的地方，本篇文章就给大家一一解密。 
 
 ## 1. 问题
 
-## 1.1 负载均衡问题
+### 1.1 负载均衡问题
 
 Node.js 在起步之初，语言层面只能利用单进程，后来官方引入了 [Cluster](https://nodejs.org/dist/latest-v16.x/docs/api/cluster.html) 模块来解决这个问题。但是在操作系统中一个端口号默认只能被一个句柄监听，也就是说不经过特殊设置，服务监听端口只能调用 listen 函数一次。但是我们现在使用了 Cluster 之后，要求每个工作进程都可以接受客户端的请求，该如何实现呢？
 
-（在 Linux 下）Node 底层会采取两种策略，一种是在主进程监听端口完成之后，顺便完成 socket 的 accept 操作，然后将接收的 socket 句柄通过进程间通信平均分发到工作进程中去；一种是主进程监听端口完成之后，直接把这个监听完成的句柄发送给工作进程，每个工作进程都自己做 accept 操作。前者的负载均衡由用户端代码控制，后者的负载均衡由操作系统控制，但是后者的负载均衡的分配会出现不均匀的情况，并且会因为惊群效应，导致性能低下，所以 Node 默认使用的是第一种策略。
+（在 Linux 下）Node 底层会采取两种策略，一种是在主进程监听端口完成之后，顺便完成 socket 的 accept 操作，然后将接收的 socket 句柄通过进程间通信平均分发到工作进程中去；一种是主进程绑定端口完成之后，直接把这个句柄发送给工作进程，每个工作进程都自己做监听 和 accept 操作。前者的负载均衡由用户端代码控制，后者的负载均衡由操作系统控制，但是后者的负载均衡的分配会出现不均匀的情况，并且会因为惊群效应，导致性能低下，所以 Node 默认使用的是第一种策略。
 
 > 这里不考虑  Windows 下的场景。
 
-对于第一种策略，主进程会先将接收到的 socket 放入本地数组中，然后再依次从数组头部中截取元素，发送到某一个工作进程中。初步看上去这个流程没有问题，特别是你的请求 QPS 不是很大的时候。但是一旦并发请求量过大，就会出现 socket 句柄在前面提到的本地数组中堆积的现象，数组长度一大对于数组的截取操作就变成了一个慢操作，引起主进程 CPU 升高，主进程 CPU 升高会进一步削弱其给工作进程分发 socket 句柄的能力，从而导致本地数组进一步增大，如此恶行循环，最终会导致主进程的老生代内存被撑爆，触发 OOM，主进程被迫退出。
+对于第一种策略，主进程会先将接收到的 socket 放入本地数组中，然后再依次从数组头部中截取元素，发送到某一个工作进程中。初步看上去这个流程没有问题，特别是你的请求 QPS 不是很大的时候。但是一旦并发请求量过大，就会出现 socket 句柄在前面提到的本地数组中堆积的现象，数组长度太大的话对于数组的截取操作就变成了一个慢操作，引起主进程 CPU 升高，主进程 CPU 升高会进一步削弱其给工作进程分发 socket 句柄的能力，从而导致本地数组进一步增大，如此恶行循环，最终会导致主进程的老生代内存被撑爆，触发 OOM，主进程被迫退出。
 
 > 默认策略性能低下问题，笔者已经给官方提交了 issue [#37343](https://github.com/nodejs/node/issues/37343) 。
 
@@ -64,9 +64,7 @@ Node.js 在起步之初，语言层面只能利用单进程，后来官方引入
 >
 > internal/cluster/round_robin_handle.js 正是 Node 中处理主进程给工作进程分发 socket 句柄的逻辑的代码。
 
-解决当前问题的思路，无怪乎有三种：提高当前策略的效率，换一个更高效稳定的策略，降低客户端连接建立频率。对于第一种解决方案，在 pull request [#40615](https://github.com/nodejs/node/pull/40615) 中得到改善，不过 Node 官方成员不承认性能问题的存在；对于第二种方案，可以使用 Linux 内核 3.9+ 中新出来的 SO_REUSEPORT 特性来解决，需要同时改造 libuv 和 Node 源码，参见 pull request [#3198](https://github.com/libuv/libuv/pull/3198)，不过目前依然没有得到官方的合并通过。
-
-> 两个 pull request 都是同一个作者 @**[theanarkh](https://github.com/theanarkh)** 所为。
+解决当前问题的思路，无怪乎有三种：提高当前策略的效率，换一个更高效稳定的策略，降低客户端连接建立频率。对于第一种解决方案，在 pull request [#40615](https://github.com/nodejs/node/pull/40615) 中得到改善，目前代码正在被合并到主线中，尚未发布 Node 版本中；对于第二种方案，可以使用 Linux 内核 3.9+ 中新出来的 SO_REUSEPORT 特性来解决，需要同时改造 libuv 和 Node 源码，参见 pull request [#3198](https://github.com/libuv/libuv/pull/3198)，不过目前依然没有得到官方的合并通过。
 
 那么我们能实操的就只有方案三了，有高并发的服务一般都是大量用户同时访问导致的，对于这种从用户端来的流量，我们按照管理都会在前面架设 nginx，来做 https 证书解析和反向代理。我们就可以在这个 nginx 上做文章。
 
@@ -142,7 +140,7 @@ server {
 
 **代码 1.1.2**
 
-在 location 代码块中需要加入 `proxy_http_version 1.1;` `proxy_set_header Connection "";` 这两行，同时留意到我们在 upstream 代码块中加入了 `max_conns` `keepalive_timeout` `keepalive_requests` `least_conn` `keepalive` 这几个新的指令（或者属性）。首先是 `keepalive` 这个指令，它的使用经常会让大家产生误解，以为这个是 nginx 和 upstream 服务的最大连接数，其实不然。`keepalive` 限制的是每个 nginx 工作进程和 upstream 服务列表中的服务的最大空闲连接数，超过这个连接数的连接，会被 nginx 工作进程回收掉。而 `server` 指令中的 `max_conns` 属性才是当前 `server` 指令所指向的服务器和各个 nginx 工作进程之间的最大连接数。考虑这么一种情况，如果当前请求的并发量相当之大，QPS 为 1000/s，那么在短时间内发送到 nginx 的句柄就有 1000 个之多，简单考虑，我们的 nginx 只启动了一个工作进程，如果不设置 `max_conns` 的话，那么 upstream 中的两个 server 每个都要承载 500 的并发，假设当前没有空闲句柄的话，每个 server 端都会和 nginx 建立 500 个 socket 句柄。而如果设置了 `max_conns` 时，nginx 工作进程就会自己维护一个句柄池，借用之前创建的句柄来发送新的请求。
+在 location 代码块中需要加入 `proxy_http_version 1.1;` `proxy_set_header Connection "";` 这两行，同时留意到我们在 upstream 代码块中加入了 `max_conns` `keepalive_timeout` `keepalive_requests` `least_conn` `keepalive` 这几个新的指令（或者属性）。首先是 `keepalive` 这个指令，它的使用经常会让大家产生误解，以为这个是 nginx 和 upstream 服务的最大连接数，其实不然。`keepalive` 限制的是每个 nginx 工作进程和 upstream 服务列表中的服务的最大空闲连接数，超过这个连接数的连接，会被 nginx 工作进程回收掉。而 `server` 指令中的 `max_conns` 属性才是当前 `server` 指令所指向的服务器和各个 nginx 工作进程之间的最大连接数。考虑这么一种情况，如果当前请求的并发量相当之大，QPS 为 1000/s，那么在短时间内发送到 nginx 的句柄就有 1000 个之多。简单考虑，我们的 nginx 只启动了一个工作进程，如果不设置 `max_conns` 的话，那么 upstream 中的两个 server 每个都要承载 500 的并发，假设当前没有空闲句柄的话，每个 server 端都会和 nginx 建立 500 个 socket 句柄。而如果设置了 `max_conns` 时，nginx 工作进程就会自己维护一个句柄池，借用之前创建的句柄来发送新的请求。
 
 > nginx 和 node 比较类似的地方是，他也分工作进程和主进程。
 
@@ -155,14 +153,19 @@ server {
 改完 nginx 端配置后，同样也需要修改 Node 端的代码：
 
 ```javascript
-const TIMEOUT_SERVER = 1000 * 60 * 30;
+const http = require('http');
+const process = require('process');
 
+
+const TIMEOUT_SERVER = 1000 * 60 * 30;
 const server = http.createServer((req, res) => {
-    res.writeHead(200);
-    res.end('hello world\n');
+	res.writeHead(200);
+	res.end('hello world\n');
 }).listen(8000);
 server.timeout = TIMEOUT_SERVER;
 server.keepAliveTimeout = TIMEOUT_SERVER;
+
+console.log(`${process.pid} started`);
 ```
 
 **代码 1.1.3**
@@ -171,7 +174,181 @@ server.keepAliveTimeout = TIMEOUT_SERVER;
 
 做完上述改动后，我们单条连接的生命周期被拉长，不会出现单位时间内创建过多 socket 句柄的现象。但是我们依然要考虑到，当前的 socket 句柄依然是有生命周期的，特别是在服务器端（这里指 Node 端）检测到空闲超时后，一样会断开连接，但是这时候恰巧有客户端（这里指 Nginx 端）的请求正在发送的路上，服务器端接收到这个迟来的请求后，会直接拒绝。这是一个边界的小概率问题，但是不代表不会发生。出现这种情况，如果是 GET 请求还好说，让用户端程序直接重试即；如果是 POST 请求，就要和用户端程序协商好，如何做到幂等性。
 
-### 1.2 Socket 写入问题
+### 1.2 IO 读写
 
+提到 IO 操作，大家一般认为它不会耗费多少 CPU 时间，如果按照这个逻辑的话，一个返回 hello world 的 HTTP 请求在并发请求数逐渐增大的情况下， CPU 应该没有压力才对。
 
+我们尝试对于 **代码1.1.3** 进行打压，然后一探究竟。
 
+打压工具选择常用的 JMeter，下面给出打压用的配置文件：
+
+```xml
+<?xml version="1.0" encoding="UTF-8"?>
+<jmeterTestPlan version="1.2" properties="5.0" jmeter="5.3">
+  <hashTree>
+    <TestPlan guiclass="TestPlanGui" testclass="TestPlan" testname="Test Plan" enabled="true">
+      <stringProp name="TestPlan.comments"></stringProp>
+      <boolProp name="TestPlan.functional_mode">false</boolProp>
+      <boolProp name="TestPlan.tearDown_on_shutdown">true</boolProp>
+      <boolProp name="TestPlan.serialize_threadgroups">false</boolProp>
+      <elementProp name="TestPlan.user_defined_variables" elementType="Arguments" guiclass="ArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+        <collectionProp name="Arguments.arguments"/>
+      </elementProp>
+      <stringProp name="TestPlan.user_define_classpath"></stringProp>
+    </TestPlan>
+    <hashTree>
+      <ThreadGroup guiclass="ThreadGroupGui" testclass="ThreadGroup" testname="Thread Group" enabled="true">
+        <stringProp name="ThreadGroup.on_sample_error">continue</stringProp>
+        <elementProp name="ThreadGroup.main_controller" elementType="LoopController" guiclass="LoopControlPanel" testclass="LoopController" testname="Loop Controller" enabled="true">
+          <boolProp name="LoopController.continue_forever">false</boolProp>
+          <intProp name="LoopController.loops">-1</intProp>
+        </elementProp>
+        <stringProp name="ThreadGroup.num_threads">16</stringProp>
+        <stringProp name="ThreadGroup.ramp_time">1</stringProp>
+        <boolProp name="ThreadGroup.scheduler">false</boolProp>
+        <stringProp name="ThreadGroup.duration"></stringProp>
+        <stringProp name="ThreadGroup.delay"></stringProp>
+        <boolProp name="ThreadGroup.same_user_on_next_iteration">true</boolProp>
+      </ThreadGroup>
+      <hashTree>
+        <HTTPSamplerProxy guiclass="HttpTestSampleGui" testclass="HTTPSamplerProxy" testname="HTTP Request" enabled="true">
+          <elementProp name="HTTPsampler.Arguments" elementType="Arguments" guiclass="HTTPArgumentsPanel" testclass="Arguments" testname="User Defined Variables" enabled="true">
+            <collectionProp name="Arguments.arguments"/>
+          </elementProp>
+          <stringProp name="HTTPSampler.domain">the_ip_of_your_service</stringProp>
+          <stringProp name="HTTPSampler.port">8000</stringProp>
+          <stringProp name="HTTPSampler.protocol"></stringProp>
+          <stringProp name="HTTPSampler.contentEncoding"></stringProp>
+          <stringProp name="HTTPSampler.path">/</stringProp>
+          <stringProp name="HTTPSampler.method">GET</stringProp>
+          <boolProp name="HTTPSampler.follow_redirects">true</boolProp>
+          <boolProp name="HTTPSampler.auto_redirects">false</boolProp>
+          <boolProp name="HTTPSampler.use_keepalive">true</boolProp>
+          <boolProp name="HTTPSampler.DO_MULTIPART_POST">false</boolProp>
+          <stringProp name="HTTPSampler.embedded_url_re"></stringProp>
+          <stringProp name="HTTPSampler.connect_timeout"></stringProp>
+          <stringProp name="HTTPSampler.response_timeout"></stringProp>
+        </HTTPSamplerProxy>
+        <hashTree>
+          <ResultCollector guiclass="ViewResultsFullVisualizer" testclass="ResultCollector" testname="View Results Tree" enabled="false">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <url>true</url>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+          <ResultCollector guiclass="SummaryReport" testclass="ResultCollector" testname="Summary Report" enabled="true">
+            <boolProp name="ResultCollector.error_logging">false</boolProp>
+            <objProp>
+              <name>saveConfig</name>
+              <value class="SampleSaveConfiguration">
+                <time>true</time>
+                <latency>true</latency>
+                <timestamp>true</timestamp>
+                <success>true</success>
+                <label>true</label>
+                <code>true</code>
+                <message>true</message>
+                <threadName>true</threadName>
+                <dataType>true</dataType>
+                <encoding>false</encoding>
+                <assertions>true</assertions>
+                <subresults>true</subresults>
+                <responseData>false</responseData>
+                <samplerData>false</samplerData>
+                <xml>false</xml>
+                <fieldNames>true</fieldNames>
+                <responseHeaders>false</responseHeaders>
+                <requestHeaders>false</requestHeaders>
+                <responseDataOnError>false</responseDataOnError>
+                <saveAssertionResultsFailureMessage>true</saveAssertionResultsFailureMessage>
+                <assertionsResultsToSave>0</assertionsResultsToSave>
+                <bytes>true</bytes>
+                <sentBytes>true</sentBytes>
+                <url>true</url>
+                <threadCounts>true</threadCounts>
+                <idleTime>true</idleTime>
+                <connectTime>true</connectTime>
+              </value>
+            </objProp>
+            <stringProp name="filename"></stringProp>
+          </ResultCollector>
+          <hashTree/>
+        </hashTree>
+      </hashTree>
+    </hashTree>
+  </hashTree>
+</jmeterTestPlan>
+```
+
+**代码 1.2.1 single.jmx**
+
+第 41 行中 `HTTPSampler.use_keepalive` 属性设置为 true，这样就能使用 http 1.1 的 keepalive 属性，我们将其设置为 `true`，这也是 JMeter 的默认值。如果改为 false，就会频繁创建 socket 句柄的问题，有可能把机器的句柄数跑满。
+
+> 在压测开始后，通过运行命令 ` netstat -antp | grep 8000 | grep ESTABLISHED | wc -l` 会发现输出 `16`，这是由于我们启用了 keepalive，且压测端开启了 16 个线程。线程数是在 21 行 `ThreadGroup.num_threads` 属性设置的。
+
+第 33 行中的 `HTTPSampler.domain` 属性要设置为 **代码 1.1.3** 启动的服务的 IP 地址。
+
+我们使用命令 
+
+```shell
+bin/jmeter.sh -n -t the_path_of_single.jmx -l /tmp/single.jtl -e -o /tmp/single.out
+```
+
+即可发起对于服务端的压测，正常情况下 JMeter 应该会有如下输出：
+
+```
+Creating summariser <summary>
+Created the tree successfully using ../single.jmx
+Starting standalone test @ Tue Nov 30 14:16:19 CST 2021 (1638252979737)
+Waiting for possible Shutdown/StopTestNow/HeapDump/ThreadDump message on port 4445
+Warning: Nashorn engine is planned to be removed from a future JDK release
+summary + 118675 in 00:00:10 = 11953.6/s Avg:     1 Min:     0 Max:    50 Err:     0 (0.00%) Active: 16 Started: 16 Finished: 0
+summary + 382998 in 00:00:30 = 12766.6/s Avg:     1 Min:     0 Max:    18 Err:     0 (0.00%) Active: 16 Started: 16 Finished: 0
+```
+
+这就代表压测成功了。
+
+然后我们发现，服务端的 CPU 已经 100%了，那么到底是什么原因导致其 CPU 跑满呢？通过 CPU 火焰图可以发现 socket 写入比较耗时。
+
+![image-20211130143113406](/images/image-20211130143113406.png)**图 1.2.1**
+
+其实一个完整的 HTTP 请求的处理，还包括 socket 原始数据包，读取后还解析其中的内容。前者是在 libuv 中的poll 阶段完成，后者在 Node 中是使用原生库 [llhttp](https://github.com/nodejs/llhttp) 实现的，这两者都是运行在原生代码中，所以要算到 `(program)` 中。但是服务器端处理完数据后，调用 `end` 函数触发 socket 写入的时候，是在 Node 端显式调用的，所以我们在火焰图中可以清晰的看到。
+
+> 从上面的分析可以推断出，socket 的读是要比写要轻量的。这是由于对于读操作从内核态中读取出来的数据，是已经做完协议栈解析后的数据；而写操作，并不是仅仅将原数据写到内核态的缓冲区就完事了，而是还要走一遍协议栈封包，组装完成后，如果当前允许发送则直接发送，否则写入内部队列。具体参见 [网络通信之收包](https://ty-chen.github.io/linux-kernel-tcp-receive/) 和 [网络通信之发包](https://ty-chen.github.io/linux-kernel-tcp-send/) 。
+>
+> socket 的读是要比写要轻量是建立在同级别数据包大小的情况下，如果服务端处理上传的大文件，必然会耗费大量的 CPU 时间用在读上。
+
+socket 读写需要做系统调用，需要损耗 CPU ，不管你使用任何编程语言，都无可避免，但是碍于 Node 的单线程机制，IO 操作和用户的 js 代码逻辑在一个线程中，必然会相互挤占资源。所以对于程序中的一些不必要的 IO 处理，比如说打日志（包括控制台日志）、上报打点之类的操作，尽量做到定时批量操作，让出更多的 CPU 时间给逻辑代码。
+
+> 关于异步日志打印的库，可以参见笔者的 [node-slogger](https://www.npmjs.com/package/node-slogger) 包。
