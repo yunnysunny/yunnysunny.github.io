@@ -325,6 +325,8 @@ console.log(`${process.pid} started`);
 bin/jmeter.sh -n -t the_path_of_single.jmx -l /tmp/single.jtl -e -o /tmp/single.out
 ```
 
+**命令 1.2.1**
+
 即可发起对于服务端的压测，正常情况下 JMeter 应该会有如下输出：
 
 ```
@@ -352,3 +354,91 @@ summary + 382998 in 00:00:30 = 12766.6/s Avg:     1 Min:     0 Max:    18 Err:  
 socket 读写需要做系统调用，需要损耗 CPU ，不管你使用任何编程语言，都无可避免，但是碍于 Node 的单线程机制，IO 操作和用户的 js 代码逻辑在一个线程中，必然会相互挤占资源。所以对于程序中的一些不必要的 IO 处理，比如说打日志（包括控制台日志）、上报打点之类的操作，尽量做到定时批量操作，让出更多的 CPU 时间给逻辑代码。
 
 > 关于异步日志打印的库，可以参见笔者的 [node-slogger](https://www.npmjs.com/package/node-slogger) 包。
+
+### 1.3 保守的 GC 参数
+
+编程语言的内存一般分为 栈（Stack）和 堆（Heap）两部分，JavaScript 的内存也是这种布局。其中 栈 用来存储函数的执行的上下文和字面量类型的值（数字、字符串、布尔、指针等类型）。堆 用来存储对象（Array Object Function 等类型）。堆又会被划分为 `新生代（New space）` `老生代（Old space）` `大对象空间（Large object space）` `代码空间（Code space）` ，同时还包括存储隐藏类相关的数据的区域 （下图中的 `Cell space` `Property cell space` `Map space` ）。对于 GC 来说，我们需要关心的仅仅只有 `新生代` 和 `老生代`。
+
+![🚀 Visualizing memory management in V8 Engine (JavaScript, NodeJS, Deno, WebAssembly)](/images/kSgatSL.png)
+
+**图 1.3.1**
+
+JavaScript 中新建一个对象，默认进入新生代（除非这个对象超大，新生代和老生代装不下，这种大对象会进入 `大对象空间`）。新生代分为 `Used` 和 `Inactive` 两个区块（上图中的两个 `Semi space` 区块，这两个区块也通常被称之为 `From` 和 `To` 区块），新分配的对象会分配到 `Used` 区块。当 `Used` 区块满时，会强制触发一次新生代的 GC，GC 收集器会扫描 `Used` 区块，找到还在使用的对象拷贝到 `Inactive` 区块，当 `Used` 区块中所有对象扫描完成后，`Used` 就是一块清空的区块了，最后交换 `Used` 和 `Inactive` 两个区块，现在新的 `Used` 块就变成了原来的那个 `Inactive` 块。
+
+虽然 V8 内部使用了线程池来并行做 GC，但是只要有 GC 在工作，主线程就必须 Stop the world，所以说 GC 的时间越长，给我们应用程序带来的延迟时间就越长。刚才上面分析过，新生代分为 `Used` 和 `Inactive` 两部分，`Used` 用满后就触发 GC。但是一个悲观的事实是 Node 中这两个区块的初始值比较小，只有 16MB（两个区块的大小是相同的），如果你的代码逻辑中处理的数据量比较多，可能很快会塞满 `Used` 区域，导致 GC 频繁发生。
+
+下面我们使用一段代码来模拟一下：
+
+```javascript
+const http = require('http');
+const process = require('process');
+
+class MyObject {
+    constructor(i) {
+        this.index = i;
+    }
+}
+const ARRAY_LEN = 1024 * 10;
+const _bigArrayTemp = function __bigArrayTemp() {
+    const arr = new Array(ARRAY_LEN)
+    for(var i=0;i<ARRAY_LEN;i++) {
+        arr[i] = new MyObject(i);
+    }
+}
+const TIMEOUT_SERVER = 1000 * 60 * 30;
+const server = http.createServer((req, res) => {
+    _bigArrayTemp();
+    res.writeHead(200);
+    res.end('hello world\n');
+}).listen(8000);
+server.timeout = TIMEOUT_SERVER;
+server.keepAliveTimeout = TIMEOUT_SERVER;
+
+console.log(`${process.pid} started`);
+```
+
+**代码 1.3.1 slow.js**
+
+运行 **代码 1.3.1** `node slow.js`， 使用 JMeter 对其打压，稳定后可以看到 GC 的占比在 6% 左右。
+
+![image-20211201173108835](/images/image-20211201173108835.png)
+
+**图 1.3.2**
+
+在运行 node 的时候，添加参数 `--max_semi_space_size=x` 可以手动修改 `Used` 和 `Inactive` 区块的大小，这里的 `x` 值只能是 2 的指数值。
+
+使用命令 `node --max_semi_space_size=32 slow.js` 运行后，重新做压测，观测到差别不大
+
+![image-20211201174510296](/images/image-20211201174510296.png)
+
+**图 1.3.3**
+
+改成 64 MB，再观测
+
+![image-20211201175519574](/images/image-20211201175519574.png)
+
+**图 1.3.4**
+
+可以看到 GC 时间降到 4% 以下。
+
+将其再次扩大到 128 MB
+
+![image-20211201182645717](/images/image-20211201182645717.png)
+
+**图 1.3.5**
+
+GC 时间占比没有发生明显变化，且比 64MB 的 GC 占时还要稍高。
+
+所以综上来看 Node 的 `max_semi_space_size` 参数设置为 64 才更合理些，但是 Node 官方仅仅是把 V8 拿来使用了，并没有对其做修改以适应服务器端环境。设置为 16 MB，在浏览器端是问题不大的，但是服务器端经常要操作大量数据内容，16 MB 就显得捉襟见肘了。
+
+同时要注意的是，也不要一次性操作太多的内存，比如说将 **代码 1.3.1** 中的 `ARRAY_LEN` 常量设置为 `10` 万的时候，即使在怎么设置 `max_semi_space_size` 的值都用处不大，GC 的时间占比都会特别大。所以说不要在 Node 中一次性操作特别多的对象数据，否则 GC 的延迟时间有多大，对于主线程的损害就有多大。
+
+## 2. 参考资料
+
+Trash talk: the Orinoco garbage collector https://v8.dev/blog/trash-talk
+
+How is data stored in V8 JS engine memory? https://blog.dashlane.com/how-is-data-stored-in-v8-js-engine-memory/
+
+🚀 Visualizing memory management in V8 Engine (JavaScript, NodeJS, Deno, WebAssembly) https://deepu.tech/memory-management-in-v8/
+
+Primitive and Reference value in JavaScript https://www.geeksforgeeks.org/primitive-and-reference-value-in-javascript/

@@ -29,8 +29,13 @@
 <meta property="og:description" content="提起 Node.js ，大家可能认为对其的优劣已经分辨的很清楚：由于其默认单线程，所以不适合做计算密集型操作；由于其异步 IO 特性，所以对于 IO 处理比较友好。但这其实是一种误解，当 IO 并发到一定的量级，一样会损耗 CPU 资源。在 Node.js 引以为豪的 IO 处理方面，依然有其做的不完善的地方，本篇文章就给大家一一解密。">
 <meta property="og:locale" content="zh_CN">
 <meta property="og:image" content="https://blog.whyun.com/images/image-20211130143113406.png">
+<meta property="og:image" content="https://blog.whyun.com/images/kSgatSL.png">
+<meta property="og:image" content="https://blog.whyun.com/images/image-20211201173108835.png">
+<meta property="og:image" content="https://blog.whyun.com/images/image-20211201174510296.png">
+<meta property="og:image" content="https://blog.whyun.com/images/image-20211201175519574.png">
+<meta property="og:image" content="https://blog.whyun.com/images/image-20211201182645717.png">
 <meta property="article:published_time" content="2021-11-16T16:00:00.000Z">
-<meta property="article:modified_time" content="2021-11-30T12:46:20.750Z">
+<meta property="article:modified_time" content="2021-12-01T10:28:01.500Z">
 <meta property="article:author" content="yunnysunny">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://blog.whyun.com/images/image-20211130143113406.png">
@@ -122,7 +127,7 @@
       <div class="sidebar-panel-container">
         <!--noindex-->
         <div class="post-toc-wrap sidebar-panel">
-            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%97%AE%E9%A2%98"><span class="nav-text">1. 问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E9%97%AE%E9%A2%98"><span class="nav-text">1.1 负载均衡问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-IO-%E8%AF%BB%E5%86%99"><span class="nav-text">1.2 IO 读写</span></a></li></ol></li></ol></div>
+            <div class="post-toc animated"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#1-%E9%97%AE%E9%A2%98"><span class="nav-text">1. 问题</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-%E8%B4%9F%E8%BD%BD%E5%9D%87%E8%A1%A1%E9%97%AE%E9%A2%98"><span class="nav-text">1.1 负载均衡问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-2-IO-%E8%AF%BB%E5%86%99"><span class="nav-text">1.2 IO 读写</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-3-%E4%BF%9D%E5%AE%88%E7%9A%84-GC-%E5%8F%82%E6%95%B0"><span class="nav-text">1.3 保守的 GC 参数</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#2-%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="nav-text">2. 参考资料</span></a></li></ol></div>
         </div>
         <!--/noindex-->
 
@@ -228,7 +233,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-11-30 20:46:20" itemprop="dateModified" datetime="2021-11-30T20:46:20+08:00">2021-11-30</time>
+        <time title="修改时间：2021-12-01 18:28:01" itemprop="dateModified" datetime="2021-12-01T18:28:01+08:00">2021-12-01</time>
       </span>
 
   
@@ -523,6 +528,7 @@ console<span class="token punctuation">.</span><span class="token function">log<
 <p>我们使用命令 </p>
 <pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">bin&#x2F;jmeter.sh -n -t the_path_of_single.jmx -l &#x2F;tmp&#x2F;single.jtl -e -o &#x2F;tmp&#x2F;single.out<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
+<p><strong>命令 1.2.1</strong></p>
 <p>即可发起对于服务端的压测，正常情况下 JMeter 应该会有如下输出：</p>
 <pre class="line-numbers language-none"><code class="language-none">Creating summariser &lt;summary&gt;
 Created the tree successfully using ..&#x2F;single.jmx
@@ -544,6 +550,60 @@ summary + 382998 in 00:00:30 &#x3D; 12766.6&#x2F;s Avg:     1 Min:     0 Max:   
 <blockquote>
 <p>关于异步日志打印的库，可以参见笔者的 <a target="_blank" rel="noopener" href="https://www.npmjs.com/package/node-slogger">node-slogger</a> 包。</p>
 </blockquote>
+<h3 id="1-3-保守的-GC-参数"><a href="#1-3-保守的-GC-参数" class="headerlink" title="1.3 保守的 GC 参数"></a>1.3 保守的 GC 参数</h3><p>编程语言的内存一般分为 栈（Stack）和 堆（Heap）两部分，JavaScript 的内存也是这种布局。其中 栈 用来存储函数的执行的上下文和字面量类型的值（数字、字符串、布尔、指针等类型）。堆 用来存储对象（Array Object Function 等类型）。堆又会被划分为 <code>新生代（New space）</code> <code>老生代（Old space）</code> <code>大对象空间（Large object space）</code> <code>代码空间（Code space）</code> ，同时还包括存储隐藏类相关的数据的区域 （下图中的 <code>Cell space</code> <code>Property cell space</code> <code>Map space</code> ）。对于 GC 来说，我们需要关心的仅仅只有 <code>新生代</code> 和 <code>老生代</code>。</p>
+<p><img src="/images/kSgatSL.png" alt="🚀 Visualizing memory management in V8 Engine (JavaScript, NodeJS, Deno, WebAssembly)"></p>
+<p><strong>图 1.3.1</strong></p>
+<p>JavaScript 中新建一个对象，默认进入新生代（除非这个对象超大，新生代和老生代装不下，这种大对象会进入 <code>大对象空间</code>）。新生代分为 <code>Used</code> 和 <code>Inactive</code> 两个区块（上图中的两个 <code>Semi space</code> 区块，这两个区块也通常被称之为 <code>From</code> 和 <code>To</code> 区块），新分配的对象会分配到 <code>Used</code> 区块。当 <code>Used</code> 区块满时，会强制触发一次新生代的 GC，GC 收集器会扫描 <code>Used</code> 区块，找到还在使用的对象拷贝到 <code>Inactive</code> 区块，当 <code>Used</code> 区块中所有对象扫描完成后，<code>Used</code> 就是一块清空的区块了，最后交换 <code>Used</code> 和 <code>Inactive</code> 两个区块，现在新的 <code>Used</code> 块就变成了原来的那个 <code>Inactive</code> 块。</p>
+<p>虽然 V8 内部使用了线程池来并行做 GC，但是只要有 GC 在工作，主线程就必须 Stop the world，所以说 GC 的时间越长，给我们应用程序带来的延迟时间就越长。刚才上面分析过，新生代分为 <code>Used</code> 和 <code>Inactive</code> 两部分，<code>Used</code> 用满后就触发 GC。但是一个悲观的事实是 Node 中这两个区块的初始值比较小，只有 16MB（两个区块的大小是相同的），如果你的代码逻辑中处理的数据量比较多，可能很快会塞满 <code>Used</code> 区域，导致 GC 频繁发生。</p>
+<p>下面我们使用一段代码来模拟一下：</p>
+<pre class="line-numbers language-javascript" data-language="javascript"><code class="language-javascript"><span class="token keyword">const</span> http <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'http'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> process <span class="token operator">=</span> <span class="token function">require</span><span class="token punctuation">(</span><span class="token string">'process'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+
+<span class="token keyword">class</span> <span class="token class-name">MyObject</span> <span class="token punctuation">&#123;</span>
+    <span class="token function">constructor</span><span class="token punctuation">(</span><span class="token parameter">i</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        <span class="token keyword">this</span><span class="token punctuation">.</span>index <span class="token operator">=</span> i<span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span>
+<span class="token keyword">const</span> <span class="token constant">ARRAY_LEN</span> <span class="token operator">=</span> <span class="token number">1024</span> <span class="token operator">*</span> <span class="token number">10</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> <span class="token function-variable function">_bigArrayTemp</span> <span class="token operator">=</span> <span class="token keyword">function</span> <span class="token function">__bigArrayTemp</span><span class="token punctuation">(</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+    <span class="token keyword">const</span> arr <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">Array</span><span class="token punctuation">(</span><span class="token constant">ARRAY_LEN</span><span class="token punctuation">)</span>
+    <span class="token keyword">for</span><span class="token punctuation">(</span><span class="token keyword">var</span> i<span class="token operator">=</span><span class="token number">0</span><span class="token punctuation">;</span>i<span class="token operator">&lt;</span><span class="token constant">ARRAY_LEN</span><span class="token punctuation">;</span>i<span class="token operator">++</span><span class="token punctuation">)</span> <span class="token punctuation">&#123;</span>
+        arr<span class="token punctuation">[</span>i<span class="token punctuation">]</span> <span class="token operator">=</span> <span class="token keyword">new</span> <span class="token class-name">MyObject</span><span class="token punctuation">(</span>i<span class="token punctuation">)</span><span class="token punctuation">;</span>
+    <span class="token punctuation">&#125;</span>
+<span class="token punctuation">&#125;</span>
+<span class="token keyword">const</span> <span class="token constant">TIMEOUT_SERVER</span> <span class="token operator">=</span> <span class="token number">1000</span> <span class="token operator">*</span> <span class="token number">60</span> <span class="token operator">*</span> <span class="token number">30</span><span class="token punctuation">;</span>
+<span class="token keyword">const</span> server <span class="token operator">=</span> http<span class="token punctuation">.</span><span class="token function">createServer</span><span class="token punctuation">(</span><span class="token punctuation">(</span><span class="token parameter">req<span class="token punctuation">,</span> res</span><span class="token punctuation">)</span> <span class="token operator">=></span> <span class="token punctuation">&#123;</span>
+    <span class="token function">_bigArrayTemp</span><span class="token punctuation">(</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    res<span class="token punctuation">.</span><span class="token function">writeHead</span><span class="token punctuation">(</span><span class="token number">200</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+    res<span class="token punctuation">.</span><span class="token function">end</span><span class="token punctuation">(</span><span class="token string">'hello world\n'</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+<span class="token punctuation">&#125;</span><span class="token punctuation">)</span><span class="token punctuation">.</span><span class="token function">listen</span><span class="token punctuation">(</span><span class="token number">8000</span><span class="token punctuation">)</span><span class="token punctuation">;</span>
+server<span class="token punctuation">.</span>timeout <span class="token operator">=</span> <span class="token constant">TIMEOUT_SERVER</span><span class="token punctuation">;</span>
+server<span class="token punctuation">.</span>keepAliveTimeout <span class="token operator">=</span> <span class="token constant">TIMEOUT_SERVER</span><span class="token punctuation">;</span>
+
+console<span class="token punctuation">.</span><span class="token function">log</span><span class="token punctuation">(</span><span class="token template-string"><span class="token template-punctuation string">`</span><span class="token interpolation"><span class="token interpolation-punctuation punctuation">$&#123;</span>process<span class="token punctuation">.</span>pid<span class="token interpolation-punctuation punctuation">&#125;</span></span><span class="token string"> started</span><span class="token template-punctuation string">`</span></span><span class="token punctuation">)</span><span class="token punctuation">;</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+
+<p><strong>代码 1.3.1 slow.js</strong></p>
+<p>运行 <strong>代码 1.3.1</strong> <code>node slow.js</code>， 使用 JMeter 对其打压，稳定后可以看到 GC 的占比在 6% 左右。</p>
+<p><img src="/images/image-20211201173108835.png" alt="image-20211201173108835"></p>
+<p><strong>图 1.3.2</strong></p>
+<p>在运行 node 的时候，添加参数 <code>--max_semi_space_size=x</code> 可以手动修改 <code>Used</code> 和 <code>Inactive</code> 区块的大小，这里的 <code>x</code> 值只能是 2 的指数值。</p>
+<p>使用命令 <code>node --max_semi_space_size=32 slow.js</code> 运行后，重新做压测，观测到差别不大</p>
+<p><img src="/images/image-20211201174510296.png" alt="image-20211201174510296"></p>
+<p><strong>图 1.3.3</strong></p>
+<p>改成 64 MB，再观测</p>
+<p><img src="/images/image-20211201175519574.png" alt="image-20211201175519574"></p>
+<p><strong>图 1.3.4</strong></p>
+<p>可以看到 GC 时间降到 4% 以下。</p>
+<p>将其再次扩大到 128 MB</p>
+<p><img src="/images/image-20211201182645717.png" alt="image-20211201182645717"></p>
+<p><strong>图 1.3.5</strong></p>
+<p>GC 时间占比没有发生明显变化，且比 64MB 的 GC 占时还要稍高。</p>
+<p>所以综上来看 Node 的 <code>max_semi_space_size</code> 参数设置为 64 才更合理些，但是 Node 官方仅仅是把 V8 拿来使用了，并没有对其做修改以适应服务器端环境。设置为 16 MB，在浏览器端是问题不大的，但是服务器端经常要操作大量数据内容，16 MB 就显得捉襟见肘了。</p>
+<p>同时要注意的是，也不要一次性操作太多的内存，比如说将 <strong>代码 1.3.1</strong> 中的 <code>ARRAY_LEN</code> 常量设置为 <code>10</code> 万的时候，即使在怎么设置 <code>max_semi_space_size</code> 的值都用处不大，GC 的时间占比都会特别大。所以说不要在 Node 中一次性操作特别多的对象数据，否则 GC 的延迟时间有多大，对于主线程的损害就有多大。</p>
+<h2 id="2-参考资料"><a href="#2-参考资料" class="headerlink" title="2. 参考资料"></a>2. 参考资料</h2><p>Trash talk: the Orinoco garbage collector <a target="_blank" rel="noopener" href="https://v8.dev/blog/trash-talk">https://v8.dev/blog/trash-talk</a></p>
+<p>How is data stored in V8 JS engine memory? <a target="_blank" rel="noopener" href="https://blog.dashlane.com/how-is-data-stored-in-v8-js-engine-memory/">https://blog.dashlane.com/how-is-data-stored-in-v8-js-engine-memory/</a></p>
+<p>🚀 Visualizing memory management in V8 Engine (JavaScript, NodeJS, Deno, WebAssembly) <a target="_blank" rel="noopener" href="https://deepu.tech/memory-management-in-v8/">https://deepu.tech/memory-management-in-v8/</a></p>
+<p>Primitive and Reference value in JavaScript <a target="_blank" rel="noopener" href="https://www.geeksforgeeks.org/primitive-and-reference-value-in-javascript/">https://www.geeksforgeeks.org/primitive-and-reference-value-in-javascript/</a></p>
 
     </div>
 
