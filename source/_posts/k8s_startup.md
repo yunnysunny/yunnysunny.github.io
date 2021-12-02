@@ -4,7 +4,7 @@ title: k8s 原理入门
 date:  2021-10-26
 description: 之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。
 typora-copy-images-to: ../images
-typora-root-url: ..\
+typora-root-url: ..
 ---
 
 之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。本文主要讲解 kubernetes 的安装和内部原理。
@@ -13,37 +13,7 @@ typora-root-url: ..\
 
 ### 1.1 Linux 下安装
 
-处于演示目的，我们依然选择安装单机版 kubernets，在 Linux 下可以选择安装 [minikube](https://github.com/kubernetes/minikube) 这个工具。
-
-```shell
-wget https://github.com/kubernetes/minikube/releases/download/v1.23.2/minikube-linux-amd64
-chmod +x minikube-linux-amd64
-mv minikube-linux-amd64 /usr/local/bin/minikube
-```
-**代码 1.1.1**
-
-> 上述代码中的下载地址，是从 minikube 的 github 项目的 release 页中找到的。你可以根据自己需要选择安装最新版本。
-
-通过 `minikube start` 命令可以启动 minikube 服务，不过 minikube 默认不支持使用 root 用户启动，如果想使用 root 启动，可以使用
-
-```shell
-minikube start ----driver=none
-```
-**代码  1.1.2**
-
-来启动（前提是你的宿主机中安装了 docker ，并且含有 systemd 守护服务）。
-
-如果启动过程中报错 ` Exiting due to GUEST_MISSING_CONNTRACK: Sorry, Kubernetes 1.22.2 requires conntrack to be installed in root's path`，则证明你的系统中缺少 conntrack 组件，需要通过 `yum install conntrack -y` 来修复（debain 内核使用 `apt-get install conntrack -y`）。
-
-不过使用**代码  1.1.2**后发现，初始化过程中需要下载依赖组件，而这些依赖组件由于众所周知的原因，我们下载不下来，通过在启动过程中改用阿里源即可解决
-
-```shell
-minikube start --driver=none --image-mirror-country='cn' --image-repository=registry.cn-hangzhou.aliyuncs.com/google_containers
-```
-
-**代码 1.1.3**
-
-> 笔者在实验过程中发现即使指定了image-repository 参数，minikube 依然会从 https://k8s.gcr.io 上拉取镜像。所以当前在 Linux 上暂时没有调试成功。具体参见这个 [issue](https://github.com/kubernetes/minikube/issues/12413) 。
+可以参见这篇文章 [使用kubeadm搭建k8s集群-ubuntu/debian发行版](https://blog.ideabeat.cn/2021/11/29/%E4%BD%BF%E7%94%A8kubeadm%E6%90%AD%E5%BB%BAk8s%E9%9B%86%E7%BE%A4-ubuntu-debian%E5%8F%91%E8%A1%8C%E7%89%88/) 。
 
 
 ### 1.2 Windows 下安装
@@ -126,6 +96,5 @@ kubernetes 将若干容器进行编排，形成一个集群，但是这个集群
 
 ## 参考资料
 
-1. https://segmentfault.com/a/1190000022685244
-2. https://blog.51cto.com/u_14359196/2424034
-3. https://arthurchiao.art/blog/cracking-k8s-node-proxy/
+1. LVS负载均衡（LVS简介、三种工作模式、调度原理以及十种调度算法） https://blog.51cto.com/u_14359196/2424034
+3. Cracking kubernetes node proxy (aka kube-proxy) https://arthurchiao.art/blog/cracking-k8s-node-proxy/
