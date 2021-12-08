@@ -15,47 +15,9 @@ typora-root-url: ..
 
 可以参见这篇文章 [使用kubeadm搭建k8s集群-ubuntu/debian发行版](https://blog.ideabeat.cn/2021/11/29/%E4%BD%BF%E7%94%A8kubeadm%E6%90%AD%E5%BB%BAk8s%E9%9B%86%E7%BE%A4-ubuntu-debian%E5%8F%91%E8%A1%8C%E7%89%88/) 。
 
-
 ### 1.2 Windows 下安装
 
-Windows 下可以从 Docker Desktop 中直接开启 kubernetes 功能，它会通过创建 docker 容器的模式来提供 kubernetes 服务，不过由于众所周知的原因，其容器用到的镜像在国内无法下载，你需要使用这个 [k8s-for-docker-desktop](https://github.com/AliyunContainerService/k8s-for-docker-desktop) 项目提供的解决方案。
-
-我们在设置里找到当前 docker-desktop 的版本
-
-![](/images/docker_desktop_k8s.png)
-
-**图 1.2.1**
-
-笔者安装的是 1.21.5 版本，clone 一下 k8s-for-docker-desktop 项目，切换到 v1.21.5 分支
-
-```shell
-git clone https://github.com/AliyunContainerService/k8s-for-docker-desktop.git
-git checkout v1.21.5
-.\load_images.ps1
-```
-
-**代码 1.2.1**
-
-接着还是在项目 k8s-for-docker-desktop 目录中，执行下述命令来配置 kubernetes 控制台：
-
-```shell
-kubectl create -f kubernetes-dashboard.yaml
-kubectl proxy
-```
-
-**代码 1.2.2**
-
-`kubectl proxy` 命令，会输出如下提示 `Starting to serve on 127.0.0.1:8001`，说明启动控制台成功，然后你需要在浏览器中访问下面地址
-
-http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
-
-这个地址会提示输入 token，在 Windows 中 token 可以通过在 powsershell 中执行如下命令获得：
-
-```powershell
-$TOKEN=((kubectl -n kube-system describe secret default | Select-String "token:") -split " +")[1]
-kubectl config set-credentials docker-for-desktop --token="${TOKEN}"
-echo $TOKEN
-```
+可以参见我之前的博文 [docker desktop 下配置 kubernetes](https://blog.whyun.com/posts/wsl-and-docker-desktop-install/#1-4-docker-desktop-%E4%B8%8B%E9%85%8D%E7%BD%AE-kubernetes) 。
 
 ## 2 原理
 

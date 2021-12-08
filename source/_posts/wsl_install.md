@@ -4,7 +4,7 @@ title: wsl 和 docker desktop 的安装教程
 date:  2021-09-09
 description: win10 中提供了 wsl 的解决方案，可以在 Windows 中直接开启 linux 子系统，十分方便开发者使用。同时一些重要的功能也要依赖于 wsl 才能启动，比如说 docker desktop。本教程就是演示一下如何在 win10 中配置 wsl ，并且如何正常使用 docker desktop。
 typora-copy-images-to: ..\images
-typora-root-url: ..\
+typora-root-url: ..
 ---
 
 win10 中提供了 wsl 的解决方案，可以在 Windows 中直接开启 linux 子系统，十分方便开发者使用。同时一些重要的功能也要依赖于 wsl 才能启动，比如说 docker desktop。本教程就是演示一下如何在 win10 中配置 wsl ，并且如何正常使用 docker desktop。
@@ -52,6 +52,47 @@ wsl 支持很多 Linux 发行版系统，比如说 [Ubuntu](https://www.microsof
 ### 1.3 安装 docker desktop
 
 docker desktop 基于 WSL2，所以要完成 1.1 小节所有的安装步骤，否则安装完成后无法启动。docker desktop 的安装包可以从官网下载 https://www.docker.com/products/docker-desktop 。
+
+### 1.4 docker desktop 下配置 kubernetes
+
+Windows 下可以从 Docker Desktop 中直接开启 kubernetes 功能，它会通过创建 docker 容器的模式来提供 kubernetes 服务，不过由于众所周知的原因，其容器用到的镜像在国内无法下载，你需要使用这个 [k8s-for-docker-desktop](https://github.com/AliyunContainerService/k8s-for-docker-desktop) 项目提供的解决方案。
+
+我们在设置里找到当前 docker-desktop 的版本
+
+![](/images/docker_desktop_k8s.png)
+
+**图 1.4.1**
+
+笔者安装的是 1.21.5 版本，clone 一下 k8s-for-docker-desktop 项目，切换到 v1.21.5 分支
+
+```shell
+git clone https://github.com/AliyunContainerService/k8s-for-docker-desktop.git
+git checkout v1.21.5
+.\load_images.ps1
+```
+
+**代码 1.4.1**
+
+接着还是在项目 k8s-for-docker-desktop 目录中，执行下述命令来配置 kubernetes 控制台：
+
+```shell
+kubectl create -f kubernetes-dashboard.yaml
+kubectl proxy
+```
+
+**代码 1.4.2**
+
+`kubectl proxy` 命令，会输出如下提示 `Starting to serve on 127.0.0.1:8001`，说明启动控制台成功，然后你需要在浏览器中访问下面地址
+
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard:/proxy/
+
+这个地址会提示输入 token，在 Windows 中 token 可以通过在 powsershell 中执行如下命令获得：
+
+```powershell
+$TOKEN=((kubectl -n kube-system describe secret default | Select-String "token:") -split " +")[1]
+kubectl config set-credentials docker-for-desktop --token="${TOKEN}"
+echo $TOKEN
+```
 
 ## 2 问题总结
 
