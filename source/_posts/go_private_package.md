@@ -175,7 +175,7 @@ func main() {
 
 ```
 # 这里假设你使用的版本号为v0.0.0
-require gitlab.your-company.com/your-account/myour-mod-name v0.0.0
+require gitlab.your-company.com/your-account/your-mod-name v0.0.0
 
 replace gitlab.your-company.com/your-account/your-mod-name v0.0.0 => gitlab.your-company.com/your-account/your-mod-name.git v0.0.0
 ```
