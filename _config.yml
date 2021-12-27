@@ -117,3 +117,12 @@ giscus:
   reactions_enabled: 1
   # Available values: light | dark | dark_high_contrast | transparent_dark | preferred-color-scheme
   theme: light
+  
+feed:
+  type: atom
+  path: atom.xml
+  limit: 20
+  hub:
+  content:
+  content_limit:
+  content_limit_delim: ' '
