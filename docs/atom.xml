@@ -62,14 +62,14 @@
   </entry>
   
   <entry>
-    <title>k8s 原理入门</title>
+    <title>k8s 网络原理入门</title>
     <link href="https://blog.whyun.com/posts/k8s-startup/"/>
     <id>https://blog.whyun.com/posts/k8s-startup/</id>
     <published>2021-10-25T16:00:00.000Z</published>
-    <updated>2021-12-09T10:27:26.945Z</updated>
+    <updated>2021-12-31T08:13:08.700Z</updated>
     
     
-    <summary type="html">之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。</summary>
+    <summary type="html">之前通过讲 docker compose 教程 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 docker swarm 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 kubernetes 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。本文作为教程的第一章，选择主要讲解的 kubernetes 内部网络原理。</summary>
     
     
     

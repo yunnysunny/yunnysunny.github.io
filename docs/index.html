@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width">
 <meta name="theme-color" content="#222">
-<meta name="generator" content="Hexo 5.4.0">
+<meta name="generator" content="Hexo 6.0.0">
 
 
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
@@ -437,7 +437,7 @@
     </span>
       <header class="post-header">
         <h2 class="post-title" itemprop="name headline">
-          <a href="/posts/k8s-startup/" class="post-title-link" itemprop="url">k8s 原理入门</a>
+          <a href="/posts/k8s-startup/" class="post-title-link" itemprop="url">k8s 网络原理入门</a>
         </h2>
 
         <div class="post-meta-container">
@@ -455,7 +455,7 @@
           <i class="far fa-calendar-check"></i>
         </span>
         <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-12-09 18:27:26" itemprop="dateModified" datetime="2021-12-09T18:27:26+08:00">2021-12-09</time>
+        <time title="修改时间：2021-12-31 16:13:08" itemprop="dateModified" datetime="2021-12-31T16:13:08+08:00">2021-12-31</time>
       </span>
 
   
@@ -468,7 +468,7 @@
     
     
     <div class="post-body" itemprop="articleBody">
-          <p>之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。</p>
+          <p>之前通过讲 docker compose 教程 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 docker swarm 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 kubernetes 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。本文作为教程的第一章，选择主要讲解的 kubernetes 内部网络原理。</p>
           <!--noindex-->
             <div class="post-button">
               <a class="btn" href="/posts/k8s-startup/">

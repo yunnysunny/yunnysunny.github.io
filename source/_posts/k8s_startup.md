@@ -1,13 +1,13 @@
 ---
 abbrlink: k8s-startup
-title: k8s 原理入门
+title: k8s 网络原理入门
 date:  2021-10-26
-description: 之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。
+description: 之前通过讲 docker compose 教程 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 docker swarm 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 kubernetes 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。本文作为教程的第一章，选择主要讲解的 kubernetes 内部网络原理。
 typora-copy-images-to: ../images
 typora-root-url: ..
 ---
 
-之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。本文主要讲解 kubernetes 的安装和内部原理。
+之前通过讲 [docker compose 教程](https://blog.whyun.com/posts/docker-compose-tutorial/) 初步了解容器编排技术。但是 docker compose 默认只能在单机模式下运行，如果想在多个宿主机上运行，你可以借助 [docker swarm](https://docs.docker.com/engine/swarm/) 技术，你可以方便的将 docker-compose.yml 文件运用到 swarm 集群创建中。不过由于 [kubernetes](https://kubernetes.io/zh/) 的出现，swarm 的市场受到了极大排挤，目前各大公司利用容器编排技术，一般都会选择 kubernetes。本文顺应时势，在讲解容器编排技术的时候也是选择了 kubernetes 作为入门教程。本文作为教程的第一章，选择主要讲解的 kubernetes 内部网络原理。
 
 ## 1. 安装
 
@@ -55,8 +55,25 @@ kubernetes 将若干容器进行编排，形成一个集群，但是这个集群
 
 **图 2.4**
 
+前面讲的是单主机的情况，但是正式环境的 kubernetes 集群，都是有若干主机组成的。同一主机上的 pod 们是通过网桥进行转发的。上面的讲解中并没有明确主机和 pod 之间的通信细节，如果展开讲的话，其网络拓扑模型是这样的：
+
+![](/images/pod_net_bridge.png)
+
+**图 2.4**
+
+pod 和主机之间 通过 veth pair 技术 进行通信，veth pair 类似于管道，一端发送的数据，可以在另一端收到。如果是统一主机上的 pod 们相互通信，就可以借助于网桥。网桥工作在链路层，可以将其理解为现实中的交换机，veth 网卡和网桥之间的连接，可以理解为网络终端通过网线和交换机之间的连接。网桥内部存储每个网口对应的 MAC 地址映射表，数据链路层的数据包到达网桥后，通过查询映射表就可以准发到对应接口了。
+
+然而 Linux 下的网桥，并不是一个纯粹的交换机，交换机或者说传统意义上的网桥只工作在数据链路层，但是 Linux 下的网卡是一块虚拟网卡，上面可以分配 IP，所以它还可以工作在网络层。它的名字叫“网桥”，仅仅是 Linux 内核开发者的自定义称谓而已。
+
+挂载在主机 1 上的 pod 们，ip 可以是 10.1.0.0/24，但是挂载到主机 2 上的 pod 们，就不能选用跟他们同一网段，否则就很有可能出现地址冲突的问题。我们假定 主机 2上的 pod 们 ip 地址是 10.2.0.0/24。那么这两部分 pod 是不能直接通信的，不过跨网络通信也不是不可能的，我们常用的 VPN 技术就是一种跨网络通信的技术。隧道的原理是，鉴定两个异地的局域网不能相互通信，但是两个局域网所在的网络中都有公网出口，则可以构建了一种隧道技术，将数据链路层的包，外层包裹在传输层中，通过公开网络进行传输，然后到达对端后在提取出内层链路层的包，转发给对应的内部网络终端。所以从抽象一样上看，感觉像是两个局域网是可以在数据链路层相互可见的，但是其实是借助了上述的隧道技术。具体到 kubenetes 中， Flannel、calico、weave 等技术提供了类似隧道功能。由于 kubenetes 中各个主机之间是可以互通的，隧道层也正是在主机所在的局域网也就成为了刚才流程中的“公开网络”。
+
+![](/images/k8s_pod_tunnel.png)
+
+**图 2.5**
+
 
 ## 参考资料
 
 1. LVS负载均衡（LVS简介、三种工作模式、调度原理以及十种调度算法） https://blog.51cto.com/u_14359196/2424034
 3. Cracking kubernetes node proxy (aka kube-proxy) https://arthurchiao.art/blog/cracking-k8s-node-proxy/
+3. linux内核网络协议栈--linux bridge（十九）https://blog.csdn.net/qq_20817327/article/details/106843154
