@@ -20,7 +20,7 @@
 
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@5.15.4/css/all.min.css" integrity="sha256-mUZM63G8m73Mcidfrv5E+Y61y7a12O5mW4ezU3bxqW4=" crossorigin="anonymous">
 
-<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.whyun.com","root":"/","images":"/images","scheme":"Muse","version":"8.7.1","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
+<script class="next-config" data-name="main" type="application/json">{"hostname":"blog.whyun.com","root":"/","images":"/images","scheme":"Muse","darkmode":false,"version":"8.9.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12},"copycode":true,"bookmark":{"enable":false,"color":"#222","save":"auto"},"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"stickytabs":false,"motion":{"enable":false,"async":false,"transition":{"post_block":"fadeIn","post_header":"fadeInDown","post_body":"fadeInDown","coll_header":"fadeInLeft","sidebar":"fadeInUp"}},"prism":false,"i18n":{"placeholder":"搜索...","empty":"没有找到任何搜索结果：${query}","hits_time":"找到 ${hits} 个搜索结果（用时 ${time} 毫秒）","hits":"找到 ${hits} 个搜索结果"}}</script><script src="/js/config.js"></script>
 <meta name="description" content="win10 中提供了 wsl 的解决方案，可以在 Windows 中直接开启 linux 子系统，十分方便开发者使用。同时一些重要的功能也要依赖于 wsl 才能启动，比如说 docker desktop。本教程就是演示一下如何在 win10 中配置 wsl ，并且如何正常使用 docker desktop。">
 <meta property="og:type" content="article">
 <meta property="og:title" content="wsl 和 docker desktop 的安装教程">
@@ -78,7 +78,7 @@
 
     <a href="/" class="brand" rel="start">
       <i class="logo-line"></i>
-      <h1 class="site-title">白一梓的个人博客</h1>
+      <p class="site-title">白一梓的个人博客</p>
       <i class="logo-line"></i>
     </a>
   </div>
@@ -131,8 +131,7 @@
         <!--/noindex-->
 
         <div class="site-overview-wrap sidebar-panel">
-          <div class="site-overview">
-            <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
+          <div class="site-author site-overview-item animated" itemprop="author" itemscope itemtype="http://schema.org/Person">
   <p class="site-author-name" itemprop="name">yunnysunny</p>
   <div class="site-description" itemprop="description"></div>
 </div>
@@ -167,7 +166,6 @@
     </ul>
   </div>
 
-          </div>
         </div>
       </div>
     </div>
@@ -227,15 +225,22 @@
 
       <time title="创建时间：2021-09-09 00:00:00" itemprop="dateCreated datePublished" datetime="2021-09-09T00:00:00+08:00">2021-09-09</time>
     </span>
-      <span class="post-meta-item">
-        <span class="post-meta-item-icon">
-          <i class="far fa-calendar-check"></i>
-        </span>
-        <span class="post-meta-item-text">更新于</span>
-        <time title="修改时间：2021-12-08 15:31:53" itemprop="dateModified" datetime="2021-12-08T15:31:53+08:00">2021-12-08</time>
+    <span class="post-meta-item">
+      <span class="post-meta-item-icon">
+        <i class="far fa-calendar-check"></i>
       </span>
+      <span class="post-meta-item-text">更新于</span>
+      <time title="修改时间：2021-12-08 15:31:53" itemprop="dateModified" datetime="2021-12-08T15:31:53+08:00">2021-12-08</time>
+    </span>
 
   
+    <span class="post-meta-item" title="阅读次数" id="busuanzi_container_page_pv">
+      <span class="post-meta-item-icon">
+        <i class="far fa-eye"></i>
+      </span>
+      <span class="post-meta-item-text">阅读次数：</span>
+      <span id="busuanzi_value_page_pv"></span>
+    </span>
 </div>
 
             <div class="post-description">win10 中提供了 wsl 的解决方案，可以在 Windows 中直接开启 linux 子系统，十分方便开发者使用。同时一些重要的功能也要依赖于 wsl 才能启动，比如说 docker desktop。本教程就是演示一下如何在 win10 中配置 wsl ，并且如何正常使用 docker desktop。</div>
@@ -271,9 +276,9 @@
 <p><img src="/images/docker_desktop_k8s.png"></p>
 <p><strong>图 1.4.1</strong></p>
 <p>笔者安装的是 1.21.5 版本，clone 一下 k8s-for-docker-desktop 项目，切换到 v1.21.5 分支</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">git clone https:&#x2F;&#x2F;github.com&#x2F;AliyunContainerService&#x2F;k8s-for-docker-desktop.git
-git checkout v1.21.5
-.\load_images.ps1<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">git</span> clone https://github.com/AliyunContainerService/k8s-for-docker-desktop.git
+<span class="token function">git</span> checkout v1.21.5
+.<span class="token punctuation">\</span>load_images.ps1<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.4.1</strong></p>
 <p>接着还是在项目 k8s-for-docker-desktop 目录中，执行下述命令来配置 kubernetes 控制台：</p>
@@ -321,8 +326,8 @@ nameserver 172.29.48.1<span aria-hidden="true" class="line-numbers-rows"><span><
 <p>类似的工具还有好多，比如 <a target="_blank" rel="noopener" href="https://coredns.io/">CoreDns</a> 这个工具也能实现 DNS 分流的工作。</p>
 </blockquote>
 <p>首先我们需要卸载 systemd-resolved，这个程序默认会占用 53 端口，跟我们的 Dnsmasq 是冲突的。</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">sudo systemctl disable systemd-resolved 
-sudo systemctl stop systemd-resolved<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">sudo</span> systemctl disable systemd-resolved 
+<span class="token function">sudo</span> systemctl stop systemd-resolved<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <p>按理来说，我们需要修改 /etc/resolv.conf 文件，不过在 wsl 中 /etc/resolv.conf 默认会在 WSL 启动的时候被重写，所以需要先修改 /etc/wsl.conf 文件。这个文件默认不存在，所以不存在的时候，可以创建一个：</p>
 <pre class="line-numbers language-none"><code class="language-none">[network]
@@ -389,6 +394,23 @@ baidu.com.              200     IN      A       220.181.38.251
 </ul>
 </div>
 
+          <div class="followme">
+  <span>欢迎关注我的其它发布渠道</span>
+
+  <div class="social-list">
+
+      <div class="social-item">
+        <a target="_blank" class="social-link" href="/atom.xml">
+          <span class="icon">
+            <i class="fa fa-rss"></i>
+          </span>
+
+          <span class="label">RSS</span>
+        </a>
+      </div>
+  </div>
+</div>
+
 
         
 
@@ -441,11 +463,29 @@ baidu.com.              200     IN      A       220.181.38.251
 
 <div class="copyright">
   &copy; 
-  <span itemprop="copyrightYear">2021</span>
+  <span itemprop="copyrightYear">2022</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>
   <span class="author" itemprop="copyrightHolder">yunnysunny</span>
+</div>
+<div class="busuanzi-count">
+    <span class="post-meta-item" id="busuanzi_container_site_uv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-user"></i>
+      </span>
+      <span class="site-uv" title="总访客量">
+        <span id="busuanzi_value_site_uv"></span>
+      </span>
+    </span>
+    <span class="post-meta-item" id="busuanzi_container_site_pv">
+      <span class="post-meta-item-icon">
+        <i class="fa fa-eye"></i>
+      </span>
+      <span class="site-pv" title="总访问量">
+        <span id="busuanzi_value_site_pv"></span>
+      </span>
+    </span>
 </div>
   <div class="powered-by">由 <a href="https://hexo.io/" rel="noopener" target="_blank">Hexo</a> & <a href="https://theme-next.js.org/muse/" rel="noopener" target="_blank">NexT.Muse</a> 强力驱动
   </div>
@@ -465,7 +505,9 @@ baidu.com.              200     IN      A       220.181.38.251
 
 
 
+
   
+  <script async src="https://busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script>
 
 
 
