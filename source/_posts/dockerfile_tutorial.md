@@ -182,6 +182,12 @@ ZOOKEEPER_DOWNLOAD_ADDRESS=https://mirrors.bfsu.edu.cn/apache/zookeeper/zookeepe
 ```
 
 > 存储在 git 仓库中文件的权限只有 644 和 755 两种，如果你在 docker 中需要使用一些比较特殊的权限，不如说 ~/.ssh 目录下的文件，必须是 600 权限，你还是必须在 dockerfile 中使用 RUN 指令强制将 ~/.ssh 下的目录 chmod 成 600。
+>
+> 如果当前项目的目录层级比较深，可以在调用 ls-tree 中添加 `-r` 参数，例如下面命令可以批量查看当前项目在 git 仓库中所有没有可执行权限的 shell 文件：
+>
+> ```shell
+> git ls-tree -r HEAD | grep "\.sh$" | grep 100644
+> ```
 
 然后重新 commit，提交代码到远程 git 仓库，就可以保证在 Linux 下正常使用了。
 
