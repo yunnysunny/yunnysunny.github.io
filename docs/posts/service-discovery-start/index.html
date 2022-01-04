@@ -36,7 +36,7 @@
 <meta property="og:image" content="https://blog.whyun.com/images/private_line_with_service_discovery.png">
 <meta property="og:image" content="https://blog.whyun.com/images/consul_with_openresty.png">
 <meta property="article:published_time" content="2021-11-04T16:00:00.000Z">
-<meta property="article:modified_time" content="2021-11-12T09:08:29.991Z">
+<meta property="article:modified_time" content="2022-01-04T03:21:09.200Z">
 <meta property="article:author" content="yunnysunny">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://blog.whyun.com/images/balancer_classic.png">
@@ -233,7 +233,7 @@
         <i class="far fa-calendar-check"></i>
       </span>
       <span class="post-meta-item-text">更新于</span>
-      <time title="修改时间：2021-11-12 17:08:29" itemprop="dateModified" datetime="2021-11-12T17:08:29+08:00">2021-11-12</time>
+      <time title="修改时间：2022-01-04 11:21:09" itemprop="dateModified" datetime="2022-01-04T11:21:09+08:00">2022-01-04</time>
     </span>
 
   
@@ -323,6 +323,9 @@
 <p>关于重载 nginx 导致的性能问题，可以参见官方的这篇博文 <a target="_blank" rel="noopener" href="https://www.nginx.com/blog/using-nginx-plus-to-reduce-the-frequency-of-configuration-reloads/">https://www.nginx.com/blog/using-nginx-plus-to-reduce-the-frequency-of-configuration-reloads/</a></p>
 </blockquote>
 <p>解决这个问题，我们可以依靠 openresty 这个 nginx 插件，它支持通过 lua 来进行编程，可以拦截 nginx 处理 http 请求的各个阶段。依靠这个特性，我们可以定时拉取各个服务的节点配置信息到 openresty 中存储起来，在客户端触发请求的时候，直接转发请求到具体的某一个节点上面。</p>
+<blockquote>
+<p>大家可以参考笔者的项目 <a target="_blank" rel="noopener" href="https://github.com/yunnysunny/resty-gate">yunnysunny/resty-gate</a>，它实现了通过 openresty 动态拉取 consul 上的服务列表并基于此进行负载均衡的功能。</p>
+</blockquote>
 <p><img src="/images/consul_with_openresty.png"></p>
 <p><strong>图 1.7</strong></p>
 

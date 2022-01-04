@@ -109,6 +109,8 @@ server {
 
 解决这个问题，我们可以依靠 openresty 这个 nginx 插件，它支持通过 lua 来进行编程，可以拦截 nginx 处理 http 请求的各个阶段。依靠这个特性，我们可以定时拉取各个服务的节点配置信息到 openresty 中存储起来，在客户端触发请求的时候，直接转发请求到具体的某一个节点上面。
 
+> 大家可以参考笔者的项目 [yunnysunny/resty-gate](https://github.com/yunnysunny/resty-gate)，它实现了通过 openresty 动态拉取 consul 上的服务列表并基于此进行负载均衡的功能。
+
 ![](/images/consul_with_openresty.png)
 
 **图 1.7**
