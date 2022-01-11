@@ -250,7 +250,7 @@
     
     
     <div class="post-body" itemprop="articleBody">
-        <h2 id="0-安装"><a href="#0-安装" class="headerlink" title="0 安装"></a>0 安装</h2><h3 id="0-1-Linux"><a href="#0-1-Linux" class="headerlink" title="0.1 Linux"></a>0.1 Linux</h3><pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">curl -sSL https:&#x2F;&#x2F;get.daocloud.io&#x2F;docker | sh<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+        <h2 id="0-安装"><a href="#0-安装" class="headerlink" title="0 安装"></a>0 安装</h2><h3 id="0-1-Linux"><a href="#0-1-Linux" class="headerlink" title="0.1 Linux"></a>0.1 Linux</h3><pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">curl</span> -sSL https://get.daocloud.io/docker <span class="token operator">|</span> <span class="token function">sh</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 
 <h3 id="0-2-Windows"><a href="#0-2-Windows" class="headerlink" title="0.2 Windows"></a>0.2 Windows</h3><p>安装 <a target="_blank" rel="noopener" href="https://www.docker.com/products/docker-desktop">docker desktop</a>。其基于 WSL2，需要安装 <a target="_blank" rel="noopener" href="https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps">WSL2</a> ，否则无法启动。具体教程可以参见之前的博文 <a href="https://blog.whyun.com/posts/wsl-and-docker-desktop-install/">wsl 和 docker desktop 的安装教程</a>。</p>
 <h2 id="1-dockerfile"><a href="#1-dockerfile" class="headerlink" title="1 dockerfile"></a>1 dockerfile</h2><h3 id="1-1-简单示例"><a href="#1-1-简单示例" class="headerlink" title="1.1 简单示例"></a>1.1 简单示例</h3><p>一个简单 dockerfile 的示例：</p>
@@ -259,12 +259,12 @@ COPY CentOS-Base.repo &#x2F;etc&#x2F;yum.repos.d&#x2F;CentOS-Base.repo<span aria
 
 <p><strong>代码 1.1.1 Dockerfile</strong></p>
 <p>使用 <code>docker build . -t mycentos</code></p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"># docker build . -t mycentos
-Sending build context to Docker daemon   5.12kB
-Step 1&#x2F;2 : FROM centos:7
- ---&gt; 8652b9f0cb4c
-Step 2&#x2F;2 : COPY CentOS-Base.repo &#x2F;etc&#x2F;yum.repos.d&#x2F;CentOS-Base.repo
- ---&gt; f3e54049025a
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># docker build . -t mycentos</span>
+Sending build context to Docker daemon   <span class="token number">5</span>.12kB
+Step <span class="token number">1</span>/2 <span class="token builtin class-name">:</span> FROM centos:7
+ ---<span class="token operator">></span> 8652b9f0cb4c
+Step <span class="token number">2</span>/2 <span class="token builtin class-name">:</span> COPY CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo
+ ---<span class="token operator">></span> f3e54049025a
 Successfully built f3e54049025a
 Successfully tagged mycentos:latest<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
@@ -272,9 +272,9 @@ Successfully tagged mycentos:latest<span aria-hidden="true" class="line-numbers-
 <p>注意命令中有一个 <code>.</code> 代表从命令行运行目录中寻找要构建的文件，<strong>代码 1.1.1</strong> 的第二行有一个 COPY 操作，其构建的时候会将当前目录中的 <code>CentOS-Base.repo</code> 拷贝覆盖到 <code>/etc/yum.repos.d/CentOS-Base.repo</code>。如果说你构建所需的文件都在命令行运行的上层目录，则可以把 <code>.</code> 换成 <code>..</code>，如果构建所需的文件都在 <code>/xx</code> 目录中，可以把 <code>.</code> 换成 <code>/xx</code>。</p>
 <p>如果你运行docker build 的目录中没有 dockerfile，或者其名字不叫 <code>Dockerfile</code>, 可以使用 <code>-f</code>( 或者 <code>--file</code> ) 参数来手动指定，比如说 <code>docker build -f ./somepath/xx.Dockerfile</code>，将读取 <code>somepath</code> 子目录下的 <code>xx.Dockerfile</code> 文件。</p>
 <p><code>-t</code> 参数指定构建出来的镜像的标签，执行 <code>docker images</code> 命令，可以查看当前构建好（或者下载好）的镜像列表：</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"># docker images
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># docker images</span>
 REPOSITORY TAG        IMAGE ID       CREATED         SIZE
-mycentos   latest     f3e54049025a   6 minutes ago   204MB<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+mycentos   latest     f3e54049025a   <span class="token number">6</span> minutes ago   204MB<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
 <p>如果 docker build 没有指定 -t 参数的话，<code>REPOSITORY</code> 栏和 <code>TAG</code> 栏会显示为 <code>&lt;none&gt;</code>。-t 参数指定标签的时候的语法是 <code>$&#123;name&#125;[:$&#123;version&#125;]</code>， <code>$&#123;version&#125;</code> 没有指定的话，默认为 <code>latest</code>。</p>
 <p><strong>代码 1.1.1 ** 中的每一个命令在构建的时候，docker 都会创建一个临时 docker 来执行对应的命令，</strong>输出 1.1.1** 中可以看出一共做了两步构建，生成了两个临时 docker（<code>8652b9f0cb4c</code> 和 <code>f3e54049025a</code>）。</p>
@@ -282,13 +282,13 @@ mycentos   latest     f3e54049025a   6 minutes ago   204MB<span aria-hidden="tru
 <p>对于 COPY 命令来说，其会将当前文件的权限一块拷贝到镜像中，如果当前待拷贝的是脚本文件，且希望其后续能被执行，则需要确保其有可执行权限。在 Windows 中，默认就是有执行权限的。但是我们一般是将 dockerfile push 到远程 git 仓库，然后触发 CI 来构建镜像，这个时候你需要确保在 git 中当前脚本文件具有可执行权限，对应的 git 命令为 <code>git update-index --chmod +x somefile</code>，注意你需要通过 git add 将其添加到 git 仓库后才能运行 git update-index 命令。由于我们当前要添加的文件，仅仅是个配置文件，不需要可执行权限，所以这里没有更改其权限的必要。</p>
 <p><strong>输出 1.1.1</strong> 中显示了构建出来的镜像的 ID，即 <code>IMAGE ID</code> 栏显示的 <code>f3e54049025a</code>，这个也在 docker images 命令中显示出来。</p>
 <p>docker 本身具有缓存机制，命令在本地运行过一次后，下次运行就会走缓存，我们再运行一次 build 命令：</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker build . -t mycentos
-Sending build context to Docker daemon   5.12kB
-Step 1&#x2F;2 : FROM centos:7
- ---&gt; 8652b9f0cb4c
-Step 2&#x2F;2 : COPY CentOS-Base.repo &#x2F;etc&#x2F;yum.repos.d&#x2F;CentOS-Base.repo
- ---&gt; Using cache
- ---&gt; f3e54049025a
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker build <span class="token builtin class-name">.</span> -t mycentos
+Sending build context to Docker daemon   <span class="token number">5</span>.12kB
+Step <span class="token number">1</span>/2 <span class="token builtin class-name">:</span> FROM centos:7
+ ---<span class="token operator">></span> 8652b9f0cb4c
+Step <span class="token number">2</span>/2 <span class="token builtin class-name">:</span> COPY CentOS-Base.repo /etc/yum.repos.d/CentOS-Base.repo
+ ---<span class="token operator">></span> Using cache
+ ---<span class="token operator">></span> f3e54049025a
 Successfully built f3e54049025a
 Successfully tagged mycentos:latest<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
@@ -310,15 +310,15 @@ CMD [&quot;&#x2F;opt&#x2F;zookeeper&#x2F;bin&#x2F;zkServer.sh&quot;, &quot;start
 
 <p><strong>代码 1.2.1</strong></p>
 <p>为了方便我们构建镜像，我们先新建一个 build.sh 文件（<a target="_blank" rel="noopener" href="https://code.aliyun.com/yunnysunny/dockerfiles/tree/master/zookeeper/build.sh">代码</a>可以从这里找到）：</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">#!&#x2F;bin&#x2F;bash
-set -e
-ZOOKEEPER_VERSION&#x3D;3.7.0
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token shebang important">#!/bin/bash</span>
+<span class="token builtin class-name">set</span> -e
+<span class="token assign-left variable">ZOOKEEPER_VERSION</span><span class="token operator">=</span><span class="token number">3.7</span>.0
 
 docker pull openjdk:11
-docker build . -f Dockerfile -t registry.cn-hangzhou.aliyuncs.com&#x2F;whyun&#x2F;base:zookeeper-$&#123;ZOOKEEPER_VERSION&#125; --build-arg ZOOKEEPER_VERSION&#x3D;$&#123;ZOOKEEPER_VERSION&#125;
-if [ &quot;$NEED_PUSH&quot; &#x3D; &quot;1&quot; ] ; then
-    docker push registry.cn-hangzhou.aliyuncs.com&#x2F;whyun&#x2F;base:zookeeper-$&#123;ZOOKEEPER_VERSION&#125;
-fi<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+docker build <span class="token builtin class-name">.</span> -f Dockerfile -t registry.cn-hangzhou.aliyuncs.com/whyun/base:zookeeper-<span class="token variable">$&#123;ZOOKEEPER_VERSION&#125;</span> --build-arg <span class="token assign-left variable">ZOOKEEPER_VERSION</span><span class="token operator">=</span><span class="token variable">$&#123;ZOOKEEPER_VERSION&#125;</span>
+<span class="token keyword">if</span> <span class="token punctuation">[</span> <span class="token string">"<span class="token variable">$NEED_PUSH</span>"</span> <span class="token operator">=</span> <span class="token string">"1"</span> <span class="token punctuation">]</span> <span class="token punctuation">;</span> <span class="token keyword">then</span>
+    docker push registry.cn-hangzhou.aliyuncs.com/whyun/base:zookeeper-<span class="token variable">$&#123;ZOOKEEPER_VERSION&#125;</span>
+<span class="token keyword">fi</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.2.2</strong></p>
 <blockquote>
@@ -337,35 +337,35 @@ fi<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><
 </blockquote>
 <p><strong>代码 1.2.2</strong> 中我们先做了一个 docker pull 操作，保证我们用的父镜像是最新的。然后做 docker build 的时候，增加了一个 –build-arg 参数。启用来指定构建参数 ZOOKEEPER_VERSION 为 3.7.0，同时在 <strong>代码 1.2.1</strong> 中通过 <code>ARG ZOOKEEPER_VERSION</code> 来做声明，这句话是必须的，否则传递过来的 –build-arg 不会被读取。</p>
 <p>我们在脚本 <code>install_zk.sh</code> （完整代码可以从<a target="_blank" rel="noopener" href="https://code.aliyun.com/yunnysunny/dockerfiles/tree/master/zookeeper/install_zk.sh">这里</a>找到）中可以引用了环境变量 <code>ZOOKEEPER_VERSION</code>，这个变量的值就是通过 <code>ARG ZOOKEEPER_VERSION</code> 传递过来的:</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">#!&#x2F;bin&#x2F;bash
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token shebang important">#!/bin/bash</span>
 
-ZOOKEEPER_FILENAME&#x3D;apache-zookeeper-$ZOOKEEPER_VERSION-bin
-ZOOKEEPER_ARCHIVE_NAME&#x3D;$ZOOKEEPER_FILENAME.tar.gz
+<span class="token assign-left variable">ZOOKEEPER_FILENAME</span><span class="token operator">=</span>apache-zookeeper-<span class="token variable">$ZOOKEEPER_VERSION</span>-bin
+<span class="token assign-left variable">ZOOKEEPER_ARCHIVE_NAME</span><span class="token operator">=</span><span class="token variable">$ZOOKEEPER_FILENAME</span>.tar.gz
 
-ZOOKEEPER_DOWNLOAD_ADDRESS&#x3D;https:&#x2F;&#x2F;mirrors.bfsu.edu.cn&#x2F;apache&#x2F;zookeeper&#x2F;zookeeper-$ZOOKEEPER_VERSION&#x2F;$ZOOKEEPER_ARCHIVE_NAME<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token assign-left variable">ZOOKEEPER_DOWNLOAD_ADDRESS</span><span class="token operator">=</span>https://mirrors.bfsu.edu.cn/apache/zookeeper/zookeeper-<span class="token variable">$ZOOKEEPER_VERSION</span>/<span class="token variable">$ZOOKEEPER_ARCHIVE_NAME</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.2.3 install_zk.sh 的部分代码</strong></p>
 <blockquote>
 <p>为了方便查阅，在 <strong>代码 1.2.1</strong> 中一般还会添加一个 ENV 指令（就是代码中注释掉的那句指令，之所以这里注释掉，是为了演示单纯使用 ARG 指令，也能在 RUN 命令中读取 ARG 指定的变量的值），这样保证在镜像制作完成后，以当前镜像启动的 docker 中也可以读取到环境变量 <code>ZOOKEEPER_VERSION</code>的值，方便排查问题。</p>
 </blockquote>
 <p>由于我们这里使用了可执行脚本，所以在推送到 git 仓库之前，需要运行 git update-index 命令，以保证在 Linux 上能够正常执行。</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"># 查看当前文件权限
-# git ls-tree HEAD
-100644 blob e35843f658466b724a6a8bdf8f60694fb72aeb24    Dockerfile
-100644 blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391    build.sh
-100644 blob e678cd6d070eb2790c4bfee000ffdab3753f30ae    install_zk.sh
-100644 blob 93262ed2b85d2381ddce1ceda9c56fb74a73f948    start_zk.sh
-100644 blob 94167794dba6420ad4625af45586c467f0550ab4    zookeeper
-# 修改权限
-# git update-index --chmod +x build.sh
-# git update-index --chmod +x install_zk.sh
-# git update-index --chmod +x start_zk.sh
-# git update-index --chmod +x zookeeper<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token comment"># 查看当前文件权限</span>
+<span class="token comment"># git ls-tree HEAD</span>
+<span class="token number">100644</span> blob e35843f658466b724a6a8bdf8f60694fb72aeb24    Dockerfile
+<span class="token number">100644</span> blob e69de29bb2d1d6434b8b29ae775ad8c2e48c5391    build.sh
+<span class="token number">100644</span> blob e678cd6d070eb2790c4bfee000ffdab3753f30ae    install_zk.sh
+<span class="token number">100644</span> blob 93262ed2b85d2381ddce1ceda9c56fb74a73f948    start_zk.sh
+<span class="token number">100644</span> blob 94167794dba6420ad4625af45586c467f0550ab4    zookeeper
+<span class="token comment"># 修改权限</span>
+<span class="token comment"># git update-index --chmod +x build.sh</span>
+<span class="token comment"># git update-index --chmod +x install_zk.sh</span>
+<span class="token comment"># git update-index --chmod +x start_zk.sh</span>
+<span class="token comment"># git update-index --chmod +x zookeeper</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <blockquote>
 <p>存储在 git 仓库中文件的权限只有 644 和 755 两种，如果你在 docker 中需要使用一些比较特殊的权限，不如说 ~/.ssh 目录下的文件，必须是 600 权限，你还是必须在 dockerfile 中使用 RUN 指令强制将 ~/.ssh 下的目录 chmod 成 600。</p>
 <p>如果当前项目的目录层级比较深，可以在调用 ls-tree 中添加 <code>-r</code> 参数，例如下面命令可以批量查看当前项目在 git 仓库中所有没有可执行权限的 shell 文件：</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">git ls-tree -r HEAD | grep &quot;\.sh$&quot; | grep 100644<span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">git</span> ls-tree -r HEAD <span class="token operator">|</span> <span class="token function">grep</span> <span class="token string">"\.sh$"</span> <span class="token operator">|</span> <span class="token function">grep</span> <span class="token number">100644</span><span aria-hidden="true" class="line-numbers-rows"><span></span></span></code></pre>
 </blockquote>
 <p>然后重新 commit，提交代码到远程 git 仓库，就可以保证在 Linux 下正常使用了。</p>
 <p>由于我们的安装操作比较复杂，我们这里做了一个 shell 文件来执行 RUN 指令，假设你想执行的命令并不负责也可以直接写在 dockerfile 中</p>
@@ -408,25 +408,25 @@ ENTRYPOINT [ &quot;&#x2F;parent.sh&quot; ]
 CMD [ &quot;&#x2F;sub.sh&quot; ]<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.3.2 both.Dockerfile</strong></p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">#!&#x2F;bin&#x2F;bash
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token shebang important">#!/bin/bash</span>
 
-echo &#39;this is from entrypoint&#39;
-# some init shell
+<span class="token builtin class-name">echo</span> <span class="token string">'this is from entrypoint'</span>
+<span class="token comment"># some init shell</span>
 
-exec &quot;$@&quot;<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token builtin class-name">exec</span> <span class="token string">"<span class="token variable">$@</span>"</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.3.3 parent.sh</strong></p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">#!&#x2F;bin&#x2F;bash
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token shebang important">#!/bin/bash</span>
 
-echo &#39;this is from cmd&#39;
+<span class="token builtin class-name">echo</span> <span class="token string">'this is from cmd'</span>
 
-#other command...
-&#x2F;hang.sh<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token comment">#other command...</span>
+/hang.sh<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.3.4 sub.sh</strong></p>
 <p>这里同时指定了 ENTRYPOINT 和 CMD 指令，那么运行结果是后者覆盖前者吗？先别下结论，我们构建出来镜像运行看看。</p>
 <p>运行如下命令</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker build . -t both -f both.Dockerfile
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker build <span class="token builtin class-name">.</span> -t both -f both.Dockerfile
 docker run --rm --name myboth both<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <p> 会直接输出</p>
@@ -444,14 +444,14 @@ ENTRYPOINT [ &quot;&#x2F;single.sh&quot; ]
 CMD [ &quot;&#x2F;sub.sh&quot; ]<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.3.5 single.Dockerfile</strong></p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">#!&#x2F;bin&#x2F;bash
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token shebang important">#!/bin/bash</span>
 
-echo &#39;this is from entrypoint&#39;
-# some init shell<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<span class="token builtin class-name">echo</span> <span class="token string">'this is from entrypoint'</span>
+<span class="token comment"># some init shell</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.3.6 single.sh</strong></p>
 <p>single.sh 和 parent.sh 相比少了 <code>exec &quot;$@&quot;</code>，我们通过如下命令来进行构建和运行：</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker build . -t single -f single.Dockerfile
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">docker build <span class="token builtin class-name">.</span> -t single -f single.Dockerfile
 docker run --rm --name mysingle single<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span></span></code></pre>
 
 <p>运行完成之后，docker 立即退出了，<code>/sub.sh</code> 未被执行。</p>
@@ -502,9 +502,9 @@ COPY --from&#x3D;build-stage &#x2F;opt&#x2F;bin&#x2F;use-my &#x2F;<span aria-hid
 <p><strong>代码 1.4.1 bin.Dockerfile</strong></p>
 <p>docker build 时通过 <code>--target $&#123;targetName&#125;</code> 可以手动运行的阶段，如果不指定的话，就从头到尾运行完整个 dockerfile。比如说 代码 1.4.1 中 使用参数 <code>--target build-stage</code> 可以直接执行 build-stage 阶段的构建，忽略 export-stage 阶段的构建。不加参数的话，会构建 export-stage 阶段，当然也会级联构建 build-stage 阶段。</p>
 <p>scratch 镜像是一个特殊的镜像，里面没有任何文件，一般是用来配合将镜像中的生成物做导出用的。不过这个导出功能属于新特性，目前只有在开启 <a target="_blank" rel="noopener" href="https://docs.docker.com/develop/develop-images/build_enhancements/">BuildKit</a> 特性的情况下才支持。下面给出 <strong>代码 1.4.1</strong> 的构建脚本：</p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">mkdir -p bin
-docker pull registry.cn-hangzhou.aliyuncs.com&#x2F;whyun&#x2F;base:golang-1.17.2
-DOCKER_BUILDKIT&#x3D;1 docker build --file bin.Dockerfile --output bin .<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token function">mkdir</span> -p bin
+docker pull registry.cn-hangzhou.aliyuncs.com/whyun/base:golang-1.17.2
+<span class="token assign-left variable">DOCKER_BUILDKIT</span><span class="token operator">=</span><span class="token number">1</span> docker build --file bin.Dockerfile --output bin <span class="token builtin class-name">.</span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 1.4.2</strong></p>
 <blockquote>
@@ -513,10 +513,10 @@ DOCKER_BUILDKIT&#x3D;1 docker build --file bin.Dockerfile --output bin .<span ar
 <h2 id="2-已知问题"><a href="#2-已知问题" class="headerlink" title="2 已知问题"></a>2 已知问题</h2><h3 id="2-1-清理磁盘"><a href="#2-1-清理磁盘" class="headerlink" title="2.1 清理磁盘"></a>2.1 清理磁盘</h3><p>在 <strong>1.1</strong> 小节讲到 dockerfile 中的每一个命令都会创建一个临时 docker，但是如果你的 dockerfile 文件有问题，执行到一半退出了，那么这些临时 docker 不会被删除，同时这些临时 docker 还会对应临时镜像，也会被保留，素以我们需要定期清理。</p>
 <p>docker 1.13 版本开始提供了一个实用的命令, <code>docker system prune</code> 可以用来清理没有用的镜像，通过 <code>docker system df</code> 可以查看当前所有镜像占用的磁盘统计信息。</p>
 <p>如果你的 docker 版本低于 1.13，可以执行以下脚本来删除： </p>
-<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell">#!&#x2F;bin&#x2F;bash
-docker stop $(docker ps -a | grep &quot;Exited&quot; | awk &#39;&#123;print $1 &#125;&#39;)
-docker rm $(docker ps -a | grep &quot;Exited&quot; | awk &#39;&#123;print $1 &#125;&#39;)
-docker rmi $(docker images | grep &quot;none&quot; | awk &#39;&#123;print $3&#125;&#39;)<span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
+<pre class="line-numbers language-shell" data-language="shell"><code class="language-shell"><span class="token shebang important">#!/bin/bash</span>
+docker stop <span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a <span class="token operator">|</span> <span class="token function">grep</span> <span class="token string">"Exited"</span> <span class="token operator">|</span> <span class="token function">awk</span> <span class="token string">'&#123;print $1 &#125;'</span><span class="token variable">)</span></span>
+docker <span class="token function">rm</span> <span class="token variable"><span class="token variable">$(</span>docker <span class="token function">ps</span> -a <span class="token operator">|</span> <span class="token function">grep</span> <span class="token string">"Exited"</span> <span class="token operator">|</span> <span class="token function">awk</span> <span class="token string">'&#123;print $1 &#125;'</span><span class="token variable">)</span></span>
+docker rmi <span class="token variable"><span class="token variable">$(</span>docker images <span class="token operator">|</span> <span class="token function">grep</span> <span class="token string">"none"</span> <span class="token operator">|</span> <span class="token function">awk</span> <span class="token string">'&#123;print $3&#125;'</span><span class="token variable">)</span></span><span aria-hidden="true" class="line-numbers-rows"><span></span><span></span><span></span><span></span></span></code></pre>
 
 <p><strong>代码 2.1.1 清理 docker 镜像脚本</strong></p>
 <h3 id="2-2-拉取基础镜像缓慢"><a href="#2-2-拉取基础镜像缓慢" class="headerlink" title="2.2 拉取基础镜像缓慢"></a>2.2 拉取基础镜像缓慢</h3><p>默认的镜像仓库地址是托管在 dockerhub 上，由于众所周知的原因，国外的网站在咱们这里访问并不稳定，并且 dockerhub 本身处于商业考量，还会对用户的访问进行限速，所以我们一般会在 docker 的配置文件中修改镜像仓库地址，将其指向国内地址。</p>
