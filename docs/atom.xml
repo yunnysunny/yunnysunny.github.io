@@ -198,10 +198,10 @@
   
   <entry>
     <title>JNI系列教程之四——在NDK中使用第三方库</title>
-    <link href="https://blog.whyun.com/posts/jnindk/use-thrid-part-library-in-ndk/"/>
-    <id>https://blog.whyun.com/posts/jnindk/use-thrid-part-library-in-ndk/</id>
+    <link href="https://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/"/>
+    <id>https://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/</id>
     <published>2015-12-30T16:00:00.000Z</published>
-    <updated>2021-09-08T12:15:57.405Z</updated>
+    <updated>2022-01-11T06:05:30.063Z</updated>
     
     
     <summary type="html">主要讲述如何在NDK中使用第三方库</summary>

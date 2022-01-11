@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/</loc>
+    <lastmod>2022-01-11</lastmod>
+  </url>
+  <url>
     <loc>https://blog.whyun.com/posts/service-discovery-start/</loc>
     <lastmod>2022-01-04</lastmod>
   </url>
@@ -67,10 +71,6 @@
   <url>
     <loc>https://blog.whyun.com/posts/docker-compose-tutorial/</loc>
     <lastmod>2021-10-30</lastmod>
-  </url>
-  <url>
-    <loc>https://blog.whyun.com/posts/jnindk/use-thrid-part-library-in-ndk/</loc>
-    <lastmod>2021-09-08</lastmod>
   </url>
   <url>
     <loc>https://blog.whyun.com/posts/jni/</loc>
