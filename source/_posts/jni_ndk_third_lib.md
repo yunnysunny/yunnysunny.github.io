@@ -3,6 +3,8 @@ abbrlink: jni/use-thrid-part-library-in-ndk
 title: JNI系列教程之四——在NDK中使用第三方库
 date:  2015-12-31
 description: 主要讲述如何在NDK中使用第三方库
+categories:
+- [Java, JNI]
 ---
 
 ## 4.1 背景

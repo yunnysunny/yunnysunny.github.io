@@ -5,6 +5,8 @@ date:  2022-02-19
 description: 这篇文章不讲代码讲受力分析，主要讲在调研某千里智能笔过程中一些深思。
 typora-copy-images-to: ../images
 typora-root-url: .. 
+categories:
+- Engineering Design
 ---
 
 ## 1. 背景分析

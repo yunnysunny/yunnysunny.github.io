@@ -4,6 +4,8 @@ title: 跨越万水千山认识你,跨根域的单点登陆设计
 date:  2018-05-27
 description: 介绍单点登陆的原理和实现
 typora-root-url: ..\
+categories:
+- Engineering Design
 ---
 
 

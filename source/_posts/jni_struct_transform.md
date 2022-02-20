@@ -3,6 +3,8 @@ abbrlink: jni/2-struct-transform
 title: JNI系列教程二——数据结构
 date: 2015-11-25
 description: JNI和java的数据结构的相互转化，JNI和java的函数相互调用
+categories:
+- [Java, JNI]
 ---
 
 

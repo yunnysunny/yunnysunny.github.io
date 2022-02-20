@@ -5,6 +5,8 @@ date:  2021-10-09
 description: dockerfile 的使用教程，讲解 dockerfile 的 FROM COPY RUN ENTRYPOINT CMD 等指令的使用。
 typora-copy-images-to: ..\images
 typora-root-url: ..\
+categories:
+- [Cloud Native, Docker]
 ---
 
 ## 0 安装

@@ -3,6 +3,8 @@ abbrlink: jni
 title: JNI系列教程一——入门
 date:  2015-11-01
 description: JNI使用背景，windows、linux下JNI环境的配置，教你编译执行第一个JNI程序
+categories:
+- [Java, JNI]
 ---
 
 ## 1.1 背景
@@ -124,5 +126,5 @@ gcc -g -Wall -I $JAVA_HOME/include/ -I $JAVA_HOME/include/linux -fPIC -shared -o
 运行java代码，最终输出
     
     num:1,string:the first demo.
-    
+
 > 本文用到的源代码可以从http://git.oschina.net/yunnysunny/jni 获得到

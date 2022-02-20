@@ -3,6 +3,8 @@ abbrlink: js
 title: js异步之惑
 date:  2015-03-20
 description: 讲解js中异步的运行原理
+categories:
+- Javascript
 ---
 
 ## 1.异步是啥

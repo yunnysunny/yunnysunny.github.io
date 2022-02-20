@@ -4,6 +4,8 @@ title: JNI系列教程三 —— NDK入门
 date:  2015-12-05
 description: 安卓NDK的编写入门  包括不同安卓版本 不同cpu架构引用头文件库文件的路径规则等知识点
 typora-root-url: ..\
+categories:
+- [Java, JNI]
 ---
 
 ## 3.1 背景

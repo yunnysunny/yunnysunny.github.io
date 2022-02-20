@@ -5,6 +5,8 @@ date:  2022-01-24
 description: 这篇文章主要讲述 prometheus 的入门内容，包括 promethues 的适用场景、promethues 的环境搭建、简单入门教程编写。
 typora-copy-images-to: ../images
 typora-root-url: .. 
+categories:
+- Prometheus
 ---
 
 在服务运行的整个生命周期内，为了尽早的发现服务内部的潜在问题，我们需要对于服务运行过程中产生的数据进行监控，并提取其关键指标，并在某项指标产生异常时触发报警。

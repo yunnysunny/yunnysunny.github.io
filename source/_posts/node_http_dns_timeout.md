@@ -5,6 +5,8 @@ date:  2019-09-25
 description: request 请求时 DNS 解析超时的问题探究，包括若干 node 源码的解读
 typora-copy-images-to: ..\images
 typora-root-url: ..\
+categories:
+- Node
 ---
 
 

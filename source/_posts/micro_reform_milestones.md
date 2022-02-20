@@ -1,10 +1,12 @@
 ---
 abbrlink: micro-reform-milestones
 title: 微服务改造心路历程
-date:  2021-02-20
-description: 本文讲述了在笔者在直播间项目工作时，践行微服务过程中的一系列趟坑的心路历程。
+date:  2022-02-20
+description: 本文讲述了在笔者在直播间项目组工作时，践行微服务过程中的一系列趟坑的心路历程。
 typora-copy-images-to: ..\images
 typora-root-url: ..
+categories:
+- Micro Service
 ---
 
 ## 1. 改造前现状

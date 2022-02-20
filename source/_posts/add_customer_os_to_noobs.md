@@ -1,8 +1,10 @@
 ---
-  title: NOOBS安装自定义系统
-  date:  2014-11-21
-  description: 手把手教你怎么将一个自定义的操作系统加入到noobs中
-  abbrlink: noobs
+title: NOOBS安装自定义系统
+date:  2014-11-21
+description: 手把手教你怎么将一个自定义的操作系统加入到noobs中
+abbrlink: noobs
+categories:
+- Raspberry
 ---
 
 ## 简介
@@ -34,7 +36,7 @@ NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安
 		  "password": "raspberry",
 		  "feature_level": 123900
 		}
-**配置文件2.1 os.json**
+	**配置文件2.1 os.json**
 
 其中`name`肯定就是名称了，然后是`version`版本，`description`描述等信息。   
 同时，我们留意到文件`flavours.json`中的内容和`os`中很多重复，可以称作是`os.json`的简版，这个文件最终要被引导程序读取，显示引导菜单，供给用户选择安装哪些操作系统。注意由于我们的文件夹是复制产生的，所以这个文件也要相应的修改，否则引导菜单发现了两个一模一样的操作系统名称，就会忽略掉其中一个，这样你辛辛苦苦做出来的引导就不管用了。  
@@ -66,16 +68,16 @@ NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安
 
 可以看到在json文件中属性partitions是一个数组类型，数组每个元素定义的是一个分区信息。首先看label为boot的分区，这是一个FAT格式的分区，被用作操作系统启动分区；然后label为root的是ext4分区，里面存放linux操作系统分区。partition_size_nominal是说分区的大小，want_maximised是说当前分区是否需要被扩展，如果为false，则分区的大小就是partition_size_nominal的指定值，如果为true，则noobs会根据sd卡的大小尽量的分配尽可能多的空间给当前分区。   
 9. 之前说过，我们从retropie官网上下载下来它的安装文件，将其解压后我们得到一个img文件。按照noobs给出的文档，根据partitions.json中的配置的信息，我们应该生成两个压缩文件，分别为boot.tar.xz和root.tar.gz，文件名实际上对应的是配置文件中的label属性。那么我们现在得到的是img文件，怎样得到这两个文件呢？  
-如果你是用linux，这个问题很好解决，linux下可以使用mount命令直接把img文件挂载到指定目录上；如果使用windows，那就只能用虚拟机了。好吧，我就是用的windows，打开自己的虚拟机，通过vbox上的共享目录，来访问windows上的这个img文件。  
-![vbox共享](http://blog.whyun.com/images/select_share.png)   
-**图2.1 共享文件夹设置1**  
-在弹出的界面中新增一个共享设置，我们假设img文件放在e:\sharing下，那么可以做如下设置：  
-![新建共享](http://blog.whyun.com/images/add_new_vbox_share.png)  
-**图2.2 新建共享**  
-最后在ubuntu下通过命令`mount -t vboxsf sharing /mnt/share`来加载这个共享（这里假设/mnt/share目录已经存在了）。在/mnt/share下我们用fdisk命令来查看img文件内部的分区情况：
+	如果你是用linux，这个问题很好解决，linux下可以使用mount命令直接把img文件挂载到指定目录上；如果使用windows，那就只能用虚拟机了。好吧，我就是用的windows，打开自己的虚拟机，通过vbox上的共享目录，来访问windows上的这个img文件。  
+	![vbox共享](http://blog.whyun.com/images/select_share.png)   
+	**图2.1 共享文件夹设置1**  
+	在弹出的界面中新增一个共享设置，我们假设img文件放在e:\sharing下，那么可以做如下设置：  
+	![新建共享](http://blog.whyun.com/images/add_new_vbox_share.png)  
+	**图2.2 新建共享**  
+	最后在ubuntu下通过命令`mount -t vboxsf sharing /mnt/share`来加载这个共享（这里假设/mnt/share目录已经存在了）。在/mnt/share下我们用fdisk命令来查看img文件内部的分区情况：
 
 	fdisk -lu RetroPieImage_ver2.3.img
-该命令将会输出如下内容：
+	该命令将会输出如下内容：
 
 	Disk RetroPieImage_ver2.3.img: 3460 MB, 3460300800 bytes
 	255 heads, 63 sectors/track, 420 cylinders, total 6758400 sectors

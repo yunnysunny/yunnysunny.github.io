@@ -4,6 +4,8 @@ title: session的安全性
 date:  2014-05-25
 description: 介绍session的基本原理和安全性
 typora-root-url: ..\
+categories:
+- HTTP
 ---
 
 ## session原理

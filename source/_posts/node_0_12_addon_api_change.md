@@ -3,6 +3,8 @@ abbrlink: node0-12capi
 title: 即将面临的Node0.12中的C++API的改变
 date:  2015-05-19
 description: Node0.12和Node0.10的C++API方面发生了重大变化，nodejs官方文档中给出仅仅是几个简单例子，在具体使用过程中依靠这几个例子是不够的，当初在将Node0.10的扩展迁移到Node0.12时遇到了各种问题，直到遇到了这篇文章，我想我不得不将它翻译出来共享给大家了
+categories:
+- Node
 ---
 
 原文地址：https://strongloop.com/strongblog/node-js-v0-12-c-apis-breaking/

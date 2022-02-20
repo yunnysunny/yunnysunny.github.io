@@ -3,6 +3,8 @@ title: go 私有化包构建路
 date:  2021-09-18
 description: 使用私有托管的 go 包仓库的折腾之路
 abbrlink: go-private-package
+categories:
+- Golang
 ---
 
 一般学习一门新的编程语言的时候，都要顺便学习一下它的包管理知识。go 语言起步的时候，包管理还比较粗糙，从 1.11 版本开始逐步引入 GO Module 机制，通过设置环境 `GO111MODULE=on` 来开启其支持，从 1.16 开始这个环境变量默认为 `on`。如果不确定可以通过 `go env | grep GO111MODULE` 来查看下。

@@ -5,6 +5,8 @@ date:  2021-10-12
 description: 当我们将编写的程序部署到服务器之后，免不了会面临未知 bug 导致的程序崩溃退出问题，这个时候快速的将程序进行重启，显得尤为重要，特别是那种在后端和用户之间维持会话的服务。这篇文章就是讲一下，如果你的程序部署到 docker 后，如何做到优雅重启。
 typora-copy-images-to: ..\images
 typora-root-url: ..\
+categories:
+- [Cloud Native, Docker]
 ---
 
 

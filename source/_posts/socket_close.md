@@ -4,6 +4,8 @@ title: 小议socket关闭
 date:  2014-02-08
 description: 介绍socket四次挥手
 typora-root-url: ..\
+categories:
+- [Network, TCP]
 ---
 
 socket编程过程中往往会遇到这样那样的问题，出现了这些问题，有的是由于并发访问量太大造成的，有些却是由于代码中编程不慎造成的。
