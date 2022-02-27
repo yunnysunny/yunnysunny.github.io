@@ -280,3 +280,7 @@ spec: #这是关于该Deployment的描述，可以理解为你期待该Deploymen
 
 本文中引用的部分镜像代码来源于 https://github.com/yunnysunny/dockerfiles
 
+## 参考资料
+
+- Load balancing and scaling long-lived connections in Kubernetes https://learnk8s.io/kubernetes-long-lived-connections
+
