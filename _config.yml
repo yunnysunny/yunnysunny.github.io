@@ -129,3 +129,9 @@ feed:
   content:
   content_limit:
   content_limit_delim: ' '
+
+search:
+  path: search.xml
+  field: post
+  content: true
+  format: html
