@@ -112,7 +112,7 @@ giscus:
   repo: yunnysunny/yunnysunny.github.io # Github repository name
   repo_id: MDEwOlJlcG9zaXRvcnkyMDU4ODk4Ng== # Github repository id
   category: Show and tell # Github discussion category
-  category_id: DIC_kwDOATopus4B_4of # Github discussion category id
+  category_id: DIC_kwDOATopus4B_4oh # Github discussion category id
   # Available values: pathname | url | title | og:title
   mapping: pathname
   # Available values: 0 | 1 
