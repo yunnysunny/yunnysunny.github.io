@@ -136,4 +136,64 @@ c85a7f7e1a68   none                   null      local
 
 由于大家的使用习惯是在 docker-compose.yml 文件中直接使用 `docker-compose up -d` 来拉起一组 docker 容器，这时候一定要留意你不同 yml 文件所在的文件名要做成不一样的，否则它在创建 network 名称的时候会冲突。
 
+### 2.3 举个例子
+
+```yaml
+version: "3"
+services:
+  elasticsearch:
+    image: 'elastic/elasticsearch:8.1.0'
+    restart: always
+    container_name: elasticsearch
+    ulimits:
+      nofile: 65536
+      memlock: -1
+    ports:
+      - '9200:9200'
+      - '9300:9300'
+    environment:
+      - ES_JAVA_OPTS=-Xms1g -Xmx1g
+    volumes:
+      - ./elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml
+      - ./data:/usr/share/elasticsearch/data
+      - ./log:/usr/share/elasticsearch/logs
+
+  logstash:
+    image: 'elastic/logstash:8.1.0'
+    user: root
+    restart: always
+    container_name: logstash
+    ports:
+      - '5000:5000'
+      - '5050:5050/udp'
+    volumes: 
+      - ./logstash.yml:/usr/share/logstash/config/logstash.yml:ro
+      - ./log4j2.properties:/usr/share/logstash/config/log4j2.properties:ro
+      - ./pipeline:/usr/share/logstash/pipeline
+    environment:
+      - LS_JAVA_OPTS=-Xms1024m -Xmx1024m --illegal-access=warn
+      - JRUBY_OPTS=-J--illegal-access=warn
+    depends_on:
+      - elasticsearch
+  kibana:
+    image: elastic/kibana:8.1.0
+    restart: always
+    container_name: kibana
+    ports:
+      - 5601:5601
+    volumes: 
+      - ./kibana.yml:/usr/share/kibana/config/kibana.yml:ro
+    depends_on:
+      - elasticsearch
+
+```
+
+**代码 2.3.1**
+
+注意由于 elasticsearch 镜像中要求不能使用 root 用户启动，其内部使用 elasticsearch 用户启动，且 elasticsearch 的 uid 和 gid 的值都是 `1000`，所以要提前将挂载的 `data` `log` 目录都修改一下所属用户，即运行 `chown -R 1000:1000 data log`。 
+
+## 参考资料
+
+- [docker挂载volume的用户权限问题,理解docker容器的uid](https://www.cnblogs.com/woshimrf/p/understand-docker-uid.html) 
+
 > 本教程源代码项目：https://gitlab.com/yunnysunny/docker-compose-tutorial
