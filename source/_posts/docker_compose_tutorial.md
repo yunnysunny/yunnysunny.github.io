@@ -142,7 +142,7 @@ c85a7f7e1a68   none                   null      local
 version: "3"
 services:
   elasticsearch:
-    image: 'elastic/elasticsearch:8.1.0'
+    image: 'elastic/elasticsearch'
     restart: always
     container_name: elasticsearch
     ulimits:
@@ -159,7 +159,7 @@ services:
       - ./log:/usr/share/elasticsearch/logs
 
   logstash:
-    image: 'elastic/logstash:8.1.0'
+    image: 'elastic/logstash'
     user: root
     restart: always
     container_name: logstash
@@ -176,7 +176,7 @@ services:
     depends_on:
       - elasticsearch
   kibana:
-    image: elastic/kibana:8.1.0
+    image: elastic/kibana
     restart: always
     container_name: kibana
     ports:
