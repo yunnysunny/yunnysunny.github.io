@@ -201,11 +201,11 @@ spec: #这是关于该Deployment的描述，可以理解为你期待该Deploymen
           imagePullPolicy: Always
           resources:
             requests:
-              cpu: 2000m
+              cpu: 1000m
               memory: 2Gi
             limits:
-              cpu: 4000m
-              memory: 4Gi
+              cpu: 1000m
+              memory: 3Gi
           env:
             - name: test
               value: "1"
