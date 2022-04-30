@@ -162,7 +162,7 @@ k8s 本身没有提供负载均衡解决方案，虽然它预留了 `LoadBalance
 
 ## 3. 实践与扩展
 
-由于 k8s 可以方便的做扩容，所以在执行压测程序时特别方便，这里给出一个在 k8s 中做打压的实例。
+由于 k8s 可以方便的做扩容，所以在执行压测程序时特别方便，这里给出一个在 k8s 中做打压的实例。由于性能测试非常消耗机器资源，请不要在 okteto 上尝试，否则容易封号。
 
 ```yaml
 apiVersion: apps/v1 #与k8s集群版本有关，使用 kubectl api-versions 即可查看当前集群支持的版本
@@ -182,19 +182,19 @@ spec: #这是关于该Deployment的描述，可以理解为你期待该Deploymen
       labels:
         app: hello
     spec:
-      # initContainers:
-      # - image: busybox
-      #   command:
-      #   - sh
-      #   - -c
-      #   - |
-      #     sysctl -w net.core.somaxconn=10240
-      #     sysctl -w net.ipv4.ip_local_port_range="1024 65535"
-      #     sysctl -w net.ipv4.tcp_tw_reuse=1
-      #     sysctl -w fs.file-max=6048576
-      #   name: setsysctl
-      #   securityContext:
-      #     privileged: true
+      initContainers:
+      - image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          sysctl -w net.core.somaxconn=10240
+          sysctl -w net.ipv4.ip_local_port_range="1024 65535"
+          sysctl -w net.ipv4.tcp_tw_reuse=1
+          sysctl -w fs.file-max=6048576
+        name: setsysctl
+        securityContext:
+          privileged: true
       containers:
         - name: hello-app
           image: registry.cn-hangzhou.aliyuncs.com/whyun/base:hello-latest
@@ -240,19 +240,19 @@ spec: #这是关于该Deployment的描述，可以理解为你期待该Deploymen
       labels:
         app: bench
     spec:
-      # initContainers:
-      # - image: busybox
-      #   command:
-      #   - sh
-      #   - -c
-      #   - |
-      #     sysctl -w net.core.somaxconn=10240
-      #     sysctl -w net.ipv4.ip_local_port_range="1024 65535"
-      #     sysctl -w net.ipv4.tcp_tw_reuse=1
-      #     sysctl -w fs.file-max=1048576
-      #   name: setsysctl
-      #   securityContext:
-      #     privileged: true
+      initContainers:
+      - image: busybox
+        command:
+        - sh
+        - -c
+        - |
+          sysctl -w net.core.somaxconn=10240
+          sysctl -w net.ipv4.ip_local_port_range="1024 65535"
+          sysctl -w net.ipv4.tcp_tw_reuse=1
+          sysctl -w fs.file-max=1048576
+        name: setsysctl
+        securityContext:
+          privileged: true
       containers:
         - name: bench-node
           image: registry.cn-hangzhou.aliyuncs.com/whyun/base:node-bench-0.2.0
@@ -269,7 +269,7 @@ spec: #这是关于该Deployment的描述，可以理解为你期待该Deploymen
 
 从肉眼上看，明显看的出来上述代码比较长，而且中间会有 `---` 分隔符，这是 yaml 文件中固有语法，可以用来分割多个配置。
 
-注意在 `spec.template.spec` 属性下的 `initContainers` 属性都被我们注释掉了，原因会在下面解释，先介绍一下它的作用，它一般用来执行一些初始化操作的命令，运行完成后就退出。这里可以指定若干初始化容器，按照顺序指定，初始化容器都执行完成后，才会轮到应用容器启动。不过这里我们使用 initContainers 的一个重要原因，还在于我们需要修改操作系统内核参数，这在普通容器中是做不到的。但是正是由于我们要修改内核参数，相当于修改宿主机的配置，这在 okteto 是不允许的，所以这里注释掉了。
+注意在 `spec.template.spec` 属性下的 `initContainers` 属性都被我们注释掉了，原因会在下面解释，先介绍一下它的作用，它一般用来执行一些初始化操作的命令，运行完成后就退出。这里可以指定若干初始化容器，按照顺序指定，初始化容器都执行完成后，才会轮到应用容器启动。不过这里我们使用 initContainers 的一个重要原因，还在于我们需要修改操作系统内核参数，这在普通容器中是做不到的。但是正是由于我们要修改内核参数，需要 k8s 本身开放权限，否则无法修改成功。
 
 同时还新增了  `spec.template.spec.containers[0].env` 属性，用来指定容器启动时的环境变量。它比 Dockerfile 中的 ENV 指定定义的环境变量要高。
 
