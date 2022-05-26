@@ -127,4 +127,4 @@ gcc -g -Wall -I $JAVA_HOME/include/ -I $JAVA_HOME/include/linux -fPIC -shared -o
     
     num:1,string:the first demo.
 
-> 本文用到的源代码可以从http://git.oschina.net/yunnysunny/jni 获得到
+> 本文用到的源代码可以从https://gitlab.com/yunnysunny/jni 获得到

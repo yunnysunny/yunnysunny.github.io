@@ -64,5 +64,5 @@ categories:
 
 这里我们用 ticket 来表示登陆成功之后写入 sso.com 的 cookie 的变量。上面代码的逻辑还是比较清晰的，首先通过 jsonp 获取 ticket ：如果获取到了就到了就在 tao.com 的后端，通过 ticket 查询出对应的用户 ID 回来，然后将登陆用户数据写入 tao.com 本身的 session中；如果没有获取到 ticket，就跳转到 sso.com 完成登陆，并生产成 ticket，登陆完成后再跳转会 tao.com。
 
-> 本教程关联的完整代码，参见这里 https://gitee.com/yunnysunny/sso-demo
+> 本教程关联的完整代码，参见这里 https://gitlab.com/yunnysunny/sso-demo
 

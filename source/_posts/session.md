@@ -181,4 +181,4 @@ js读取到sessionid，这会有问题吗？如果没有问题，我就不在这
 ````
 **代码3.1 设置httponly属性为true**
 
-本文源代码地址：[源码git库](http://git.oschina.net/yunnysunny/hack)
+本文源代码地址：[源码git库](https://gitlab.com/yunnysunny/session-hack)
