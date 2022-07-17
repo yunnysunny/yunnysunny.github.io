@@ -12,15 +12,23 @@ categories:
 win10 中提供了 wsl 的解决方案，可以在 Windows 中直接开启 linux 子系统，十分方便开发者使用。同时一些重要的功能也要依赖于 wsl 才能启动，比如说 docker desktop。本教程就是演示一下如何在 win10 中配置 wsl ，并且如何正常使用 docker desktop。
 
 ## 1. 安装
+
 ### 1.1 安装 wsl
+
+如果是 Windows 10 2004 版本及以上，通过超级管理员使用命令 `wsl --install` 即可安装，否则则需要使用如下流程进行手动安装。
+
 #### 1.1.1 启用 linux 子系统
+
 用管理员身份打开 powershell ，然后输入如下命令回车：
+
 ```powershell
 dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
 ```
 
 #### 1.1.2 启动虚拟机功能
+
 由于我们后续要安装 docker desktop，需要依赖于 wsl 2，所以需要启动 Windows 自带的虚拟机平台功能，同样是管理员身份打开 powershell，然后输入如下命令：
+
 ```powershell
 dism.exe /online /enable-feature /featurename:Microsoft-Windows-Subsystem-Linux /all /norestart
 ```
@@ -139,8 +147,6 @@ failed to solve with frontend dockerfile.v0: failed to create LLB definition: fa
 
 ![](/images/insecure_registries.png)
 
-
-
 在 `insecure-registries` 数组中添加公司的镜像仓库根地址。
 
 ### 2.5 WSL2 无法启动
@@ -222,6 +228,3 @@ baidu.com.              200     IN      A       220.181.38.251
 上面输出中 `ANSWER SECTION` 中列出来了解析出来的 IP，代表解析成功。同样执行 dig 内网域名，也能被正常解析则证明配置正确。
 
 最后需要说明的是 wsl 不好做 service 的开机自启动，下次启动后需要手动执行 `sudo service dnsmasq start` 才能启动 dnsmasq 。这样就显得不是很友好，可以修改 /etc/resolv.conf，在 `nameserver 127.0.0.1` 的后面再追加一行 `nameserver 119.29.29.29` 这样 dnsmasq 没有启动时，可以保证公网域名能解析。
-
-
-

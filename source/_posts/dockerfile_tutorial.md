@@ -128,25 +128,25 @@ fi
 **代码 1.2.2**
 
 > **代码 1.2.1** 中 FROM 参数中使用的镜像是托管在 dockerhub 上的，很多公司都会自建镜像仓库，比如说我在 代码 1.2.2 中将构建出来的镜像推送到了阿里云仓库中。如果有新的镜像要依赖于我刚才构建出来的镜像，那么 FROM 会写成这样：
->
+> 
 > ```dockerfile
 > FROM registry.cn-hangzhou.aliyuncs.com/whyun/base:zookeeper-3.7.0
 > ```
->
+> 
 > docker 遇到这句话的时候，会自动拼接一个 https 的地址进行请求。不过有一种特殊情况就是，公司的运维人员在搭建自建镜像仓库的时候，没有启用 https ，而是直接用了 http 协议，那么 FROM 指令可能就是这样的：
->
+> 
 > ```dockerfile
 > FROM registry.private.com:port/image-name:tag-name
 > ```
->
+> 
 > 那么你就需要更改你的 docker 的配置文件，Linux 下位于 /etc/docker/daemon.json，添加如下配置：
->
+> 
 > ```json
 > "insecure-registries": [
 >     "registry.private.com:port"
 > ]
 > ```
->
+> 
 > Windows 下，直接在设置界面的 Docker Engine 菜单做修改。修改完成后都需要重启 docker 服务。
 
 **代码 1.2.2** 中我们先做了一个 docker pull 操作，保证我们用的父镜像是最新的。然后做 docker build 的时候，增加了一个 --build-arg 参数。启用来指定构建参数 ZOOKEEPER_VERSION 为 3.7.0，同时在 **代码 1.2.1** 中通过 `ARG ZOOKEEPER_VERSION` 来做声明，这句话是必须的，否则传递过来的 --build-arg 不会被读取。
@@ -184,9 +184,9 @@ ZOOKEEPER_DOWNLOAD_ADDRESS=https://mirrors.bfsu.edu.cn/apache/zookeeper/zookeepe
 ```
 
 > 存储在 git 仓库中文件的权限只有 644 和 755 两种，如果你在 docker 中需要使用一些比较特殊的权限，不如说 ~/.ssh 目录下的文件，必须是 600 权限，你还是必须在 dockerfile 中使用 RUN 指令强制将 ~/.ssh 下的目录 chmod 成 600。
->
+> 
 > 如果当前项目的目录层级比较深，可以在调用 ls-tree 中添加 `-r` 参数，例如下面命令可以批量查看当前项目在 git 仓库中所有没有可执行权限的 shell 文件：
->
+> 
 > ```shell
 > git ls-tree -r HEAD | grep "\.sh$" | grep 100644
 > ```
@@ -205,8 +205,8 @@ RUN command1 && command2 && command3
 
 ```dockerfile
 RUN command1 \
-	&& command2 \
-	&& command3
+    && command2 \
+    && command3
 ```
 
 **代码 1.2.5**
@@ -335,12 +335,12 @@ docker run --rm --name mysingle single
 
 父子镜像组合使用 `CMD` 和 `ENTRYPOINT` 时，可能出现更为复杂的情况，总结如下：
 
-|   父镜像   |   子镜像   |            结果             |
-| :--------: | :--------: | :-------------------------: |
-|    CMD     |    CMD     |        只执行子 CMD         |
-|    CMD     | ENTRYPOINT |     只执行子 ENTRYPOINT     |
-| ENTRYPOINT |    CMD     | 父ENTRYPOINT，子CMD均被执行 |
-| ENTRYPOINT | ENTRYPOINT |     只执行子 ENTRYPOINT     |
+| 父镜像        | 子镜像        | 结果                   |
+|:----------:|:----------:|:--------------------:|
+| CMD        | CMD        | 只执行子 CMD             |
+| CMD        | ENTRYPOINT | 只执行子 ENTRYPOINT      |
+| ENTRYPOINT | CMD        | 父ENTRYPOINT，子CMD均被执行 |
+| ENTRYPOINT | ENTRYPOINT | 只执行子 ENTRYPOINT      |
 
 > 同一指令后者会覆盖前者，`ENTRYPOINT` 是 docker 启动的入口点，而 `CMD` 是入口点的传参。当未显式设置 `ENTRYPOINT` 时，可以理解成默认的 `ENTRYPOINT` 为 `exec "$@"`。
 
@@ -495,4 +495,3 @@ RUN yum install wget curl make tcpdump net-tools bind-utils telnet \
 ![image-20211027162450032](/images/image-20211027162450032.png) 
 
 **图 2.3.2**
-

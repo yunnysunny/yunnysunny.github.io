@@ -32,7 +32,9 @@ categories:
 3. 镜像 数据库的数据镜像，生命周期特长
 
 ## 2. 缓存设计思路
+
 ### 2.1 会话
+
 现如今，各种设备终端兴起，很多情况下，我们要自己设计用户会话，而不是直接使用传统 web 中使用的 session，以便更好的适配多端设备，并且能够更好的对性能进行调优。
 
 一个简单的 session 设计思路，就是生成一个 token，然后将用户数据序列化成 JSON 字符串，最后将 token 和 JSON 字符串的映射关系写入 redis。在读取的时候，根据 token 查询到 JSON 字符串，然后反序列化即可。
@@ -78,6 +80,3 @@ categories:
 ## 3. 性能测试
 
 关于性能调优的方法和工具，可以参见我写的《Node 基础教程》中的第11章 [Node 调优](https://github.com/yunnysunny/nodebook/blob/master/text/11_node_optimization.md)。
-
-
-
