@@ -65,26 +65,26 @@ require('http').request('http://' + domain,function(res) {
 
 这就很神奇了，node 的 http 的代码封装中肯定做了什么！带着这个疑问，我阅读了 node 的源码，首先看 ClientRequest 的初始化代码中，连接初始化部分：
 
-![image-20210909150643988](/images/image-20210909150643988.png)
+![image-20210909150643988](images/image-20210909150643988.png)
 
 **代码 1.3 [ClientRequest 类的连接初始化](https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/_http_client.js#L274)**
 
 http.request 没有加任何参数的情况，默认走到 `this.onSocket(net.createConnection(options));` 这句话，然后看 net 包的代码，其中一端跟 DNS 相关的代码：
 
-![image-20210909145827042](/images/image-20210909145827042.png)
+![image-20210909145827042](images/image-20210909145827042.png)
 
 **代码 1.4 [net 包中 DNS 查询参数代码](https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/net.js#L1010)**
 
 然后我们再看 lookup 函数的源码：
 
-![image-20210909145948090](/images/image-20210909145948090.png)
+![image-20210909145948090](images/image-20210909145948090.png)
 
 
 **代码 1.5 [lookup 函数源码](https://sourcegraph.com/github.com/nodejs/node/-/blob/lib/dns.js#L88)**
 
 通过代码 1.5 发现最终 DNS 查询是要调用 C++ 绑定类的，于是我又查看了 C++ 的代码：
 
-![image-20210909150206942](/images/image-20210909150206942.png)
+![image-20210909150206942](images/image-20210909150206942.png)
 
 **代码 1.6 [C++ 中 DNS 的查询代码](https://sourcegraph.com/github.com/nodejs/node/-/blob/src/cares_wrap.cc#L1940)**
 
@@ -92,7 +92,7 @@ http.request 没有加任何参数的情况，默认走到 `this.onSocket(net.cr
 
 最终这个结构体 hints 会层层传递到 libuv 中：
 
-![image-20210909150312046](/images/image-20210909150312046.png)
+![image-20210909150312046](images/image-20210909150312046.png)
 
 
 **代码 1.7 [libuv 中的 dns 查询函数代码](https://sourcegraph.com/github.com/nodejs/node@c5f5f84a33967862036c7d87f4bbde6a59d3820a/-/blob/deps/uv/src/unix/getaddrinfo.c#L101)**

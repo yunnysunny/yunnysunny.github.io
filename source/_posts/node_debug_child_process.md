@@ -21,15 +21,15 @@ node.js中可以读取环境变量，使用方法为`process.env.环境变量名
 **代码1.1**
 
 剩下的就是在idea中配置环境变量了，点击调试的配置功能，即点击图1.1位置。  
-![选择配置](/images/edit_config.jpg)  
+![选择配置](images/edit_config.jpg)  
 **图1.1 选择配置**
 
 在打开的界面中点击环境变量配置功能按钮  
-![配置界面](/images/set_env_show.jpg)  
+![配置界面](images/set_env_show.jpg)  
 **图1.2 配置界面**
 
 添加一个环境变量  
-![添加环境变量](/images/add_env.jpg)  
+![添加环境变量](images/add_env.jpg)  
 **图1.3 添加环境变量**  
 
 至此完成配置，点击调试后，就会将当前的代码运行成单进程，在生产环境中不加环境变量启动，则运行到正常的cluster代码中。

@@ -15,7 +15,7 @@ categories:
 
 我们这篇文章讲 Node 的缓存设计，不过在切入正题之前，我还是要先讲一下 Node 的线程模型，如下图：
 
-![Node 线程模型](/images/node_threads.png)
+![Node 线程模型](images/node_threads.png)
 
 **图片0.1 Node 线程模型**
 
@@ -59,7 +59,7 @@ categories:
 
 整个设计思路类似于 JVM 或者 V8 的新生代 GC 算法：
 
-  ![young/old](/images/young_old_area.png)
+  ![young/old](images/young_old_area.png)
 
 **图 2 .2 young/old**
 

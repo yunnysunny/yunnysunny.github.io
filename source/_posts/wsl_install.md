@@ -51,7 +51,7 @@ wsl --set-default-version 2
 
 wsl 支持很多 Linux 发行版系统，比如说 [Ubuntu](https://www.microsoft.com/store/apps/9n6svws3rx71) [openSUSE](https://www.microsoft.com/store/apps/9NJFZK00FGKV) [Debian](https://www.microsoft.com/store/apps/9MSVKQC78PK6) [Fedora](https://www.microsoft.com/store/apps/9n6gdm4k2hnc) [Alpine](https://www.microsoft.com/store/apps/9p804crf0395) 等。鉴于大家使用最多的就是 Ubuntu，下面就显示如何安装 Ubuntu，根据上面的链接，打开 Microsoft Store，然后选择 **获取** 按钮。
 
-![](/images/install_wsl_ubuntu.png)
+![](images/install_wsl_ubuntu.png)
 
 **图 1.2.1**
 
@@ -69,7 +69,7 @@ Windows 下可以从 Docker Desktop 中直接开启 kubernetes 功能，它会�
 
 我们在设置里找到当前 docker-desktop 的版本
 
-![](/images/docker_desktop_k8s.png)
+![](images/docker_desktop_k8s.png)
 
 **图 1.4.1**
 
@@ -127,7 +127,7 @@ See https://docs.docker.com/docker-for-windows/wsl/ for details.
 
 需要手动开启一下，找到  **Resources** >  **WSL Integration**，选中 **Enableinteration with my default WSL distro**， 如果这个复选框已经处于选中状态，说明当前你用的 WSL 系统不是默认的 WSL 系统，可以通过 `wsl --set-default <distro name>`，或者在下面的 **Enable integration with additional distros** 中选中你使用的系统。最后选择 **Apply & Restart** 按钮即可，更加详细的说明参见[官方文档](https://docs.docker.com/desktop/windows/wsl/#install)。
 
-![](/images/enable_docker_for_wsl.png)
+![](images/enable_docker_for_wsl.png)
 
 **图 2.3.1**
 
@@ -145,7 +145,7 @@ failed to solve with frontend dockerfile.v0: failed to create LLB definition: fa
 
 究其原因是由于私有镜像仓库没有启用 https 文件，需要更改 docker 的配置文件，让其信任私有的镜像仓库。在 在 Docker Desktop 中，需要在设置界面中进行修改
 
-![](/images/insecure_registries.png)
+![](images/insecure_registries.png)
 
 在 `insecure-registries` 数组中添加公司的镜像仓库根地址。
 

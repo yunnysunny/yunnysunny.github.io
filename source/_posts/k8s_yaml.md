@@ -152,7 +152,7 @@ k8s 本身没有提供负载均衡解决方案，虽然它预留了 `LoadBalance
 
 接着点击左侧 **Settings** 菜单，然后点击按钮 **Download Config File**，然后会弹出设置 `KUBECONFIG` 环境变量的提示框，将其命令拷贝到终端执行，则当前终端中就能直接找到 k8s 的配置文件，否则的话你执行 kubectl 命令的时候，都需要添加 ` --kubeconfig ` 的参数。
 
-![image-20220227203214263](/images/image-20220227203214263.png)
+![image-20220227203214263](images/image-20220227203214263.png)
 
 **图 2.1**
 

@@ -12,7 +12,7 @@ categories:
 谈到JNI的使用场景，最常用的就是android NDK的编写了。首先从http://developer.android.com/ndk/downloads/index.html#download 把最新版的NDK下载下来。下载完之后得到一个exe文件，这其实是一个自解压文件，运行后自动解压，解压完成后的文件夹有3GB，所以你的磁盘空间起码得留足5GB左右的剩余空间。
 最终我们得到这么一个目录结构：
 
-![ndk目录结构](/images/ndk_dir.jpg "")  
+![ndk目录结构](images/ndk_dir.jpg "")  
 **图3.1.1 ndk目录结构**  
 接着需要将ndk所在目录添加到环境变量PATH中，这样在以后运行的时候，只需要输出`ndk-buld`就可以了。文件夹`plantforms`存放着编译各个版本的android所需的头文件和动态库，举个例子`platforms/android-3/arch-arm`文件夹下存放的是`android 1.5`版本的`arm`平台的头文件和库文件，从`android 2.3`开始，开始支持`x86`和`mips`两个平台，所以在`platforms/android-9`目录下会有`arch-arm` `arch-mips` `arch-x86`三个文件夹。
 
@@ -41,11 +41,11 @@ include $(BUILD_SHARED_LIBRARY)
 - LOCAL_CFLAGS 定义编译用到的宏定义，当然也可以使用`-I`来指定头文件路径，不过这个使用`LOCAL_C_INCLUDES`更适合，因为后者可以被断点调试程序gdb识别。
 - TARGET_PLATFORM 指定当前使用的API版本，比如说android-9，就会使用NDK文件夹下的`platforms/android-9`中的头文件和库来参与编译（对于API版本和android版本之间的对应关系，可以参见百度百科的词条[Android历史版本](http://baike.baidu.com/view/7902337.htm "")）。
 - TARGET_ARCH 指定编译的CPU平台，不同API版本支持的类型不同，越新的API支持的CPU平台就越多，如果想查看当前API版本支持哪几个平台，去`plantforms/android-{API版本号}`中看一下便知道，比如说android-3仅仅支持一个平台`arch-arm`:  
-![1.5支持的cpu类型](/images/1.5arch.png "")  
+![1.5支持的cpu类型](images/1.5arch.png "")  
 **图3.2.1 anroid 1.5支持的cpu类型**  
 那么android-3，可选的`TARGET_ARCH`就只有一个`arm`选项。
 但是`android-21`就支持6个CPU平台：  
-![android-21支持的CPU类型](/images/anroid21-arch.png "")  
+![android-21支持的CPU类型](images/anroid21-arch.png "")  
 **图3.2.2 android5.0 支持的CPU类型**  
 这样对于android5.0来说可选的选项包括`arm` `arm64` `mips` `mips64` `x86` `x86_64`
 另外如果没有指定这个值的话，就会用默认的`arm`
@@ -59,5 +59,5 @@ include $(BUILD_SHARED_LIBRARY)
 `APP_ABI := all`  
 `ABI`这个参数（可以参见百度百科词条[ABI](http://baike.baidu.com/subview/1433570/6276632.htm "")）比之前讲到的`ARCH`要更加细化，可以理解为在同一体系结构下CPU的不同版本，支持的指令集有所差异，android中支持的ABI可以参见[谷歌官方ABI解释](http://developer.android.com/ndk/guides/abis.html "")。最终在模拟器上运行程序成功：  
 
-![运行hello-jni项目成功](/images/hello_jni_run_success.png "")  
+![运行hello-jni项目成功](images/hello_jni_run_success.png "")  
 **图3.3 运行hello-jni项目成功**  

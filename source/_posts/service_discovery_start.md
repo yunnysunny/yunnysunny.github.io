@@ -13,7 +13,7 @@ categories:
 
 随着互联网业务的发展，互联网用户基数越来越大，对于服务提供者来说带来的并发压力也越来越大。以往通过单机提供服务的方式已经被淘汰，多机冗余、负载均衡等名词也已经成为当前服务开发的基本要求。如何感知到一个服务的多个节点，如何平滑的对于服务进行扩容，如何保证负载均衡的高效性，传统的负载均衡基础设施面对越来越多的挑战。而服务发现技术的出现，对于上述问题带来了一个更有的解决方案。
 
-![](/images/balancer_classic.png)
+![](images/balancer_classic.png)
 
 **图 1.1**
 
@@ -59,7 +59,7 @@ server {
 
 `服务发现` 技术解决方案，都会提供一个应用注册中心。服务器端可以将自己的访问地址注册到这个中心里来；然后客户端可以通过监听注册中心中当前服务的变动情况，来动态增加本地维护的服务器列表。
 
-![](/images/register_and_watch.png)
+![](images/register_and_watch.png)
 
 **图 1.2**
 
@@ -79,19 +79,19 @@ server {
 
 **图 1.2** 适合的是在集群内部服务器之间相互调用的情况，但是一个服务如果是对公网暴漏访问的，情况会大不同。对于公网访问的服务，我们需要提供 https 支持（这里仅仅考虑七层 HTTP 协议，不考虑四层 socket 长连接的情况）。这时候，我们不得不在公网入口处部署一处 nginx 服务器（也可以是其他类似服务器，这里仅仅来 nginx 举例），配置好 SSL 证书，完成 https 的握手。考虑到这个 nginx 是直接和用户建立连接，如果这个 nginx 只有一台机器，而你的用户群体又分布在全国各地，肯定会出现一定概率某个地域的用户访问这台单节点的 nginx 服务速率慢的问题。所以更优化的方案是全国几个重要的地区各自建立入口点 nginx，最终入口点和业务集群之间的网络拓扑结构会是这样。
 
-![](/images/edge_to_cluster.png)
+![](images/edge_to_cluster.png)
 
 **图 1.3**
 
 **图 1.3** 上面画了三个入口，其通过专线连接到了业务集群，但是这里并没有画入口节点是怎么最终连接到 `服务X` 上的节点的。如果入口节点和集群内部的网络是隔离的，那么入口节点和集群必然要部署一台负载均衡服务器，用来做流量转发。这太负载均衡服务器上绑定两块网卡，一块负责和入口节点通信，一块负责和业务集群通信。
 
-![](/images/edge_to_balancer.png)
+![](images/edge_to_balancer.png)
 
 **图 1.4**
 
 **图 1.4** 跟 **图 1.3** 相比，多了一个负载均衡服务器。嗯？但是这个样子的话，岂不是又走回了我们的老路。而且说好的用服务发现呢，这也没发现啊。对于后者我们可以使用 consul-template 这个工具，读取 consul 的服务配置，动态生成 nginx 配置文件，然后重载 nginx 来达到服务发现的目的。
 
-![](/images/consul_template_in_cluster.png)
+![](images/consul_template_in_cluster.png)
 
 **图 1.5**
 
@@ -99,7 +99,7 @@ server {
 
 如果入口节点和业务集群的网络是打通的，问题会好办很多。入口点直接读取注册中心的变动，动态更改本地服务器列表即可。
 
-![](/images/private_line_with_service_discovery.png)
+![](images/private_line_with_service_discovery.png)
 
 **图 1.6**
 
@@ -113,7 +113,7 @@ server {
 
 > 大家可以参考笔者的项目 [yunnysunny/resty-gate](https://github.com/yunnysunny/resty-gate)，它实现了通过 openresty 动态拉取 consul 上的服务列表并基于此进行负载均衡的功能。
 
-![](/images/consul_with_openresty.png)
+![](images/consul_with_openresty.png)
 
 **图 1.7**
 

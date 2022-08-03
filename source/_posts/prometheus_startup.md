@@ -141,7 +141,7 @@ metric_name{label_name1=label_value1, ...} float_value
 
 后回车，会显示出来当前不同 HTTP 请求响应码的个数统计：
 
-![image-20220216094717415](/images/image-20220216094717415.png)
+![image-20220216094717415](images/image-20220216094717415.png)
 
 **图 2.1**
 
@@ -151,7 +151,7 @@ metric_name{label_name1=label_value1, ...} float_value
 
 后回车，会显示如下数据：
 
-![image-20220216095022954](/images/image-20220216095022954.png)
+![image-20220216095022954](images/image-20220216095022954.png)
 
 **图 2.2**
 
@@ -163,7 +163,7 @@ metric_name{label_name1=label_value1, ...}[duration]
 
 例如我们要显示最近 1 分钟内所有的 `promhttp_metric_handler_requests_total` 指标，可以输入 `promhttp_metric_handler_requests_total[1m]`：
 
-![image-20220216144951153](/images/image-20220216144951153.png)
+![image-20220216144951153](images/image-20220216144951153.png)
 
 **图 2.3**
 
@@ -173,7 +173,7 @@ metric_name{label_name1=label_value1, ...}[duration]
 
 Prometheus 每次进行搜刮的时候，都会将搜刮到的各种指标添加一个时间戳字段，然后存储到本地。如下图所示，图中的每个圆点代表搜刮的来的指标内容。一个个的小圆点组成了一个类似矩阵的结构，矩阵的每一行都是具体某个指标在各个时间点上的取值；矩阵的每一列的时间戳属性都是同一个值。列与列之间的间隔就是 Prometheus 的搜刮的时间间隔。
 
-![](/images/prometheus_time_series.drawio.png)
+![](images/prometheus_time_series.drawio.png)
 
 **图 2.4**
 
@@ -185,7 +185,7 @@ Prometheus 对于 **图 2.3** 中的查询语句，叫做区间向量查询（Ra
 
 同时留意到我们在 **图 2.1** 使用的指标 `promhttp_metric_handler_requests_total` 在 Prometheus 中属于计数器（Counter）类型，它只能单调递增，我们一般用其来进行计数，比如说记录某个接口的请求次数。
 
-![image-20220218134052626](/images/image-20220218134052626.png)
+![image-20220218134052626](images/image-20220218134052626.png)
 
 **图 2.5**
 
@@ -231,7 +231,7 @@ func main() {
 
 现实场景中，很多数据并不是单调递增的，比如操作系统中内存、CPU 资源的使用，不同时间点上数值上下波动是很正常的。在 Prometheus 中这种数据类型，适合用仪表盘（Guage）来进行处理。
 
-![image-20220218154349451](/images/image-20220218154349451.png)
+![image-20220218154349451](images/image-20220218154349451.png)
 
 **图 2.6**
 
@@ -278,7 +278,7 @@ func main() {
 
 再考虑这么一种场景，就是你在记录响应时间数据时，希望对于当前服务的响应时间有一个估算值，在某些极端情况下，服务器确实会出现响应超长的情况，你想在查看的时候能够将这些异常值和正常值区分开。一个比较好的方法就是绘制直方图，将不同响应时间区间内的数据分开展示出来。Prometheus 中直接就含有直方图（Histogram）的指标类型。借助于 grafana，我们能够呈现出如下的图形，方便查阅
 
-![image-20220218133244968](/images/image-20220218133244968.png)
+![image-20220218133244968](images/image-20220218133244968.png)
 
 **图 2.7**
 
@@ -324,7 +324,7 @@ func main() {
 
 和直方图类似，摘要（Summary）也提供了数据聚合功能，不过它是将数据按照百分比进行聚合，比如说占总量 50% 的数据有多少，占总量 90% 的数据有多少。
 
-![image-20220218154554996](/images/image-20220218154554996.png)
+![image-20220218154554996](images/image-20220218154554996.png)
 
 ```go
 package main
@@ -367,7 +367,7 @@ func main() {
 
 第二小节已经展示了若干 grafana 中图标，这一小节讲述 grafana 的具体配置。首先选择配置按钮，然后选择 `Data Sources` 菜单，接着点击 `Add data source` 按钮，再打开的列表中选择 `Prometheus` 选项。
 
-![image-20220218160509680](/images/image-20220218160509680.png)
+![image-20220218160509680](images/image-20220218160509680.png)
 
 **图 3.1**
 
@@ -375,25 +375,25 @@ func main() {
 
 最后把滚动条拉到最后，点击按钮 `Save & test`，正常情况下会提示成功。
 
-![image-20220218160750176](/images/image-20220218160750176.png)
+![image-20220218160750176](images/image-20220218160750176.png)
 
 **图 3.2**
 
 接着选择 `+` 按钮，然后选择 `Dashboard`，然后选择 `Add a new panel`，然后在 `Metrics browser` 输入框中填入一个 Prometheus 中的立即向量表达式，比如说 `pond_duration_req_bucket{instance="host.docker.internal:2112"}`，默认情况下图表会以时间线的形式显示出来，如 **图3.5** 所示。当然你也可以在右上角下拉选择不同的图标展示模式，如 **图 3.6** 所示。
 
-![image-20220218161148473](/images/image-20220218161148473.png)
+![image-20220218161148473](images/image-20220218161148473.png)
 
 **图 3.3**
 
-![image-20220218161303568](/images/image-20220218161303568.png)
+![image-20220218161303568](images/image-20220218161303568.png)
 
 **图 3.4**
 
-![image-20220218161552531](/images/image-20220218161552531.png)
+![image-20220218161552531](images/image-20220218161552531.png)
 
 **图 3.5**
 
-![image-20220218162106609](/images/image-20220218162106609.png)
+![image-20220218162106609](images/image-20220218162106609.png)
 
 **图 3.6**
 
