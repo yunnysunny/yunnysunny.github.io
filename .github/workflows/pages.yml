@@ -24,7 +24,7 @@ jobs:
       - name: Install Dependencies
         run: yarn install
       - name: Clean
-        run: npm run clean
+        run: rm -rf db.json && rm -rf docs
       - name: Build
         run: npm run build
       - name: Deploy
