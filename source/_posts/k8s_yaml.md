@@ -18,25 +18,26 @@ categories:
 首先跟 docker 类似，k8s 的运行基本单元称之为 pod，我们通常会将一组 pod 作为一个部署单元部署到 k8s 集群中，这组 pod 里面的镜像等信息都是相同的。在 k8s 中，这种部署单元被称之为 `depolyment`，比如说下面这个配置文件就是一个 `depolyment`：
 
 ```yaml
-apiVersion: apps/v1	#与k8s集群版本有关，使用 kubectl api-versions 即可查看当前集群支持的版本
-kind: Deployment	#该配置的类型，我们使用的是 Deployment
-metadata:	        #译名为元数据，即 Deployment 的一些基本属性和信息
-  name: nginx-deployment	#Deployment 的名称
-  labels:	    #标签，可以灵活定位一个或多个资源，其中key和value均可自定义，可以定义多组，目前不需要理解
-    app: nginx	#为该Deployment设置key为app，value为nginx的标签
-spec:	        #这是关于该Deployment的描述，可以理解为你期待该Deployment在k8s中如何使用
-  replicas: 1	#使用该Deployment创建一个应用程序实例
-  selector:	    #标签选择器，与上面的标签共同作用，目前不需要理解
+apiVersion: apps/v1    #与k8s集群版本有关，使用 kubectl api-versions 即可查看当前集群支持的版本
+kind: Deployment    #该配置的类型，我们使用的是 Deployment
+metadata:            #译名为元数据，即 Deployment 的一些基本属性和信息
+  name: nginx-deployment    #Deployment 的名称
+  labels:        #标签，可以灵活定位一个或多个资源，其中key和value均可自定义，可以定义多组，目前不需要理解
+    app: nginx    #为该Deployment设置key为app，value为nginx的标签
+spec:            #这是关于该Deployment的描述，可以理解为你期待该Deployment在k8s中如何使用
+  replicas: 1    #使用该Deployment创建一个应用程序实例
+  selector:        #标签选择器，与上面的标签共同作用，目前不需要理解
     matchLabels: #选择包含标签app:nginx的资源
       app: nginx
-  template:	    #这是选择或创建的Pod的模板
-    metadata:	#Pod的元数据
-      labels:	#Pod的标签，上面的selector即选择包含标签app:nginx的Pod
+  template:        #这是选择或创建的Pod的模板
+    metadata:    #Pod的元数据
+      labels:    #Pod的标签，上面的selector即选择包含标签app:nginx的Pod
         app: nginx
-    spec:	    #期望Pod实现的功能（即在pod中部署）
-      containers:	#生成container，与docker中的container是同一种
-      - name: nginx	#container的名称
-        image: nginx:1.21	#使用镜像nginx:1.21创建container，该container默认80端口可访问
+    spec:        #期望Pod实现的功能（即在pod中部署）
+      containers:    #生成container，与docker中的container是同一种
+      - name: nginx    #container的名称
+        # containerPort: 80
+        image: nginx:1.21    #使用镜像nginx:1.21创建container，该container默认80端口可访问
 ```
 
 **代码 1.1.1 nginx-deployment.yaml**
@@ -133,6 +134,16 @@ Commercial support is available at
 ```
 
 代表我们的服务没有问题。
+
+k8s 中除了 port 的概念，还有 nodePort  targetPort containerPort 的概念，其内部关系如下：
+
+![](images/k8s_ports.drawio.png)
+
+**图 1.2.1**
+
+port 属性在 **代码 1.2.1** 中已经演示，一个 k8s 的 service 被访问到时，会通过 iptables 或者 ipvs 工具选择当前服务中挂载的其中一个 pod 的 targetPort 上，targetPort 再转发给容器内的 containerPort。不过我们在配置 pod 的容器时候，一般不用特意指定 containerPort 和 targetPort，只需要容器内将所需要暴漏的端口暴漏在 `0.0.0.0` 即可。
+
+除 containerPort 需要配置在 **代码 1.1.1** 中的具体的某一个 containers 下面外，其他的三个端口都需要配置在 **代码 1.2.1** 中 ports 下面。
 
 ### 1.3 负载均衡
 
@@ -282,4 +293,4 @@ spec: #这是关于该Deployment的描述，可以理解为你期待该Deploymen
 ## 参考资料
 
 - Load balancing and scaling long-lived connections in Kubernetes https://learnk8s.io/kubernetes-long-lived-connections
-
+- [k8s容器参数containerPort解析 - 闲谈 (ushell.me)](https://ushell.me/2021/03/31/k8s%E5%AE%B9%E5%99%A8%E5%8F%82%E6%95%B0containerPort%E8%A7%A3%E6%9E%90/)
