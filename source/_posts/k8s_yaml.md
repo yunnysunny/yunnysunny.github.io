@@ -8,7 +8,7 @@ typora-root-url: ..
 categories:
 
 - [Cloud Native, K8s]
-  ---
+---
 
 在之前的教程 [k8s 网络原理入门](https://blog.whyun.com/posts/k8s-startup/) 中，我们了解到更多的是 k8s 如何保证集群内部各个服务在网络上互通。而这篇教程主要是讲实操的内容，会讲如何在 k8s 内部部署服务。
 
