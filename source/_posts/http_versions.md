@@ -1,5 +1,5 @@
 ---
-abbrlink: k8s-yaml
+abbrlink: transport-layer-different-among-http-versions
 title: 不同版本 http 协议 TCP 实现方式解析 
 date:  2022-08-06
 description: 从 http 1.0 开始，http 历经了 1.1 2.0 3.0 版本，每个版本迭代升级的时候，都会对传输层的使用模式加以改进，本文就是从这个方面讲一下各个版本在传输层的异同。
