@@ -12,19 +12,23 @@ categories:
 按理来说通过 go get 就能下载托管在 github 上的包，但是很多时候，我们想将自己的某一部分代码抽离出来做成一个包，但是这部分代码又不能公开，最适合就是托管到公司代码仓库上去，比如说 gitlab。那么从私有镜像仓库下载 go 包，就成为一个特别紧迫的需求。
 
 ## 1. git 配置
+
 其实 go 官方是支持这种功能的。假设你公司的 gitlab 域名为 gitlab.your-company.com ，首先我们要设置环境变量 `GOPRIVATE`，通过命令 
 
  `go env -w GOPRIVATE=gitlab.your-company.com` 
 
 **代码 1.0**
 
-即可设置完成。然后就是配置 git 授权，让 go 能够正确的从 git 仓库中下载源代码。go 默认使用 https 协议来跟 git 服务器通信，所以通过再 .netrc 文件（此文件在 HOME 目录下，Linux 下在 $HOME 中，Windows 下在 %USERPROFILE% 中）中增加如下配置，可以让 go 可以跟 git 服务正确的通信。
+> 如果有多个私有化 gitlab 仓库，上述环境变量的值可以支持用 `,` 分隔来指定多个域名。
+
+即可设置完成。然后就是配置 git 授权，让 go 能够正确的从 git 仓库中下载源代码。go 默认使用 https 协议来跟 git 服务器通信，所以通过再 .netrc 文件（此文件在 HOME 目录下，Linux 下在 $HOME 中，Windows 下在 `%USERPROFILE%` 中）中增加如下配置，可以让 go 可以跟 git 服务正确的通信。
 
 ```
 machine gitlab.your-company.com
 login 你内网 gitlab 的用户名
 password 你内网 gitlab 的密码
 ```
+
 **代码 1.1**
 
 然后大家 git 的惯用用法是使用 ssh 模式跟 git 服务器通信。所以单独配置一个 https 的访问模式显得不伦不类，可以使用 git 自带的 url 替换配置，强制让 go 在跟 git 服务器端通信的时候，修改 .gitconfig 文件（此文件在用户根目录下，Linux 下在 $HOME 中，Windows 下在 %USERPROFILE% 中）就能达到这种目的。
@@ -36,7 +40,7 @@ password 你内网 gitlab 的密码
 
 **代码 1.2**
 
-如果你的 git 服务器使用的端口号并不是标准的 22 端口，你可能对于上述配置比较疑惑，为何配置中不需要加端口号呢，其实一个默认的 ssh 格式的 git 链接是这种格式的 git@github.com:yunnysunny/nodebook.git 这里拿 github 上的一个项目举例，其中 yunnysunny 为账号，nodebook 为项目名。假设 git 没有开启默认的端口 22 作为 ssh 访问端口，而是使用 1234 的话，我们的 ssh 地址应该是这样子：git@github.com:1234/yunnysunny/nodebook.git，也就是说  git@github.com: 是固定格式，那端口号的配置从哪里获取呢，答案是 .ssh 目录（此目录在 Linux 下在 $HOME 中，Windows 下在 %USERPROFILE% 中）下的 config 文件，如果你的 git 服务开启的是 1234 的，应该会有如下配置
+如果你的 git 服务器使用的端口号并不是标准的 22 端口，你可能对于上述配置比较疑惑，为何配置中不需要加端口号呢，其实一个默认的 ssh 格式的 git 链接是这种格式的 `git@github.com:yunnysunny/nodebook.git` 这里拿 github 上的一个项目举例，其中 yunnysunny 为账号，nodebook 为项目名。假设 git 没有开启默认的端口 22 作为 ssh 访问端口，而是使用 1234 的话，我们的 ssh 地址应该是这样子：`git@github.com:1234/yunnysunny/nodebook.git`，也就是说  `git@github.com:` 是固定格式，那端口号的配置从哪里获取呢，答案是 .ssh 目录（此目录在 Linux 下在 $HOME 中，Windows 下在 `%USERPROFILE%` 中）下的 config 文件，如果你的 git 服务开启的是 1234 的，应该会有如下配置
 
 ```
 Host gitlab.your-company.com
@@ -102,6 +106,7 @@ go get: unrecognized import path "gitlab.your-company.com/your-account/mod-test"
 ```html
 <html><head><meta name="go-import" content="gitlab.your-company.com:1234/your-account/mod-test git http://gitlab.your-company.com:1234/your-account/mod-test.git" /></head></html>
 ```
+
 究其原因应该是由于我们公司的 gitlab 搭建在 docker 中，内部端口开启的是 1234，然后内置一个 nginx 做反向代理，nginx 对外开放 80 和 443。
 
 如果你使用的内网 gitlab 没有这种幺蛾子，刚才的操作就已经成功了。如果你非要在这种模式下使用，也不是没有办法，只不过步骤会复杂些。首先我们手动编辑 use-mod 项目中的 go.mod:
@@ -115,6 +120,7 @@ require gitlab.your-company.com/your-account/mod-test v0.0.0
 
 replace gitlab.your-company.com/your-account/mod-test v0.0.0 => gitlab.your-company.com/your-account/mod-test.git v0.0.0
 ```
+
 **代码 2.2**
 
 然后编写我们的 go 代码
@@ -123,14 +129,15 @@ replace gitlab.your-company.com/your-account/mod-test v0.0.0 => gitlab.your-comp
 package main
 
 import (
-	"fmt"
-	"gitlab.your-company.com/your-account/mod-test"
+    "fmt"
+    "gitlab.your-company.com/your-account/mod-test"
 )
 
 func main() {
-	fmt.Println("begin");
+    fmt.Println("begin");
 }
 ```
+
 **代码 2.3**
 
 执行 `go mod tidy` 发现依赖包终于可以正常下载了，不过执行 `go run test.go` 又报错了：
@@ -149,13 +156,13 @@ test.go:5:2: import "gitlab.your-company.com/your-account/mod-test" is a program
 package main
 
 import (
-	"fmt"
-	"gitlab.your-company.com/your-account/mod-test/my"
+    "fmt"
+    "gitlab.your-company.com/your-account/mod-test/my"
 )
 
 func main() {
-	my.MyShow("bcd")
-	fmt.Println("begin");
+    my.MyShow("bcd")
+    fmt.Println("begin");
 }
 ```
 
@@ -190,7 +197,55 @@ replace gitlab.your-company.com/your-account/your-mod-name v0.0.0 => gitlab.your
 
 > 初学者还容易搞混的一个概念，就是 go 中的 module 和 package 的概念，使用 go get 下载的单元为一个 module，在代码中调用的时候，是调用 module 中的某一个 package。换句话说，就是一个 module 可以包含多一个 package （每个 package 的代码放置在同一个文件夹中）。 
 
-## 4. 其他问题
+## 4. 使用 gitlab ci 构建镜像
+
+上面讲了如何在开发过程中使用私有化 go module，如果我们做部署的话，一般需要在 CI 中制作镜像。所以下面就讲一下如何在 gitlab-ci 中使用私有 go module。
+
+首先笔者制作了一个构建用镜像 [yunnysunny/golang](https://github.com/yunnysunny/docker-golang)，里面设置 `gitlab.com` 为私有化包域名，读者可以根据需要做修改。首先给出构建应用的 dockerfile 代码：
+
+```dockerfile
+FROM yunnysunny/golang:1.18 AS compiler-stage
+ARG CI_JOB_TOKEN
+RUN echo -e "machine gitlab.com\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/.netrc
+WORKDIR /opt
+COPY . .
+RUN go mod tidy && go build -o private-use-my
+
+FROM ubuntu:latest AS build-stage
+COPY --from=compiler-stage /opt/private-use-my /opt
+WORKDIR /opt
+
+CMD [ "/opt/private-use-my" ]
+```
+
+**代码 4.1 bin.Dockerfile**
+
+注意第三行代码，如果我们所有私有 module 和其依赖的项目，都托管在一个 gitlab 仓库中，那么我们可以借助 gitlab ci 中的 `CI_JOB_TOKE` 来完成 git 授权，只需要在调用 docker build 命令时将其作为构建参数传递过来即可，下面时 gitlab-ci.yml 中的配置：
+
+```yaml
+stages:
+  - test
+  - build
+  - docker
+
+job:docker:
+  stage: docker
+  image: docker:20.10.16
+  services:
+    - docker:20.10.16-dind
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build --pull -t yunnysunny/private-use-my -f bin.Dockerfile --build-arg CI_JOB_TOKEN=$CI_JOB_TOKEN .
+    - docker push $CI_REGISTRY_BASE_URL/yunnysunny/private-use-my
+```
+
+**代码 4.2 gitlab-ci.yml**
+
+script 中的第二行通过 `--build-arg` 将环境变量传递到了 `bin.Dockerfile` 中。
+
+> 注意如果往 dockerhub 进行推送的话，上述代码中 `CI_REGISTRY` 的值为 `docker.io`，`CI_REGISTRY_BASE_URL` 的值为 `index.docker.io` 。
+
+## 5. 其他问题
 
 如果在下载私有 module 的时候，出现如下问题：
 
@@ -201,4 +256,3 @@ go mod download: gitlab.your-company.com/your-account/mod-test.git@v0.0.3: inval
 ```
 
 通过提示信息上来看是版本号找不到，但是真实的原因可能并不如此。需要做两方面的检查，一方面确认 git 仓库上是否有 `v0.0.3` 这个 tag；另一方面也需要确认当前系统中配置的 ssh 私钥（**代码 1.3** 中的配置）是否有访问 mod-test 这个项目的权限，如果没有权限，同样会报 `invalid version` 这个错误。
-
