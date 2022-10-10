@@ -1,7 +1,7 @@
 ---
 abbrlink: gitlab-ci-tutorial
 title: gitlab ci 简明教程
-date:  2021-08-28
+date:  2022-08-28
 description: gitlab ci 简明教程，如何配置 gitlab runner，如何编写 gitlab-ci.yml 文件。
 categories:
 - [CI]
