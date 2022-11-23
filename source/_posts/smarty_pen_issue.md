@@ -86,6 +86,3 @@ categories:
 ## 2. 代码
 
 还原笔迹的代码，没有包含插值算法的实现，https://github.com/yunnysunny/smarty-pen
-
-
-
