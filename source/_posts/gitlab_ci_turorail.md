@@ -201,3 +201,21 @@ job:test-pro:
 由于在不同环境下收集测试覆盖率的代码是相同的，所以这里做了一个 `coverage_expression` 的锚点方便下面的 job 做引用，同时锚点前面的 `.coverage-collection` 名称一定要以 `.` 开头，否则 gitlab ci 会将其当成普通 job 来执行。
 
 由于 gitlab ci 的知识点比较多，其他未讲到的内容，可以从官方教程中自行查找 [GitLab CI/CD | GitLab](https://docs.gitlab.com/ee/ci/) 。
+
+## 4. 项目引用
+
+为了代码复用，我们在开发过程中会将部分通用代码单独抽离为一个模块，然后将这个模块的代码单独创建一个项目。这样其他项目就可以将此模块项目作为当前项目的依赖包来引入，从而提高代码的复用性和可维护性。
+
+在很多语言中这种依赖模块是可以通过 git 格式的地址进行引入的。如此依赖，我们在 CI 构建过程中就需要操作两个项目的源代码，当前项目代码和依赖项目代码。当前项目代码在 CI 过程中是可以直接拥有权限的，那么其依赖的模块项目应该如何获取权限呢？
+
+方法有两种，首先是在 gitlab 中配置一个部署密钥，然后将部署密钥对应的私钥配置到 CI 环境中，这样当模块项目启用这个部署密钥的时候，就能保证在 CI 中能正常 clone 当前模块项目。
+
+其次就是一个零配置的方法，就是使用 [CI_JOB_TOKEN](https://microfluidics.utoronto.ca/gitlab/help/ci/jobs/ci_job_token.md) 。同时增加一个 before_script 配置：
+
+```yaml
+before_script:
+    - echo -e "machine your_gitlab_domain\nlogin gitlab-ci-token\npassword ${CI_JOB_TOKEN}" > ~/.netrc
+    - git config --global url."https://your_gitlab_domain/".insteadOf "git@your_gitlab_domain:"
+```
+
+**代码 4.1**
