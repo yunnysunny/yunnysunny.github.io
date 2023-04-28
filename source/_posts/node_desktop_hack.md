@@ -32,9 +32,10 @@ SectionEnd
 单纯打包一个 node.exe 是不够的，我们还需要将我们的应用代码打包进去，安装到磁盘根目录也很不灵活，我们需要指定一个自己想要的路径：
 
 ```nsis
-INSTDIR "$PROGRAMFILES\my_program"
+InstallDir "$PROGRAMFILES\my_program"
 Section "My Program"
   SetOutPath $INSTDIR
+  SetOverwrite ifnewer
   File "D:\node\node.exe"
   File /r app\*.*
 SectionEnd
@@ -43,7 +44,17 @@ SectionEnd
 
 我们在 app 目录中创建一个 express 项目，然后运行 `makensis .\second.nsi` ，重新打包生成一个 second.exe 文件，使用 7zip 打开这个文件后，可以看到压缩包中包含 app 文件夹中所有文件和 node.exe 文件。运行 second.exe 后，会将所有的文件安装到 C:\Program Files (x86)\my_program 文件夹下。
 
-不过这样的安装包，安装完之后依然没法直接运行，我们还需要在里面添加启动脚本。
+不过这样的安装包，安装完之后依然没法直接运行，我们还需要在里面添加启动脚本。新建一个 start.cmd 文件，
+```bat
+@echo off
+"%~dp0/node" "%~dp0/src/bin/www.js" --name demo
+start msedge http://localhost:8888
+```
+代码 2.3 start.cmd
+
+将其放到 app 目录下。
+
+这样虽然添加了启动脚本，但是还是需要手动执行才行。
 
 
 
