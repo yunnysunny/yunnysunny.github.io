@@ -48,7 +48,6 @@ SectionEnd
 ```bat
 @echo off
 "%~dp0/node" "%~dp0/src/bin/www.js" --name demo
-start msedge http://localhost:8888
 ```
 代码 2.3 start.cmd
 
