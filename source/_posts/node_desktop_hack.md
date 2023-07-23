@@ -60,7 +60,7 @@ Unicode true
 !define PRODUCT_MANAGE_LINK "http://localhost:3005"
 !define M_ICON ".\app\myprogram.ico"
 
-InstallDir "$PROGRAMFILES\$PRODUCT_NAME"
+InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
 Section "My Program"
   SetOutPath $INSTDIR
   SetOverwrite ifnewer
@@ -70,10 +70,10 @@ SectionEnd
 Section -AdditionalIcons
   WriteIniStr "$INSTDIR\manage.url" "InternetShortcut" "URL" "${PRODUCT_MANAGE_LINK}"
   ; 在开始菜单目录下创建文件夹
-  CreateDirectory "$SMPROGRAMS\$PRODUCT_NAME"
+  CreateDirectory "$SMPROGRAMS\${PRODUCT_NAME}"
 
-  CreateShortCut "$SMPROGRAMS\$PRODUCT_NAME\管理.lnk" "$INSTDIR\manage.url"
-  CreateShortCut "$SMPROGRAMS\$PRODUCT_NAME\Uninstall.lnk" "$INSTDIR\uninst.exe"
+  CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\管理.lnk" "$INSTDIR\manage.url"
+  CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe"
   CreateShortCut "$DESKTOP\StartConnector.lnk" "$INSTDIR\manage.url" "" "${M_ICON}" 0
 SectionEnd
 ```
