@@ -9,9 +9,9 @@ categories:
 ---
 ## 1. 背景
 
-一般使用node开发桌面程序会采用electron等技术栈，它们会将chromium内核直接打到最终的安装包中。但是很多情况下 我们的桌面程序比较简单 仅仅是完成一些增删改查之类的操作 逻辑代码量并不大 但是如果加一个chromium内核进来 安装包体积会陡增。这种情况下 不如考虑如下解决方案，将业务逻辑直接做到http服务中 然后通过网页访问http服务实现业务的增删改查，看上去这个解决方案是传统bs的解决方案，但是如果将http服务部署在本地呢？那么我们只需要在本地打开浏览器，就可以操作数据了。不过看上去 这么操作跟直接部署一个网站 然后用浏览器访问依然没啥区别。但是如果你操作的数据只在本地存储 不需要上传到云端 ，做一个网站显得太浪费资源；又或者你需要操作本地原生API和操作系统进行交互，做网站无法组成这种调用，这种本地http客户端就提现出来了优越性。
+一般使用 node 开发桌面程序会采用 electron 等技术栈，它们会将 chromium 内核直接打到最终的安装包中。但是很多情况下 我们的桌面程序比较简单 仅仅是完成一些增删改查之类的操作 逻辑代码量并不大 但是如果加一个 chromium 内核进来 安装包体积会陡增。这种情况下 不如考虑如下解决方案，将业务逻辑直接做到 http 服务中 然后通过网页访问http服务实现业务的增删改查，看上去这个解决方案是传统bs的解决方案，但是如果将http服务部署在本地呢？那么我们只需要在本地打开浏览器，就可以操作数据了。不过看上去 这么操作跟直接部署一个网站 然后用浏览器访问依然没啥区别。但是如果你操作的数据只在本地存储 不需要上传到云端 ，做一个网站显得太浪费资源；又或者你需要操作本地原生API和操作系统进行交互，做网站无法组成这种调用，这种本地http客户端就提现出来了优越性。
 
-但是如果将这种模式演变为一个成熟产品时，有好多体验性优化需要处理。首先是node主进程 如何做到崩溃后自动重启。在windows中能够做到这种功能就是windows service。同时利用其可以做到 开机自启动的目的。
+但是如果将这种模式演变为一个成熟产品时，有好多体验性优化需要处理。首先是node主进程 如何做到崩溃后自动重启。在 windows 中能够做到这种功能就是 windows service。同时利用其可以做到 开机自启动的目的。
 
 其中作为一个桌面程序 肯定需要有一个安装包 方便进行安装和卸载。这个可以通过 [nsis](https://nsis.sourceforge.io/Main_Page) 来实现。
 
@@ -44,24 +44,42 @@ SectionEnd
 
 我们在 app 目录中创建一个 express 项目，然后运行 `makensis .\second.nsi` ，重新打包生成一个 second.exe 文件，使用 7zip 打开这个文件后，可以看到压缩包中包含 app 文件夹中所有文件和 node.exe 文件。运行 second.exe 后，会将所有的文件安装到 C:\Program Files (x86)\my_program 文件夹下。
 
-不过这样的安装包，安装完之后依然没法直接运行，我们还需要在里面添加启动脚本。新建一个 start.cmd 文件，
+不过这样的安装包，安装完之后依然没法直接运行，我们还需要在里面添加启动脚本。新建一个 start.cmd 文件，将其放到 app 目录下。
 ```bat
 @echo off
 "%~dp0/node" "%~dp0/src/bin/www.js" --name demo
 ```
 代码 2.3 start.cmd
+这样虽然添加了启动脚本，但是还是需要进入目录手动执行才行。
+为了让它更像是桌面软件，可以添加桌面快捷方式。
+```nsis
+; 支持中文
+Unicode true
 
-将其放到 app 目录下。
+!define PRODUCT_NAME "my program"
+!define PRODUCT_MANAGE_LINK "http://localhost:3005"
+!define M_ICON ".\app\myprogram.ico"
 
-这样虽然添加了启动脚本，但是还是需要手动执行才行。
+InstallDir "$PROGRAMFILES\$PRODUCT_NAME"
+Section "My Program"
+  SetOutPath $INSTDIR
+  SetOverwrite ifnewer
+  File "D:\node\node.exe"
+  File /r app\*.*
+SectionEnd
+Section -AdditionalIcons
+  WriteIniStr "$INSTDIR\manage.url" "InternetShortcut" "URL" "${PRODUCT_MANAGE_LINK}"
+  ; 在开始菜单目录下创建文件夹
+  CreateDirectory "$SMPROGRAMS\$PRODUCT_NAME"
 
+  CreateShortCut "$SMPROGRAMS\$PRODUCT_NAME\管理.lnk" "$INSTDIR\manage.url"
+  CreateShortCut "$SMPROGRAMS\$PRODUCT_NAME\Uninstall.lnk" "$INSTDIR\uninst.exe"
+  CreateShortCut "$DESKTOP\StartConnector.lnk" "$INSTDIR\manage.url" "" "${M_ICON}" 0
+SectionEnd
+```
+代码 2.4 third.nsi
 
+`$SMPROGRAMS` 是 NSIS 的内置变量，代表开始开始菜单所在的文件夹。这里的 `!define` 语法类似于 C 语言的宏定义，它也可以在运行 makensis 命令时通过 `/D` 参数指定，类如 `!define PRODUCT_NAME "my program"` 可以换成 `makensis /DPRODUCT_NAME="my program"`。
 
-
-
-
-
-
-
-
+> 关于 NSIS 中的内置变量，可以参见[这里](https://www.nsisfans.com/help/Section4.2.html)。
 

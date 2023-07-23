@@ -382,7 +382,9 @@ DOCKER_BUILDKIT=1 docker build --file bin.Dockerfile --output bin .
 
 在 **1.1** 小节讲到 dockerfile 中的每一个命令都会创建一个临时 docker，但是如果你的 dockerfile 文件有问题，执行到一半退出了，那么这些临时 docker 不会被删除，同时这些临时 docker 还会对应临时镜像，也会被保留，素以我们需要定期清理。
 
-docker 1.13 版本开始提供了一个实用的命令, `docker system prune` 可以用来清理没有用的镜像，通过 `docker system df` 可以查看当前所有镜像占用的磁盘统计信息。
+docker 1.13 版本开始提供了一个实用的命令, `docker system prune` 删除关闭的容器、无用的数据卷和网络，以及dangling镜像（即无tag的镜像），通过 `docker system df` 可以查看当前所有镜像占用的磁盘统计信息。
+
+> `docker system prune` 命令默认不会清理当前未被容器使用的镜像，使用 -a 参数可以清理所有未运行状态的容器关联的镜像。如果嫌手动清理太过麻烦，可以添加定时清理任务，通过 `crontab -e` 后输入如下指令 `0 3 * * * docker system prune -af  --filter "until=$((30*24))h"  >> /tmp/docker-prune.log 2>&1` 便可在每天凌晨做自动清理，为了清理时无需手动确认，命令中增加了 `-f` 参数，同时为了尽可能的复用缓存，只清理 30 天前的镜像。
 
 如果你的 docker 版本低于 1.13，可以执行以下脚本来删除： 
 

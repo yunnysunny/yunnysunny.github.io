@@ -57,7 +57,7 @@ gitlab-runner register \
  --description "当前runner的描述信息" \
  --tag-list "tag-name-for-current-runner" \
  --run-untagged="false" \
- --locked="true"
+ --locked="false"
 ```
 
 **代码 1.2**
@@ -78,8 +78,18 @@ gitlab-runner register \
 
 `run-untagged` 为 true，则代表某个 job 即使没有配置 tags 属性，也可以运行在这个 runner 上。
 
-`locked` 参数对于项目专属的 runner 来说，用的频率会多一些，它代表当前 runner 仅仅只能用在当前关联的项目上，默认这个值为 true，如果你想将这个 runner 用在跟其同组的其他项目上，可以将其置为 false。对于组级别的 runner 来说，这个参数笔者并没有用过。
+`locked` 参数对于项目专属的 runner 来说，用的频率会多一些，它代表当前 runner 仅仅只能用在当前关联的项目上，默认这个值为 true，如果你想将这个 runner 用在跟其同组的其他项目上，可以将其置为 false。对于组级别的 runner 来说，这个参数应该设置为 false，无法给组下的应用使用。
 
+如果由于误操作创建了错误的 runner，你需要使用 unregister 命令取消注册，其使用命令格式为 `gitlab-runner unregister --url ${URL} --token ${token}`，注意这里的 `${token}` 参数并不是 **代码 1.2** 中的 `--registration-token` 的值，而是要通过运行 `gitlab-runner list` 获取到。举一个例子运行完 `gitlab-runner list` 后，得到如下输出：
+```
+Listing configured runners                          ConfigFile=/etc/gitlab-runner/config.toml
+manage-ui-test                                      Executor=ssh Token=abcdef URL=https://some.com.yours
+```
+则取消 manage-ui-test 注册，就需要运行 `gitlab-runner unregister --url =https://some.com.yours --token abcdef`。
+如果设置了组级别的 runner，在组下的具体某一个项目中要手动启用它，否则在运行 CI 的时候会提示没有绑定任何 runner。具体启用方式比较简单，在要操作的项目的设置里面找到 `CI/CD`，点开 `Runners` 按钮，会有如下显示界面：
+![](images/enable_shared_runner.png)
+**图 1.4**
+在上图界面中找到需要的 runner，然后点击按钮 `Enable for this project` 即可将当前 runner 在此项目中启用。
 ## 2. 在何时执行
 
 在 **代码 1.1** 中，我们没有指定当前 job 运行的时机，这样会导致你做任何代码提交操作都会触发这个 job，有可能会导致任务执行的过于频繁。我们一般都会在每个任务上指定运行条件，来防止任务被无味的执行导致耗费 runner 机器的资源。
@@ -210,7 +220,7 @@ job:test-pro:
 
 方法有两种，首先是在 gitlab 中配置一个部署密钥，然后将部署密钥对应的私钥配置到 CI 环境中，这样当模块项目启用这个部署密钥的时候，就能保证在 CI 中能正常 clone 当前模块项目。
 
-其次就是一个零配置的方法，就是使用 [CI_JOB_TOKEN](https://microfluidics.utoronto.ca/gitlab/help/ci/jobs/ci_job_token.md) 。同时增加一个 before_script 配置：
+其次就是一个零配置的方法，就是使用 [CI_JOB_TOKEN](https://docs.gitlab.com/ee/ci/jobs/ci_job_token.html) 。同时增加一个 before_script 配置：
 
 ```yaml
 before_script:
@@ -219,3 +229,5 @@ before_script:
 ```
 
 **代码 4.1**
+CI_JOB_TOKEN 的权限的权限和当前 CI 的触发者的权限一致，所以只要执行 CI 的人也有当前以来项目的仓库 clone 权限，即可使用 CI_JOB_TOKEN 的模式 clone 此依赖包。
+
