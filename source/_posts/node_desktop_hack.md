@@ -79,7 +79,9 @@ SectionEnd
 ```
 代码 2.4 third.nsi
 
-`$SMPROGRAMS` 是 NSIS 的内置变量，代表开始开始菜单所在的文件夹。这里的 `!define` 语法类似于 C 语言的宏定义，它也可以在运行 makensis 命令时通过 `/D` 参数指定，类如 `!define PRODUCT_NAME "my program"` 可以换成 `makensis /DPRODUCT_NAME="my program"`。在后续的代码中我们可以通过 `${PRODUCT_NAME}` 来引用这个宏定义，注意要用 {} 把定义的名字包裹起来。
-
+`$SMPROGRAMS` 是 NSIS 的内置变量，代表开始开始菜单所在的文件夹。
 > 关于 NSIS 中的内置变量，可以参见[这里](https://www.nsisfans.com/help/Section4.2.html)。
+
+这里的 `!define` 语法类似于 C 语言的宏定义，它也可以在运行 makensis 命令时通过 `/D` 参数指定，类如 `!define PRODUCT_NAME "my program"` 可以换成 `makensis /DPRODUCT_NAME="my program"`。在后续的代码中我们可以通过 `${PRODUCT_NAME}` 来引用这个宏定义，注意要用 {} 把定义的名字包裹起来。
+
 
