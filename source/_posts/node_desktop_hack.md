@@ -58,7 +58,7 @@ Unicode true
 
 !define PRODUCT_NAME "my program"
 !define PRODUCT_MANAGE_LINK "http://localhost:3005"
-!define M_ICON ".\app\myprogram.ico"
+!define M_ICON "$INSTDIR\myprogram.ico"
 
 InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
 Section "My Program"
@@ -74,14 +74,16 @@ Section -AdditionalIcons
 
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\管理.lnk" "$INSTDIR\manage.url"
   CreateShortCut "$SMPROGRAMS\${PRODUCT_NAME}\Uninstall.lnk" "$INSTDIR\uninst.exe"
-  CreateShortCut "$DESKTOP\StartConnector.lnk" "$INSTDIR\manage.url" "" "${M_ICON}" 0
+  CreateShortCut "$DESKTOP\${PRODUCT_NAME}.lnk" "$INSTDIR\manage.url" "" "${M_ICON}" 0
 SectionEnd
 ```
 代码 2.4 third.nsi
 
-`$SMPROGRAMS` 是 NSIS 的内置变量，代表开始开始菜单所在的文件夹。
+`$SMPROGRAMS` `$INSTDIR` `$DESKTOP` 是 NSIS 的内置变量，代表开始开始菜单所在的文件夹。
 > 关于 NSIS 中的内置变量，可以参见[这里](https://www.nsisfans.com/help/Section4.2.html)。
 
-这里的 `!define` 语法类似于 C 语言的宏定义，它也可以在运行 makensis 命令时通过 `/D` 参数指定，类如 `!define PRODUCT_NAME "my program"` 可以换成 `makensis /DPRODUCT_NAME="my program"`。在后续的代码中我们可以通过 `${PRODUCT_NAME}` 来引用这个宏定义，注意要用 {} 把定义的名字包裹起来。
+这里的 `!define` 语法类似于 C 语言的宏定义（恰好 C 的宏定义表达式是 `#define` 开头的），它也可以在运行 makensis 命令时通过 `/D` 参数指定，类如 `!define PRODUCT_NAME "my program"` 可以换成 `makensis /DPRODUCT_NAME="my program"`。在后续的代码中我们可以通过 `${PRODUCT_NAME}` 来引用这个宏定义，注意要用 `{}` 把定义的名字包裹起来。但是类似于 `$INSTDIR` 这些内置变量，要使用 `$变量名` 的格式。
+
+
 
 
