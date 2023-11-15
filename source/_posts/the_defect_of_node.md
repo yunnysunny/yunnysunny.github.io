@@ -444,3 +444,5 @@ How is data stored in V8 JS engine memory? https://blog.dashlane.com/how-is-data
 🚀 Visualizing memory management in V8 Engine (JavaScript, NodeJS, Deno, WebAssembly) https://deepu.tech/memory-management-in-v8/
 
 Primitive and Reference value in JavaScript https://www.geeksforgeeks.org/primitive-and-reference-value-in-javascript/
+	
+JavaScript 中的按值传递与按引用传递 https://www.scaler.com/topics/javascript/pass-by-value-and-pass-by-reference/	
