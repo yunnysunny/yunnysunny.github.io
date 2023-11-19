@@ -47,7 +47,7 @@ SectionEnd
 不过这样的安装包，安装完之后依然没法直接运行，我们还需要在里面添加启动脚本。新建一个 start.cmd 文件，将其放到 app 目录下。
 ```bat
 @echo off
-"%~dp0/node" "%~dp0/src/bin/www.js" --name demo
+"%~dp0/node" "%~dp0/src/bin/www.js" --name=demo
 ```
 代码 2.3 start.cmd
 这样虽然添加了启动脚本，但是还是需要进入目录手动执行才行。
@@ -57,7 +57,7 @@ SectionEnd
 Unicode true
 
 !define PRODUCT_NAME "my program"
-!define PRODUCT_MANAGE_LINK "http://localhost:3005"
+!define PRODUCT_MANAGE_LINK "http://localhost:7001"
 !define M_ICON "$INSTDIR\myprogram.ico"
 
 InstallDir "$PROGRAMFILES\${PRODUCT_NAME}"
@@ -79,11 +79,15 @@ SectionEnd
 ```
 代码 2.4 third.nsi
 
-`$SMPROGRAMS` `$INSTDIR` `$DESKTOP` 是 NSIS 的内置变量，代表开始开始菜单所在的文件夹。
+`$SMPROGRAMS` `$INSTDIR` `$DESKTOP` 是 NSIS 的内置变量，分别代表开始开始菜单所在的文件夹、安装目录（或者卸载文件所在目录）、Windows 桌面目录 。
 > 关于 NSIS 中的内置变量，可以参见[这里](https://www.nsisfans.com/help/Section4.2.html)。
 
 这里的 `!define` 语法类似于 C 语言的宏定义（恰好 C 的宏定义表达式是 `#define` 开头的），它也可以在运行 makensis 命令时通过 `/D` 参数指定，类如 `!define PRODUCT_NAME "my program"` 可以换成 `makensis /DPRODUCT_NAME="my program"`。在后续的代码中我们可以通过 `${PRODUCT_NAME}` 来引用这个宏定义，注意要用 `{}` 把定义的名字包裹起来。但是类似于 `$INSTDIR` 这些内置变量，要使用 `$变量名` 的格式。
 
+代码 2.4 中在安装目录中创建一个超链接文件，链接地址为后端服务器的访问地址。并且分别在开始菜单和桌面上创建这个超链接文件的快捷方式，这样可以像桌面程序一样通过双击桌面图标进入应用界面（虽然打开的是一个浏览器）。
 
+## 3. 进阶
+### 3.1 应用只运行一次
+由于我们的程序主体是 Node 后端服务，多次启用的时候，会导致启动的 HTTP 服务端口冲突，所以需要提前判断当前程序是否重复启动了。具体在 Windows 上可以调用 `wmic process get ProcessId,ParentProcessId,CommandLine` 命令来判断输出的命令行参数中是否有和当前进程启动参数相符的相符的进程。为此我们还应该将引用的启动程序稍作改造，先启动一个检测进程，检测程序通过后，才 fork 一个子进程，运行代码 2.3 中的命令。
 
 
