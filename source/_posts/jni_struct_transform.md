@@ -9,7 +9,7 @@ categories:
 
 JNI和java相互调用，一个不可避免的问题就是两者的数据结构要相互转换。这一节正是要讲这个重头戏。
 
-> 本文源地址http://blog.whyun.com/posts/jni/2-struct-transform/ 转载请注明出处。
+> 本文源地址https://blog.whyun.com/posts/jni/2-struct-transform/ 转载请注明出处。
 
 ## 2.1 基本类型
 

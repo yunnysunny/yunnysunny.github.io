@@ -10,7 +10,7 @@ categories:
 ## 1.1 背景
 和很多语言类似，java也提供了调用原生代码的功能，这门技术叫做JNI。有了JNI，可以在付出更小的代价的前提下，复用大量已经写好的C/C++库，当然一般用JNI的目的还是由于java在处理**计算密集型**（比如说非对称运算）的操作时有时会力不从心。  
 从结构上来看JNI是一个中间层，具体的调用步骤是这个样子的：java->JNI->C/C++。  
-> 本文源地址http://blog.whyun.com/posts/jni 转载请注明出处
+> 本文源地址https://blog.whyun.com/posts/jni 转载请注明出处
 
 ## 1.2 准备活动
 ### 1.2.1 编写java代码
@@ -46,7 +46,7 @@ public class FirstDemo {
 
 ### 1.2.2 生成头文件
 本文用到的项目源码在文后给出，项目的目录结构如下：  
-![项目目录结构](http://blog.whyun.com/images/chapter1_dir.jpg "")  
+![项目目录结构](images/chapter1_dir.jpg "")  
 **图1.2.2 项目目录结构**  
 其中目录`out/production`为我们的class文件生成的目录，在命令行下进入该目录，运行如下命令`javah com.whyun.jni.chapter1.FirstDemo`，运行成功之后则在运行命令行的目录下生成文件`com_whyun_jni_chapter1_FirstDemo.h`,用文本编辑器打开这个头文件，会显示如下内容：
 ```c

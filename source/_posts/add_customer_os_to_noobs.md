@@ -22,7 +22,7 @@ NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安
 3. 进入`os`文件夹。
 4. 选择其中的一个子文件，拷贝一份新的。这里就拿Raspbin这个文件夹开刀。拷贝完成后，将文件夹改名RetroPie，现在目录下的文件结构如下：
 
-![noobs的os文件夹文件列表](http://blog.whyun.com/images/noobs_os_dir.jpg "")  
+![noobs的os文件夹文件列表](images/noobs_os_dir.jpg "")  
 下面要依次讲解各个文件的作用。
 5. 好，现在我们修改RetroPie文件夹下的os.json文件，这里面定义的数据将会在安装的时候显示为操作系统的标题和描述等信息。我大体上将其改为如下形式：
 
@@ -71,10 +71,10 @@ NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安
 可以看到在json文件中属性partitions是一个数组类型，数组每个元素定义的是一个分区信息。首先看label为boot的分区，这是一个FAT格式的分区，被用作操作系统启动分区；然后label为root的是ext4分区，里面存放linux操作系统分区。partition_size_nominal是说分区的大小，want_maximised是说当前分区是否需要被扩展，如果为false，则分区的大小就是partition_size_nominal的指定值，如果为true，则noobs会根据sd卡的大小尽量的分配尽可能多的空间给当前分区。   
 9. 之前说过，我们从retropie官网上下载下来它的安装文件，将其解压后我们得到一个img文件。按照noobs给出的文档，根据partitions.json中的配置的信息，我们应该生成两个压缩文件，分别为boot.tar.xz和root.tar.gz，文件名实际上对应的是配置文件中的label属性。那么我们现在得到的是img文件，怎样得到这两个文件呢？  
     如果你是用linux，这个问题很好解决，linux下可以使用mount命令直接把img文件挂载到指定目录上；如果使用windows，那就只能用虚拟机了。好吧，我就是用的windows，打开自己的虚拟机，通过vbox上的共享目录，来访问windows上的这个img文件。  
-    ![vbox共享](http://blog.whyun.com/images/select_share.png)   
+    ![vbox共享](images/select_share.png)   
     **图2.1 共享文件夹设置1**  
     在弹出的界面中新增一个共享设置，我们假设img文件放在e:\sharing下，那么可以做如下设置：  
-    ![新建共享](http://blog.whyun.com/images/add_new_vbox_share.png)  
+    ![新建共享](images/add_new_vbox_share.png)  
     **图2.2 新建共享**  
     最后在ubuntu下通过命令`mount -t vboxsf sharing /mnt/share`来加载这个共享（这里假设/mnt/share目录已经存在了）。在/mnt/share下我们用fdisk命令来查看img文件内部的分区情况：
 
@@ -114,6 +114,6 @@ NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安
 10. noobs在进行分区的时候需要读取脚本`partition_setup.sh`来完成分区操作，如果当前系统是由`Raspbian`改装来的（比如`RetroPie`和`raspbmc`、`Pidora`），那么直接使用`Raspbian`文件夹中的`partition_setup.sh`即可，但是有一些系统不是标准linux，比如说`openelec`，这时候你可以从github项目[procount/noobsconfig](https://github.com/procount/noobsconfig "")找到相应的sh脚本文件。  
 11. 最后我们就是格式化SD卡了，使用SDFormatter（[下载页面地址](https://www.sdcard.org/chs/downloads/formatter_4/)）将你的SD卡格式化，然后将制作好的noobs文件全部拷贝到sd卡中，保证recovery.img在sd卡根目录：
 
-![noobs根目录](http://blog.whyun.com/images/noobs_files.jpg)  
+![noobs根目录](images/noobs_files.jpg)  
 **图2.3 sd卡根目录**  
 至此一个自定义的操作系统已经成功制作完成，将sd卡插入树莓派就可以安装了。

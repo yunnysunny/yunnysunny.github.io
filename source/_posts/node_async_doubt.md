@@ -137,7 +137,7 @@ function synchronizedCode() {
 	setTimeout 0 occured second.  
 **输出2.2**  
 之所以nextTick排在所有异步的最前面，是由于nextTick是在第一帧运行的，而其他的都是在第二帧运行的。也就是说代码运行情况是这个样子的：  
-![](http://blog.whyun.com/images/js_frame2.png)  
+![](images/js_frame2.png)  
 **图2.2 js帧结构**  
 接下来再举几个异步API的例子，这次我们添加`setImmediate`和`mkdir`两个函数：
 
@@ -279,7 +279,7 @@ NODE_MODULE(binding, Init);
 ```
 
 **代码2.4**  
-> 上述代码的编译参照[编译说明](http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md "")，项目源码地址参加第3节。关于nan的使用，可以参照我的另一篇教程[《nan基础教程》](http://blog.whyun.com/posts/nan/)。
+> 上述代码的编译参照[编译说明](http://git.oschina.net/yunnysunny/async-tutorial-code/blob/master/addon/readme.md "")，项目源码地址参加第3节。关于nan的使用，可以参照我的另一篇教程[《nan基础教程》](https://blog.whyun.com/posts/nan/)。
 
 编写的测试代码，将其运行，就可以看出函数`Execute`根本就不在js线程中执行，也就是说它是可以和js线程并行的；函数`HandleOKCallback`中能够触发js中的回调函数，将处理完的结果交给js。下面就编译上面代码（需要node-gyp支持，执行`node-gpy rebuild`进行编译），来验证上述结论：  
 
@@ -351,7 +351,7 @@ NODE_MODULE(binding, Init);
 	node addon result good--->hello world from c++
 **输出2.5**  
 我们终于看到开篇提到的类似java代码的交叉输出的效果了。libuv在处理任务时根本就和js不在一个线程中，所以才出现了libuv线程和js线程交叉输出的效果。我们在梳理一下代码2.5的异步流程，那么可以用下面这个图来展示出来：  
-![](http://blog.whyun.com/images/js_frame3.png)  
+![](images/js_frame3.png)  
 **图2.3**  
 在 node 中维护了一个回调的队列，那为什么调用插件的回调排在队列的最后面呢，是有于我们在**代码2.4**中故意将其代码设置成15秒之后才执行完成，这要远远长于其他的那些回调，所以它只能被追加到回调队列的最后一位。在第二帧中，node 中的事件轮询依次将这些回调队列中的任务取出来，进行触发调用。可以看出回调队列是个先进先出的结构。注意回调是按照队列中排队顺序执行的，同时它们执行的环境是 js 线程，要知道 js 线程可是个单线程，也就是说一旦某个回调中的同步代码耗时比较长，那么它后面的回调任务就得一直等着它运行完成，所以说一定不要在回调中写特别耗时的同步代码。
 

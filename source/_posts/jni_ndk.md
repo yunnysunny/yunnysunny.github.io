@@ -16,7 +16,7 @@ categories:
 **图3.1.1 ndk目录结构**  
 接着需要将ndk所在目录添加到环境变量PATH中，这样在以后运行的时候，只需要输出`ndk-buld`就可以了。文件夹`plantforms`存放着编译各个版本的android所需的头文件和动态库，举个例子`platforms/android-3/arch-arm`文件夹下存放的是`android 1.5`版本的`arm`平台的头文件和库文件，从`android 2.3`开始，开始支持`x86`和`mips`两个平台，所以在`platforms/android-9`目录下会有`arch-arm` `arch-mips` `arch-x86`三个文件夹。
 
-> 本文源地址：http://blog.whyun.com/posts/jni-ndk/ 转载请注明出处。
+> 本文源地址：https://blog.whyun.com/posts/jni-ndk/ 转载请注明出处。
 
 ## 3.2 Android.mk
 mk后缀的文件是makefile文件，mk文件一般通过`include`语法被引入到其它makefile中。在NDK中Android.mk里存储的都是编译相关的配置信息，我们先举一个例子：

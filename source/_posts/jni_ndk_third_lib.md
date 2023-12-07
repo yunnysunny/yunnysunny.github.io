@@ -10,7 +10,7 @@ categories:
 ## 4.1 背景
 既然使用NDK，一般两个常见的原因，一个就是java代码运行效率低，还有一个就是之前和c相关的类库已经在其它项目中准备好了，这样使用NDK就可以尽可能的复用代码。
 
-> 本文源地址：http://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/ 转载请注明出处。
+> 本文源地址：https://blog.whyun.com/posts/jni/use-thrid-part-library-in-ndk/ 转载请注明出处。
 
 ## 4.2 使用第三方库源码
 假设你将第三方库做成动态库，并且你在JNI中还引用了这个动态库，不要企盼着把你的JNI库和这个第三方库放到同一个目录（比如说android项目的`libs/armeabi`目录）下就万事大吉了，很不幸的告诉你，JNI代码在被运行在android上时不能引用非`/system/lib`下的动态库。安卓操作系统的系统库文件都是放到`/system/lib`下的，如果你的JNI代码想引用一些第三方库的功能，就得考虑将第三方库做成静态库，继而打入你生成的jni库中。  
