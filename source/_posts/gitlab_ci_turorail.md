@@ -44,9 +44,7 @@ job:test:
 
 **图 1.1**
 
-`gitlab runner` 是一个安装程序，需要作为服务安装在某台机器上做开机自启动，具体的安装教程，可以参见官方文档 [Install GitLab Runner | GitLab](https://docs.gitlab.com/runner/install/) 。同时 `gitlab runner` 本身
-
-安装完成后，需要将当前要建立  CI 的 gitlab 项目和 `gitlab runner` 之间建立联系，这个步骤在 `gitlab runner` 中称之为注册。拿 Linux 系统举例，你需要在 gitlab runner 所在机器上运行如下格式的命令：
+`gitlab runner` 是一个安装程序，需要作为服务安装在某台机器上做开机自启动，具体的安装教程，可以参见官方文档 [Install GitLab Runner | GitLab](https://docs.gitlab.com/runner/install/) 。同时 `gitlab runner` 本身安装完成后，需要将当前要建立  CI 的 gitlab 项目和 `gitlab runner` 之间建立联系，这个步骤在 `gitlab runner` 中称之为注册。拿 Linux 系统举例，你需要在 gitlab runner 所在机器上运行如下格式的命令：
 
 ```shell
 gitlab-runner register \
@@ -64,7 +62,12 @@ gitlab-runner register \
 
 将 **代码 1.2** 中的参数依此从上往下看，`url` 参数比较好理解，就是当前托管 gitlab 的 url 前缀。
 
-`registration-token` 这个参数，需要着重讲一下，gitlab 中的 runner 的作用域并不是固定关联到具体某一个项目上，根据需要可以还可以关联到组上和全局上。对于组级别的 runner，按照如下路径可以找到 token 的配置：**具体的某个Group** -> **Settings** -> **CI/CD** -> **Runners**，不过你需要有组的管理权限才能看上 Settings 菜单；全局 runner，在 gitlab 中称之为 shared runner，其配置的 **Settings** 菜单从网站头部 **Menu** 菜单中点击 **Admin** 菜单就可以看到，不过你需要有超级管理员权限，否则 **Admin** 菜单不会显示；项目专属的 runner，可以在项目首页左侧直接找到 **Settings** 菜单，不过你需要拥有当前项目的 maintainer 权限，否则这个菜单也看不到。如果上述三个权限，你至少拥有一个话，就能看到如下界面：
+`registration-token` 这个参数，需要着重讲一下，gitlab 中的 runner 的作用域并不是固定关联到具体某一个项目上，根据需要可以还可以关联到组上和全局上。
+对于组级别的 runner，按照如下路径可以找到 token 的配置：**具体的某个Group** -> **Settings** -> **CI/CD** -> **Runners**，不过你需要有组的管理权限才能看上 Settings 菜单。
+
+全局 runner，在 gitlab 中称之为 shared runner，其配置的 **Settings** 菜单从网站头部 **Menu** 菜单中点击 **Admin** 菜单就可以看到，不过你需要有超级管理员权限，否则 **Admin** 菜单不会显示。
+
+项目专属的 runner，可以在项目首页左侧直接找到 **Settings** 菜单，不过你需要拥有当前项目的 maintainer 权限，否则这个菜单也看不到。如果上述三个权限，你至少拥有一个话，就能看到如下界面：
 
 ![](images/gitlab_runner_token.png) 
 
@@ -78,7 +81,12 @@ gitlab-runner register \
 
 `run-untagged` 为 true，则代表某个 job 即使没有配置 tags 属性，也可以运行在这个 runner 上。
 
-`locked` 参数对于项目专属的 runner 来说，用的频率会多一些，它代表当前 runner 仅仅只能用在当前关联的项目上，默认这个值为 true，如果你想将这个 runner 用在跟其同组的其他项目上，可以将其置为 false。对于组级别的 runner 来说，这个参数应该设置为 false，无法给组下的应用使用。
+`locked` 参数对于项目专属的 runner 来说，用的频率会多一些，它代表当前 runner 仅仅只能用在当前关联的项目上，默认这个值为 true，如果你想将这个 runner 用在跟其同组的其他项目上，可以将其置为 false。对于组级别的 runner 来说，即使设置成 false，也可以给组下的所有应用使用。
+
+从 gitlab 15.10 版本开始，引入了新的 runner 注册方式，官方取名为 `鉴权token（authentication token）` 注册方式（具体参见官方[文档](https://docs.gitlab.com/ee/ci/runners/new_creation_workflow)）。新版的注册模式将 `executor` `tag-list` `run-untagged` `locked` 参数全部从命令行中去除，改为在界面上设置：
+![](images/auth_token_register.png)
+
+**图 1.4**
 
 如果由于误操作创建了错误的 runner，你需要使用 unregister 命令取消注册，其使用命令格式为 `gitlab-runner unregister --url ${URL} --token ${token}`，注意这里的 `${token}` 参数并不是 **代码 1.2** 中的 `--registration-token` 的值，而是要通过运行 `gitlab-runner list` 获取到。举一个例子运行完 `gitlab-runner list` 后，得到如下输出：
 ```
@@ -88,7 +96,7 @@ manage-ui-test                                      Executor=ssh Token=abcdef UR
 则取消 manage-ui-test 注册，就需要运行 `gitlab-runner unregister --url =https://some.com.yours --token abcdef`。
 如果设置了组级别的 runner，在组下的具体某一个项目中要手动启用它，否则在运行 CI 的时候会提示没有绑定任何 runner。具体启用方式比较简单，在要操作的项目的设置里面找到 `CI/CD`，点开 `Runners` 按钮，会有如下显示界面：
 ![](images/enable_shared_runner.png)
-**图 1.4**
+**图 1.5**
 在上图界面中找到需要的 runner，然后点击按钮 `Enable for this project` 即可将当前 runner 在此项目中启用。
 ## 2. 在何时执行
 
