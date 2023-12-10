@@ -43,11 +43,12 @@ job:test:
 ![](images/gitlab_runner_flow.drawio.png)
 
 **图 1.1**
-
+### 1.1 注册
+#### 1.1.1 注册 token 模式
 `gitlab runner` 是一个安装程序，需要作为服务安装在某台机器上做开机自启动，具体的安装教程，可以参见官方文档 [Install GitLab Runner | GitLab](https://docs.gitlab.com/runner/install/) 。同时 `gitlab runner` 本身安装完成后，需要将当前要建立  CI 的 gitlab 项目和 `gitlab runner` 之间建立联系，这个步骤在 `gitlab runner` 中称之为注册。拿 Linux 系统举例，你需要在 gitlab runner 所在机器上运行如下格式的命令：
 
 ```shell
-gitlab-runner register \
+sudo gitlab-runner register \
  --non-interactive \
  --url "https://托管gitlab的域名/" \
  --registration-token "runner的密钥，需要从 gitlab CI/CD 设置中获取" \
@@ -58,46 +59,78 @@ gitlab-runner register \
  --locked="false"
 ```
 
-**代码 1.2**
+**代码 1.1.1.1**
 
-将 **代码 1.2** 中的参数依此从上往下看，`url` 参数比较好理解，就是当前托管 gitlab 的 url 前缀。
+将 **代码 1.1.1.1** 中的参数依此从上往下看，`url` 参数比较好理解，就是当前托管 gitlab 的 url 前缀。
 
 `registration-token` 这个参数，需要着重讲一下，gitlab 中的 runner 的作用域并不是固定关联到具体某一个项目上，根据需要可以还可以关联到组上和全局上。
 对于组级别的 runner，按照如下路径可以找到 token 的配置：**具体的某个Group** -> **Settings** -> **CI/CD** -> **Runners**，不过你需要有组的管理权限才能看上 Settings 菜单。
-
-全局 runner，在 gitlab 中称之为 shared runner，其配置的 **Settings** 菜单从网站头部 **Menu** 菜单中点击 **Admin** 菜单就可以看到，不过你需要有超级管理员权限，否则 **Admin** 菜单不会显示。
-
+![](images/group_runner.png)
+**图 1.1.1.1**
+全局 runner，在 gitlab 中称之为 shared runner，可以通过访问 `/admin/runners` 路径访问到，不过你需要有超级管理员权限，否则访问路径会显示 404。
+![](images/shared_runner.png)
+**图 1.1.1.2**
 项目专属的 runner，可以在项目首页左侧直接找到 **Settings** 菜单，不过你需要拥有当前项目的 maintainer 权限，否则这个菜单也看不到。如果上述三个权限，你至少拥有一个话，就能看到如下界面：
 
-![](images/gitlab_runner_token.png) 
+![](images/project_runner.png) 
 
-**图 1.3**
+**图 1.1.1.3**
 
-**图 1.3** 中涂掉的部分就是 `registration-token`，`Register the runner with this URL` 部分就是 `url` 参数的值。
+**图 1.1.1.3** 中 `Use the following registration token during setup:` 后面被涂掉的部分就是 `registration-token`，`Register the runner with this URL` 部分就是 `url` 参数的值。
 
-`executor` 参数代表当前 runner 的运行模式，默认为 `shell` 模式，代表在 runner 所在机器上的 shell 环境（Linux 下默认为 bash）中运行。`executor` 其他常见的可选值还包括，`ssh` 模式，这种情况 `gitlab runner` 将被当成一个“跳板机”，通过 ssh 和目标机器进行通信，然后在目标机器上来执行所有脚本命令，这时候为了保证 ssh 的正常通信，你还需要指定 `ssh-host` `ssh-port` `ssh-user` 和 `ssh-password` 或者 `ssh-identity-file` 参数。还有一个常见的 `executor` 为 docker 模式，这种模式下你可以直接在 gitalb-ci.yml 中指定某一个 job 运行所需的镜像名称，显得比较灵活，不过这种模式下，需要你的 runner 机器安装 docker 环境。其他 `executor` 的选项，可以参见官方文档 [Executors | GitLab](https://docs.gitlab.com/runner/executors/index.html)
+`executor` 参数代表当前 runner 的运行模式，默认为 `shell` 模式，代表在 runner 所在机器上的 shell 环境（Linux 下默认为 bash）中运行。`executor` 其他常见的可选值还包括，`ssh` 模式，这种情况 `gitlab runner` 将被当成一个“跳板机”，通过 ssh 和目标机器进行通信，然后在目标机器上来执行所有脚本命令，这时候为了保证 ssh 的正常通信，你还需要指定 `ssh-host` `ssh-port` `ssh-user` 和 `ssh-password` 或者 `ssh-identity-file` 参数。还有一个常见的 `executor` 为 docker 模式，这种模式下你可以直接在 gitalb-ci.yml 中指定某一个 job 运行所需的镜像名称，显得比较灵活，不过这种模式下，需要你的 runner 机器安装 docker 环境。其他 `executor` 的选项，可以参见官方文档 [Executors | GitLab](https://docs.gitlab.com/runner/executors/index.html)。
 
 `tag-list` 可以给当前 runner 打上一个或者多个标签，多个标签之间使用逗号分隔，**代码 1.1** 中指定了 tags 参数为 `my-test-runner` 后，则必须在所有注册中 runner 中拥有一个 tag 列表中含有 `my-test-runner` 的 runner，否则当前 CI 任务会因为找不到 runner 而无法运行。 
 
 `run-untagged` 为 true，则代表某个 job 即使没有配置 tags 属性，也可以运行在这个 runner 上。
 
-`locked` 参数对于项目专属的 runner 来说，用的频率会多一些，它代表当前 runner 仅仅只能用在当前关联的项目上，默认这个值为 true，如果你想将这个 runner 用在跟其同组的其他项目上，可以将其置为 false。对于组级别的 runner 来说，即使设置成 false，也可以给组下的所有应用使用。
+`locked` 参数对于项目专属的 runner 来说，用的频率会多一些，它代表当前 runner 仅仅只能用在当前关联的项目上，默认这个值为 true，如果你想将这个 runner 用在跟其同组的其他项目上，可以将其置为 false。对于组级别的 runner 来说，这个参数不管用：即使设置成 false，也可以给组下的所有应用使用；即使设置成 true，也无法给其他组中的项目使用。
 
-从 gitlab 15.10 版本开始，引入了新的 runner 注册方式，官方取名为 `鉴权token（authentication token）` 注册方式（具体参见官方[文档](https://docs.gitlab.com/ee/ci/runners/new_creation_workflow)）。新版的注册模式将 `executor` `tag-list` `run-untagged` `locked` 参数全部从命令行中去除，改为在界面上设置：
+如果某些项目级别的 runner 设置了 `locked` 为 `false` ，则在其他项目中的设置里面找到 `CI/CD`，点开 `Runners` 按钮，会有如下显示界面：
+![](images/enable_shared_runner.png)
+**图 1.1.1.4**
+在上图界面中找到需要的 runner，然后点击按钮 `Enable for this project` 即可将当前 runner 在此项目中启用。
+#### 1.1.2 鉴权 token 模式
+从 gitlab 15.10 版本开始，引入了新的 runner 注册方式，官方取名为 `鉴权token（authentication token）` 注册方式（具体参见官方[文档](https://docs.gitlab.com/ee/ci/runners/new_creation_workflow)）。新版的注册模式将  `tag-list` `run-untagged` `locked` 参数全部从命令行中去除，改为在界面上设置：
 ![](images/auth_token_register.png)
+**图 1.1.2.1**
 
-**图 1.4**
+> 鉴于官方将会在 18 版本开始移除掉 `注册 token`，推荐大家后续使用新的 `鉴权token` 模式管理 gitlab runner。
 
-如果由于误操作创建了错误的 runner，你需要使用 unregister 命令取消注册，其使用命令格式为 `gitlab-runner unregister --url ${URL} --token ${token}`，注意这里的 `${token}` 参数并不是 **代码 1.2** 中的 `--registration-token` 的值，而是要通过运行 `gitlab-runner list` 获取到。举一个例子运行完 `gitlab-runner list` 后，得到如下输出：
+点击 `Create runner` 按钮，gitlab 会给出需要执行的注册命令行，如下格式：
+
+```shell
+gitlab-runner register  --url 你的gitlab访问地址  --token 分配的 auth token值
+```
+**代码 1.1.2.1**
+如果直接使用 **代码 1.1.2.1** 中命令运行，运行过程中又得输入 `executor` `description` 等参数，所以我们这里把分配的 auth token 值记录下来，然后通过如下命令可以跳过注册过程中的交互输入，一步创建一个 runner：
+```shell
+sudo gitlab-runner register \
+  --non-interactive \
+  --url 你的gitlab访问地址 \
+  --token 分配的 auth token值 \
+  --description "runner的名字" \
+  --executor shell
+```
+**代码 1.1.2.2**
+
+新版的 gitlab 不仅仅带来新的 runner 注册方式，同时还修改了若干 runner 配置的代码位置。对于组级别的 runner 来说，放到了组下的 **Build** -> **Runners** 菜单下面：
+![](images/group_new_runner.png)
+**图 1.1.2.2**
+
+### 1.2 取消注册
+如果由于误操作创建了错误的 runner，你需要使用 unregister 命令取消注册，其使用命令格式为 `gitlab-runner unregister --url ${URL} --token ${token}`。但是对于使用 `注册 token` 和 `鉴权 token` 模式注册的 runner ，分别做 unregister 命令时 token 的来源是不一样的。
+对于 `注册 token` 模式，取消注册的 `${token}` 参数并不是 **代码 1.1.1.1** 中的 `--registration-token` 的值，而是要通过运行 `gitlab-runner list` 获取到。举一个例子运行完 `gitlab-runner list` 后，得到如下输出：
 ```
 Listing configured runners                          ConfigFile=/etc/gitlab-runner/config.toml
 manage-ui-test                                      Executor=ssh Token=abcdef URL=https://some.com.yours
 ```
-则取消 manage-ui-test 注册，就需要运行 `gitlab-runner unregister --url =https://some.com.yours --token abcdef`。
-如果设置了组级别的 runner，在组下的具体某一个项目中要手动启用它，否则在运行 CI 的时候会提示没有绑定任何 runner。具体启用方式比较简单，在要操作的项目的设置里面找到 `CI/CD`，点开 `Runners` 按钮，会有如下显示界面：
-![](images/enable_shared_runner.png)
-**图 1.5**
-在上图界面中找到需要的 runner，然后点击按钮 `Enable for this project` 即可将当前 runner 在此项目中启用。
+则取消 manage-ui-test 注册，就需要运行 `sudo gitlab-runner unregister --url =https://some.com.yours --token abcdef`。
+
+对于 `鉴权 token` 来说就比较简单，取消注册用的 token 值和注册时 token 值是一个值。
+
+
+
 ## 2. 在何时执行
 
 在 **代码 1.1** 中，我们没有指定当前 job 运行的时机，这样会导致你做任何代码提交操作都会触发这个 job，有可能会导致任务执行的过于频繁。我们一般都会在每个任务上指定运行条件，来防止任务被无味的执行导致耗费 runner 机器的资源。
@@ -239,7 +272,9 @@ before_script:
 **代码 4.1**
 CI_JOB_TOKEN 的权限的权限和当前 CI 的触发者的权限一致，所以只要执行 CI 的人也有当前以来项目的仓库 clone 权限，即可使用 CI_JOB_TOKEN 的模式 clone 此依赖包。
 
-## 5. 缓存 CI 生成产物
+## 5. 生成产物复用
 
 我们在 CI 中不可避免的要安装程序依赖文件，对于普通项目来说，依赖的安装很可能会等待比较久的时间。其实大多数情况下，我们每次运行 CI 时，依赖列表不会变动，这时候可以利用 gitlab 的缓存机制来讲安装的依赖文件做缓存。
+
+
 
