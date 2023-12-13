@@ -1,2 +1,7 @@
 User-agent: *
 Crawl-delay: 7200
+
+Disallow: /archives/
+Disallow: /categories/
+
+Sitemap: https://blog.whyun.com/sitemap.xml
