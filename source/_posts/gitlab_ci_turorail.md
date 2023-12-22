@@ -5,6 +5,7 @@ date:  2022-08-28
 description: gitlab ci 简明教程，如何配置 gitlab runner，如何编写 gitlab-ci.yml 文件。
 categories:
 - [CI]
+updated: 2023-12-10T16:44:24+08:00
 ---
 
 由于现在大多数公司使用私有化 git 仓库产品时一般选择 gitlab，所以借助其提供的 gitlab ci 功能来做 CI (**C**ontinuous **I**ntegration，可持续集成) 任务还是比较普遍的一种选型。本篇文档作为一个 gitlab 的入门教程，会设计到 gitlab runner 和 gitlab-ci.yml 文件的编写两部分内容。
@@ -42,10 +43,23 @@ job:test:
 
 ![](images/gitlab_runner_flow.drawio.png)
 
+`gitlab runner` 是一个安装程序，需要作为服务安装在某台机器上做开机自启动，其在不通操作系统中的安装方式不一样，下面以 Linux 操作系统为例，给出安装命令：
+```shell
+sudo curl -L --output /usr/local/bin/gitlab-runner https://gitlab-runner-downloads.s3.amazonaws.com/latest/binaries/gitlab-runner-linux-amd64
+sudo chmod +x /usr/local/bin/gitlab-runner
+sudo useradd --comment 'GitLab Runner' --create-home gitlab-runner --shell /bin/bash
+sudo gitlab-runner install --user=gitlab-runner --working-directory=/home/gitlab-runner
+sudo gitlab-runner start
+```
+
+**代码 1.2**
+
+其他操作系统的的安装教程，可以参见官方文档 [Install GitLab Runner | GitLab](https://docs.gitlab.com/runner/install/) 。
 **图 1.1**
 ### 1.1 注册
+ `gitlab runner` 本身安装完成后，需要将当前要建立  CI 的 gitlab 项目和 `gitlab runner` 之间建立联系，这个步骤在 `gitlab runner` 中称之为注册。目前 `gitlab runner` 支持两种注册模式：`注册 token 模式`和`授权 token 模式`，下面分别对其进行讲解。
 #### 1.1.1 注册 token 模式
-`gitlab runner` 是一个安装程序，需要作为服务安装在某台机器上做开机自启动，具体的安装教程，可以参见官方文档 [Install GitLab Runner | GitLab](https://docs.gitlab.com/runner/install/) 。同时 `gitlab runner` 本身安装完成后，需要将当前要建立  CI 的 gitlab 项目和 `gitlab runner` 之间建立联系，这个步骤在 `gitlab runner` 中称之为注册。拿 Linux 系统举例，你需要在 gitlab runner 所在机器上运行如下格式的命令：
+以下教程依然拿 Linux 系统举例，你需要在 gitlab runner 所在机器上运行如下格式的命令：
 
 ```shell
 sudo gitlab-runner register \
