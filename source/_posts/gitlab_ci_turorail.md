@@ -5,7 +5,6 @@ date:  2022-08-28
 description: gitlab ci 简明教程，如何配置 gitlab runner，如何编写 gitlab-ci.yml 文件。
 categories:
 - [CI]
-updated: 2023-12-10T16:44:24+08:00
 ---
 
 由于现在大多数公司使用私有化 git 仓库产品时一般选择 gitlab，所以借助其提供的 gitlab ci 功能来做 CI (**C**ontinuous **I**ntegration，可持续集成) 任务还是比较普遍的一种选型。本篇文档作为一个 gitlab 的入门教程，会设计到 gitlab runner 和 gitlab-ci.yml 文件的编写两部分内容。
