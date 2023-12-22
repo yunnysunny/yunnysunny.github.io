@@ -8,3 +8,5 @@ public/
 docs/
 *.bkp
 *.dtmp
+*.tmp
+
