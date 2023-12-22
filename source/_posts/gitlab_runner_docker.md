@@ -1,7 +1,7 @@
 ---
 abbrlink: gitlab-runner-docker
 title: gitlab docker 模式 runner
-date:  2022-12-10
+date:  2023-12-22
 description: gitlab runner 可以创建 shell ssh docker 这三个创建的模式。如果 runner 安装在自己托管的机器上，那么可以根据需要任意选择模式进行使用，如果你的 runner 是使用云上托管的平台，默认提供了 docker 模式，你可以使用子托管的 runner 来使用你想要的任意模式。使用 shell 模式可以直接将命令运行在 runner 安装的机器上，省去了启动 docker 容器的时间，同时可以直接读取本机上的应用程序和磁盘文件，省去了一些初始化配置的时间。但是如果当前 runner 是多个项目组混用，那么将凭证之类的数据放置到磁盘上可能会引起冲突或者隐私泄露，这时候 docker 模式的隔离特性就凸显出来优点了。所以说在很多情况下 docker 模式是必不可少的。
 categories:
 - [CI]
