@@ -3,6 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
+	  "prebuild": "node update-time.js",
     "build": "hexo generate && node scripts/copy.js",
     "clean": "hexo clean",
     "deploy": "hexo deploy",
@@ -31,6 +32,7 @@
     "hexo-renderer-stylus": "^3.0.0",
     "hexo-server": "^3.0.0",
     "hexo-theme-landscape": "^0.0.3",
-    "hexo-theme-next": "^8.18.2"
+    "hexo-theme-next": "^8.18.2",
+    "simple-git": "^3.21.0"
   }
 }
