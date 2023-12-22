@@ -89,10 +89,7 @@ async function _renameFile(oldPath, newPath) {
 			format: '%ct',
 			maxCount : 1,
 		});
-		//return {
-		//	file,
-		//	updatedTime: info.latest.date
-		//}
+		console.log(file, info.latest.date)
 		await updateTimeInFile(
 		  path.join(__dirname, file),
 		  info.latest.date,
@@ -100,15 +97,5 @@ async function _renameFile(oldPath, newPath) {
 		);
 	});
 	await Promise.all(promises);
-	//console.log(dates);
-	/*
-  try {
-    await updateTimeInFile(
-	  path.join(__dirname, 'source/_posts/add_customer_os_to_noobs.md'),
-	  new Date().toLocaleString()
-	);
-  } catch(error) {
-    console.log(error);
-  }
-	*/
+
 })()
