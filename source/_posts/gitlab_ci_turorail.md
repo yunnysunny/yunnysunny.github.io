@@ -91,7 +91,7 @@ sudo gitlab-runner register \
 
 **图 1.1.1.3** 中 `Use the following registration token during setup:` 后面被涂掉的部分就是 `registration-token`，`Register the runner with this URL` 部分就是 `url` 参数的值。
 
-`executor` 参数代表当前 runner 的运行模式，默认为 `shell` 模式，代表在 runner 所在机器上的 shell 环境（Linux 下默认为 bash）中运行。`executor` 其他常见的可选值还包括，`ssh` 模式，这种情况 `gitlab runner` 将被当成一个“跳板机”，通过 ssh 和目标机器进行通信，然后在目标机器上来执行所有脚本命令，这时候为了保证 ssh 的正常通信，你还需要指定 `ssh-host` `ssh-port` `ssh-user` 和 `ssh-password` 或者 `ssh-identity-file` 参数。还有一个常见的 `executor` 为 docker 模式，这种模式下你可以直接在 gitalb-ci.yml 中指定某一个 job 运行所需的镜像名称，显得比较灵活，不过这种模式下，需要你的 runner 机器安装 docker 环境。其他 `executor` 的选项，可以参见官方文档 [Executors | GitLab](https://docs.gitlab.com/runner/executors/index.html)。
+`executor` 参数代表当前 runner 的运行模式，默认为 `shell` 模式，代表在 runner 所在机器上的 shell 环境（Linux 下默认为 bash）中运行。`executor` 其他常见的可选值还包括，`ssh` 模式，这种情况 `gitlab runner` 将被当成一个“跳板机”，通过 ssh 和目标机器进行通信，然后在目标机器上来执行所有脚本命令，这时候为了保证 ssh 的正常通信，你还需要指定 `ssh-host` `ssh-port` `ssh-user` 和 `ssh-password` 或者 `ssh-identity-file` 参数。还有一个常见的 `executor` 为 docker 模式，这种模式下你可以直接在 gitalb-ci.yml 中指定某一个 job 运行所需的镜像名称，显得比较灵活，不过这种模式下，需要你的 runner 机器安装 docker 环境（可以参见系列博文之[gitlab docker 模式 runner](/gitlab-runner-docker)）。其他 `executor` 的选项，可以参见官方文档 [Executors | GitLab](https://docs.gitlab.com/runner/executors/index.html)。
 
 `tag-list` 可以给当前 runner 打上一个或者多个标签，多个标签之间使用逗号分隔，**代码 1.1** 中指定了 tags 参数为 `my-test-runner` 后，则必须在所有注册中 runner 中拥有一个 tag 列表中含有 `my-test-runner` 的 runner，否则当前 CI 任务会因为找不到 runner 而无法运行。 
 

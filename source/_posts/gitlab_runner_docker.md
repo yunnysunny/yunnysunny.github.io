@@ -82,6 +82,7 @@ job:image:
     - docker push $REGISTER_IMAGE
   allow_failure: false
 ```
+**代码 2.1**
 
 DOCKER_AUTH_CONFIG 是 gitlab 的约定的变量，如果你的镜像来自私有仓库，正确的设置这个变量可以让你能够成功拉取到指定镜像（具体参见官方[文档](https://docs.gitlab.com/ee/ci/docker/using_docker_images.html#access-an-image-from-a-private-container-registry)）。这里我们使用的是 docker hub 的镜像仓库，拉取的是公开的镜像，所以这个变量在这里没有体现出来用户。
 
@@ -93,5 +94,40 @@ DOCKER_AUTH_CONFIG 是 gitlab 的约定的变量，如果你的镜像来自私�
 
 在 job:image 中的 before_script 中，将 DOCKER_AUTH_CONFIG 写入了 docker 容器内的 ~/.docker/config.json 中，是因为 docker in docker 模式无法读取到 gitlab variables 中定义的环境变量，必须手动写入 docker 的鉴权文件。
 
-## 3. 问题总结
+写完代码后把代码推送到 gitlab，然后查看 CI 运行状态，会发现 docker build 会直接报错：
+
+```
+error during connect: Post "http://docker:2375/v1.24/build?buildargs=%7B%7D&cachefrom=%5B%5D&cgroupparent=&cpuperiod=0&cpuquota=0&cpusetcpus=&cpusetmems=&cpushares=0&dockerfile=Dockerfile&labels=%7B%7D&memory=0&memswap=0&networkmode=default&rm=1&shmsize=0&t=yunnysunny%2Fcn-alpine%3Amain&target=&ulimits=null&version=1": dial tcp: lookup docker on x.x.x.x:53: no such host
+```
+
+这是由于我们的 docker 命令运行在 docker 镜像中无法与宿主机中真正的 docker 守护程序进行通信，需要修改一下 gitlab-runner 中 config.toml ， 将守护程序监听的 Unix Socket 路径挂载在 runner 启动的容器上：
+
+```toml
+[[runners]]
+  name = "My Docker Runner"
+  url = "https://gitlab.com"
+  id = xxxx
+  token = "yyyy"
+  token_obtained_at = 2023-12-16T12:54:50Z
+  token_expires_at = 0001-01-01T00:00:00Z
+  executor = "docker"
+  [runners.cache]
+    MaxUploadedArchiveSize = 0
+  [runners.docker]
+    tls_verify = false
+    image = "docker:20.10.16"
+    privileged = true
+    disable_entrypoint_overwrite = false
+    oom_kill_disable = false
+    disable_cache = false
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock","/cache"]
+    shm_size = 0
+    network_mtu = 0
+```
+**代码 2.2**
+
+注意 `volumes` 属性，这里增加了一个 Unix Socket 地址映射，这样容器中的 docker 命令就可以和宿主机中的 docker 守护程序进行通信了。
+
+### 2.2 使用自定义镜像
+
 
