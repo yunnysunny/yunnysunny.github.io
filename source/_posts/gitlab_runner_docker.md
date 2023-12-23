@@ -82,13 +82,13 @@ job:image:
     - docker push $REGISTER_IMAGE
   allow_failure: false
 ```
-**代码 2.1**
+**代码 2.1.1**
 
 DOCKER_AUTH_CONFIG 是 gitlab 的约定的变量，如果你的镜像来自私有仓库，正确的设置这个变量可以让你能够成功拉取到指定镜像（具体参见官方[文档](https://docs.gitlab.com/ee/ci/docker/using_docker_images.html#access-an-image-from-a-private-container-registry)）。这里我们使用的是 docker hub 的镜像仓库，拉取的是公开的镜像，所以这个变量在这里没有体现出来用户。
 
 ![](images/group_var.png)
 
-**图 2.1**
+**图 2.1.1**
 
 另外 DOCKER_AUTH_CONFIG 中的 DOCKER_TOKEN 是 docker 的鉴权凭证，格式为 BASE64 形式，可以现在一台机器上通过 docker login 登录你的账号，然后查看 ~/.docker/config.json，将其中的 BASE64 值拷贝出来，在 gitlab 组中配置一个变量，如上图所示。
 
@@ -124,10 +124,35 @@ error during connect: Post "http://docker:2375/v1.24/build?buildargs=%7B%7D&cach
     shm_size = 0
     network_mtu = 0
 ```
-**代码 2.2**
+**代码 2.1.2**
 
 注意 `volumes` 属性，这里增加了一个 Unix Socket 地址映射，这样容器中的 docker 命令就可以和宿主机中的 docker 守护程序进行通信了。
 
 ### 2.2 使用自定义镜像
 
+很多情况下，我们除了构建镜像外，还会执行运行单元测试、做代码质量校验等任务，所以我们使用的镜像中肯定要加入其他程序。下面演示在 docker 镜像里面加 Node 运行环境的 Dockerfile 的例子：
 
+```dockerfile
+FROM docker:20.10.16-git
+LABEL used-for="ci"
+ARG NPM_MIRROR=//registry.npmmirror.com
+ARG NPM_REGISTRY=https:${NPM_MIRROR}
+RUN git config --global user.email "ci@your-company.com" && git config --global user.name "ci-user"
+
+RUN sed -i 's/dl-cdn.alpinelinux.org/mirrors.ustc.edu.cn/g' /etc/apk/repositories
+RUN apk add --update --no-cache gcc g++ make python3 openssh-client \
+ libgcc libstdc++ wget tar xz bash
+
+# node
+ARG NODE_VERSION=18.19.0
+RUN wget https://unofficial-builds.nodejs.org/download/release/v$NODE_VERSION/node-v$NODE_VERSION-linux-x64-musl.tar.xz \
+  && tar -xJf node-v$NODE_VERSION-linux-x64-musl.tar.xz -C /usr --strip-components=1 --no-same-owner \
+  && rm -rf node-v$NODE_VERSION-linux-x64-musl.tar.xz
+
+# npm config
+RUN npm config set registry ${NPM_REGISTRY} \
+  && npm i yarn -g \
+  && npm cache clean --force \
+  && yarn config set registry ${NPM_REGISTRY}
+```
+**代码 2.2.1**
