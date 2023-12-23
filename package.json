@@ -3,7 +3,6 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-	  "prebuild": "node update-time.js",
     "build": "hexo generate && node scripts/copy.js",
     "clean": "hexo clean",
     "deploy": "hexo deploy",
