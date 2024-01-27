@@ -10,3 +10,4 @@ docs/
 *.dtmp
 *.tmp
 
+/source/_posts/.obsidian
