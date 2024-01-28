@@ -4,3 +4,4 @@ Crawl-delay: 7200
 Disallow: /archives/
 
 Sitemap: https://blog.whyun.com/sitemap.xml
+Sitemap: https://blog.whyun.com/nodebook/sitemap.xml
