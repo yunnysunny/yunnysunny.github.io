@@ -87,15 +87,16 @@ job:image:
 
 > 上述代码的配套完整项目可以参见：https://gitlab.com/demo-whyun/alpine-docker
 
+> CI_COMMIT_REF_NAME 是 gitlab 中的预定义变量，代表当前的 git 分支名或者 tag 名，更多预定义变量参见官方[文档](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html)。
+
 DOCKER_AUTH_CONFIG 是 gitlab 的约定的变量，如果你的镜像来自私有仓库，正确的设置这个变量可以让你能够成功拉取到指定镜像（具体参见官方[文档](https://docs.gitlab.com/ee/ci/docker/using_docker_images.html#access-an-image-from-a-private-container-registry)）。这里我们使用的是 docker hub 的镜像仓库，拉取的是公开的镜像，所以这个变量在这里没有体现出来用户。
 
 ![](images/group_var.png)
 
 **图 2.1.1**
 
-另外 DOCKER_AUTH_CONFIG 中的 DOCKER_TOKEN 是 docker 的鉴权凭证，格式为 BASE64 形式，可以现在一台机器上通过 docker login 登录你的账号，然后查看 ~/.docker/config.json，将其中的 BASE64 值拷贝出来，在 gitlab 组中配置一个变量，如上图所示。
-
-> CI_COMMIT_REF_NAME 是 gitlab 中的预定义变量，代表当前的 git 分支名或者 tag 名，更多预定义变量参见官方[文档](https://docs.gitlab.com/ee/ci/variables/predefined_variables.html)。
+另外 `DOCKER_AUTH_CONFIG` 中的 `DOCKER_TOKEN` 是 docker 的鉴权凭证，格式为 BASE64 形式，可以现在一台机器上通过 docker login 登录你的账号，然后查看 ~/.docker/config.json，将其中的 BASE64 值拷贝出来，在 gitlab 组中配置一个变量，如上图所示。
+> 注意途中的 **Protect variable** 选项，如果勾选则只有受保护分支可以访问这个变量，非受保护分支读取这个变量的时候得到的是未定义。有时候你会发现创建了一个 feature 分支，但是执行 CI 的时候，提示使用 `DOCKER_AUTH_CONFIG` 环境变量鉴权失败了，那么有可能是由于你将这个变量给勾选导致的。 
 
 在 job:image 中的 before_script 中，将 DOCKER_AUTH_CONFIG 写入了 docker 容器内的 ~/.docker/config.json 中，是因为 docker in docker 模式无法读取到 gitlab variables 中定义的环境变量，必须手动写入 docker 的鉴权文件。
 

@@ -142,7 +142,7 @@ manage-ui-test                                      Executor=ssh Token=abcdef UR
 
 对于 `鉴权 token` 来说就比较简单，取消注册用的 token 值和注册时 token 值是一个值。
 
-
+> 如果在 gitlab 设置中将某个 runner 的密钥更换掉，那么注册的 runner 将会处于失效状态，这时候失效的 runner 不会被自动移除。如果想批量清理这些失效的 runner ，可以使用命令 `sudo gitlab-runner verify --delete` 。
 
 ## 2. 在何时执行
 
@@ -263,9 +263,6 @@ job:test-pro:
 **代码 3.1**
 
 由于在不同环境下收集测试覆盖率的代码是相同的，所以这里做了一个 `coverage_expression` 的锚点方便下面的 job 做引用，同时锚点前面的 `.coverage-collection` 名称一定要以 `.` 开头，否则 gitlab ci 会将其当成普通 job 来执行。
-
-由于 gitlab ci 的知识点比较多，其他未讲到的内容，可以从官方教程中自行查找 [GitLab CI/CD | GitLab](https://docs.gitlab.com/ee/ci/) 。
-
 ## 4. 项目引用
 
 为了代码复用，我们在开发过程中会将部分通用代码单独抽离为一个模块，然后将这个模块的代码单独创建一个项目。这样其他项目就可以将此模块项目作为当前项目的依赖包来引入，从而提高代码的复用性和可维护性。
@@ -283,11 +280,17 @@ before_script:
 ```
 
 **代码 4.1**
-CI_JOB_TOKEN 的权限的权限和当前 CI 的触发者的权限一致，所以只要执行 CI 的人也有当前以来项目的仓库 clone 权限，即可使用 CI_JOB_TOKEN 的模式 clone 此依赖包。
+`CI_JOB_TOKEN` 的权限的权限和当前 CI 的触发者的权限一致，所以只要执行 CI 的人也有当前以来项目的仓库 clone 权限，即可使用 `CI_JOB_TOKEN` 的模式 clone 此依赖包。
+
+> 从 gitlab 16.3 开始，官方对于 `CI_JOB_TOKEN` 进行了限制，默认需要在 **Settings -> CI/CD -> Token Access** 中手动添加项目白名单才能允许跨项目访问。如果嫌麻烦，可以直接将 **Limit access to this project** 关闭掉。
+> ![](images/gitlab_ci_job_token_allow_list.png)
+> **图 4.1**
 
 ## 5. 生成产物复用
 
 我们在 CI 中不可避免的要安装程序依赖文件，对于普通项目来说，依赖的安装很可能会等待比较久的时间。其实大多数情况下，我们每次运行 CI 时，依赖列表不会变动，这时候可以利用 gitlab 的缓存机制来讲安装的依赖文件做缓存。
 
+## 6. 参考
+由于 gitlab ci 的知识点比较多，其他未讲到的内容，可以从官方教程中自行查找 [GitLab CI/CD | GitLab](https://docs.gitlab.com/ee/ci/) 。
 
 
