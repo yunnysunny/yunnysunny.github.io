@@ -138,7 +138,7 @@ sudo gitlab-runner register \
 Listing configured runners                          ConfigFile=/etc/gitlab-runner/config.toml
 manage-ui-test                                      Executor=ssh Token=abcdef URL=https://some.com.yours
 ```
-则取消 manage-ui-test 注册，就需要运行 `sudo gitlab-runner unregister --url =https://some.com.yours --token abcdef`。
+则取消 manage-ui-test 注册，就需要运行 `sudo gitlab-runner unregister --url https://some.com.yours --token abcdef`。
 
 对于 `鉴权 token` 来说就比较简单，取消注册用的 token 值和注册时 token 值是一个值。
 
