@@ -34,6 +34,7 @@ skip_render:
   - "404.html"
   - "ByteDanceVerify.html"
   - "0a321c3fbb2d4b86915e04a05f622cfe.txt"
+  - "sogousiteverification.txt"
 
 # Writing
 new_post_name: :title.md # File name of new posts
