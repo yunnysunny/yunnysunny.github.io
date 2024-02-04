@@ -35,6 +35,7 @@ skip_render:
   - "ByteDanceVerify.html"
   - "0a321c3fbb2d4b86915e04a05f622cfe.txt"
   - "sogousiteverification.txt"
+  - "shenma-site-verification.txt"
 
 # Writing
 new_post_name: :title.md # File name of new posts
