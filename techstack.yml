@@ -1,0 +1,122 @@
+repo_name: yunnysunny/yunnysunny.github.io
+report_id: 677634baea3f08de3850cd858ffa13ff
+version: 0.1
+repo_type: Public
+timestamp: '2024-02-05T15:55:24+00:00'
+requested_by: yunnysunny
+provider: github
+branch: master
+detected_tools_count: 9
+tools:
+- name: EJS
+  description: An Embedded JavaScript templating Language
+  website_url: https://ejs.co/
+  license: Apache-2.0
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Templating Languages & Extensions
+  image_url: https://img.stackshare.io/no-img-open-source.png
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io/blob/master/package.json
+  detection_source: package.json
+  last_updated_by: yunnysunny
+  last_updated_on: 2021-09-08 13:06:03.000000000 Z
+- name: JavaScript
+  description: Lightweight, interpreted, object-oriented language with first-class
+    functions
+  website_url: https://developer.mozilla.org/en-US/docs/Web/JavaScript
+  open_source: true
+  hosted_saas: false
+  category: Languages & Frameworks
+  sub_category: Languages
+  image_url: https://img.stackshare.io/service/1209/javascript.jpeg
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io
+  detection_source: Repo Metadata
+- name: Git
+  description: Fast, scalable, distributed revision control system
+  website_url: http://git-scm.com/
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Version Control System
+  image_url: https://img.stackshare.io/service/1046/git.png
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io
+  detection_source: Repo Metadata
+- name: GitHub Actions
+  description: Automate your workflow from idea to production
+  website_url: https://github.com/features/actions
+  open_source: false
+  hosted_saas: true
+  category: Build, Test, Deploy
+  sub_category: Continuous Integration
+  image_url: https://img.stackshare.io/service/11563/actions.png
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io/blob/master/.github/workflows/pages.yml
+  detection_source: ".github/workflows/pages.yml"
+  last_updated_by: yunnysunny
+  last_updated_on: 2024-01-28 08:47:16.000000000 Z
+- name: Yarn
+  description: A new package manager for JavaScript
+  website_url: https://yarnpkg.com/
+  open_source: true
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Front End Package Manager
+  image_url: https://img.stackshare.io/service/5848/44mC-kJ3.jpg
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io/blob/master/yarn.lock
+  detection_source: yarn.lock
+  last_updated_by: yunnysunny
+  last_updated_on: 2021-09-09 07:15:44.000000000 Z
+- name: npm
+  description: The package manager for JavaScript.
+  website_url: https://www.npmjs.com/
+  open_source: false
+  hosted_saas: false
+  category: Build, Test, Deploy
+  sub_category: Front End Package Manager
+  image_url: https://img.stackshare.io/service/1120/lejvzrnlpb308aftn31u.png
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io/blob/master/package.json
+  detection_source: package.json
+  last_updated_by: yunnysunny
+  last_updated_on: 2021-09-08 13:06:03.000000000 Z
+- name: Hexo
+  description: A fast, simple &amp; powerful blog framework, powered by Node.js
+  website_url: http://hexo.io/
+  version: 3.9.0
+  license: MIT
+  open_source: true
+  hosted_saas: false
+  category: Application Utilities
+  sub_category: Static Site Generators
+  image_url: https://img.stackshare.io/service/1154/mQZOTo9f.png
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io/blob/master/yarn.lock
+  detection_source: package.json
+  last_updated_by: yunnysunny
+  last_updated_on: 2021-09-08 13:06:03.000000000 Z
+- name: copyfiles
+  description: Copy some files
+  package_url: https://www.npmjs.com/copyfiles
+  version: 2.4.1
+  license: MIT
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: npm Packages
+  image_url: https://img.stackshare.io/package/16453/default_73c88a18b684e01cbdbf945631a40a44aff5a777.png
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io/blob/master/yarn.lock
+  detection_source: package.json
+  last_updated_by: yunnysunny
+  last_updated_on: 2022-08-03 12:18:30.000000000 Z
+- name: simple-git
+  description: Simple GIT interface for node.js
+  package_url: https://www.npmjs.com/simple-git
+  version: 3.21.0
+  license: MIT
+  open_source: true
+  hosted_saas: false
+  category: Libraries
+  sub_category: npm Packages
+  image_url: https://img.stackshare.io/package/16567/default_d6ff16957d0b119d673d5ec0eb21b08d8d5008f4.png
+  detection_source_url: https://github.com/yunnysunny/yunnysunny.github.io/blob/master/yarn.lock
+  detection_source: package.json
+  last_updated_by: yunnysunny
+  last_updated_on: 2023-12-22 15:41:01.000000000 Z
