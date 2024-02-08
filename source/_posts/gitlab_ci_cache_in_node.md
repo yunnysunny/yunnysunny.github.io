@@ -175,5 +175,29 @@ job:build:build:
 ## 2. 其他解释
 ### 2.1 为何不用 npm ci 命令
 网上的很多教程在 CI 中安装 Node 依赖的时候都是使用 npm ci 命令，那么它和 npm install 的区别是啥呢，首先 npm ci 在安装的时候会删除 node_modules  文件夹，但是我们的 CI  运行在 docker 中，node_modules 初始化的时候就是空的。其次，npm ci 只使用 package-lock.json 来安装依赖包，但是一旦有人不按照规范来安装依赖包，就会导致安装完的包不能用。如果为了约束安装行为可以使用 npm ci，如果为了更好的兼容性可以使用 npm install 。
-### 2.2 为了使用 docker 模式的时候缓存生成后不能读取
-使用 docker 模式时，会通过挂载宿主机目录的方式来加载缓存，但是默认会随机挂载一个宿主机目录。这样上一个 docker job 生成的缓存文件，在下一个 job 中将会失效。直接将 gitlab runner 中的挂载的 /cache 目录，映射到一个固定宿主目录即可。
+### 2.2 为何使用 docker 模式的时候缓存生成后不能读取
+使用 docker 模式时，会通过挂载宿主机目录的方式来加载缓存，但是默认会随机挂载一个宿主机目录。这样上一个 docker job 生成的缓存文件，在下一个 job 中将会失效。直接将 gitlab runner 中的挂载的 /cache 目录，映射到一个固定宿主目录即可。例如下面这个配置，`volumes` 属性默认为 `["/cache"]` ，gitlab runner 关联的 docker 启动后将会随机映射宿主机目录，这里将其关联 `/tmp` 目录后，将会直接关联宿主机 `/tmp` 目录，保证缓存能够复用成功。
+```toml
+[[runners]]
+  name = "My Docker Runner"
+  url = "https://gitlab.com"
+  id = 1234567
+  token = "你的注册token"
+  token_obtained_at = 2023-12-16T12:54:50Z
+  token_expires_at = 0001-01-01T00:00:00Z
+  executor = "docker"
+  [runners.cache]
+    MaxUploadedArchiveSize = 0
+  [runners.docker]
+    tls_verify = false
+    image = "docker:20.10.16"
+    privileged = true
+    disable_entrypoint_overwrite = false
+    oom_kill_disable = false
+    disable_cache = false
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock","/tmp:/cache"]
+    shm_size = 0
+    network_mtu = 0
+```
+### 2.3 既然 npm 使用缓存如此拉跨，有没有替代方案
+npm 的 package-lock.json 冗余 version 字段确实给我们使用缓存带来的很多不变，但是如果我们切换为其他包管理工具，例如 yarn 或者 pnpm 却不会有这么烦人的问题，它们的 lock 文件比较纯粹，只有依赖包的信息，使用类似 1.1 小节的解决方案是完全可以的。

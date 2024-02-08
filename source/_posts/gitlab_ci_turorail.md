@@ -289,6 +289,7 @@ before_script:
 ## 5. 生成产物复用
 
 我们在 CI 中不可避免的要安装程序依赖文件，对于普通项目来说，依赖的安装很可能会等待比较久的时间。其实大多数情况下，我们每次运行 CI 时，依赖列表不会变动，这时候可以利用 gitlab 的缓存机制来讲安装的依赖文件做缓存。
+可以参考笔者的 [gitlab ci 系列教程（三）—— 在 Node.js 项目中使用缓存 | 白一梓的个人博客 (whyun.com)](https://blog.whyun.com/posts/gitlab-ci-cache-in-node/) ，虽然是拿 Node.js 编程语言讲述的，但是应用到其他语言中，差别不大。
 
 ## 6. 参考
 由于 gitlab ci 的知识点比较多，其他未讲到的内容，可以从官方教程中自行查找 [GitLab CI/CD | GitLab](https://docs.gitlab.com/ee/ci/) 。
