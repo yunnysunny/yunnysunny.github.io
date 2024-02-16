@@ -199,5 +199,98 @@ job:build:build:
     shm_size = 0
     network_mtu = 0
 ```
+**代码 2.2.1**
 ### 2.3 既然 npm 使用缓存如此拉跨，有没有替代方案
 npm 的 package-lock.json 冗余 version 字段确实给我们使用缓存带来的很多不变，但是如果我们切换为其他包管理工具，例如 yarn 或者 pnpm 却不会有这么烦人的问题，它们的 lock 文件比较纯粹，只有依赖包的信息，使用类似 1.1 小节的解决方案是完全可以的。
+下面给出一个使用 yarn 作为包管理工具的 CI 示例文件：
+```yaml
+image: node:latest
+
+variables:
+  CI: 1
+
+# Caches
+.node_modules-cache: &node_modules-cache
+  key:
+    files:
+      - yarn.lock
+  paths:
+    - node_modules
+  policy: pull
+  
+.check_node_modules:
+  script: &check-node-modules
+    - |
+      set -v
+      echo "check cache..."
+      if [ -d node_modules ] ; then
+        echo "show 10 deps:" && (ls node_modules/ | head) && echo "cache exist"
+      else
+        yarn install
+      fi
+
+stages:
+  - prepare
+  - build
+  - image
+
+.when-to-run: &when_to_run
+  rules:
+    - if: $CI_COMMIT_MESSAGE !~ /^\d+.\d+.\d+/
+    - if: $CI_COMMIT_TAG =~ /^v\d+.\d+.\d+\S*$/
+
+# prepare
+job:prepare:
+  stage: prepare
+
+  script:
+    - yarn install
+    - npm run eslint
+  cache:
+    - <<: *node_modules-cache
+      policy: pull-push # We override the policy
+  allow_failure: false
+  <<: *when_to_run
+
+# build: build
+job:build:build:
+  stage: build
+
+  artifacts:
+    expire_in: 10min
+    paths:
+      - dist/
+  before_script:
+    - *check-node-modules
+  script:
+    - npm run build
+  cache:
+    - <<: *node_modules-cache
+  allow_failure: false
+  <<: *when_to_run
+
+# build: test
+job:build:test:
+  stage: build
+
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  variables:
+    NODE_ENV: test
+  before_script:
+    - *check-node-modules
+  script:
+    - npm run test:ci
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+  cache:
+    - <<: *node_modules-cache
+  allow_failure: false
+  <<: *when_to_run
+  dependencies: []
+```
+**代码 2.3.1**
