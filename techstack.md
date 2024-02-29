@@ -3,11 +3,11 @@
 ## Tech Stack
 yunnysunny/yunnysunny.github.io is built on the following main stack:
 
-- [Hexo](http://hexo.io/) – Static Site Generators
-- [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) – Languages
 - [EJS](https://ejs.co/) – Templating Languages & Extensions
-- [Yarn](https://yarnpkg.com/) – Front End Package Manager
+- [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) – Languages
 - [GitHub Actions](https://github.com/features/actions) – Continuous Integration
+- [Yarn](https://yarnpkg.com/) – Front End Package Manager
+- [Hexo](http://hexo.io/) – Static Site Generators
 
 Full tech stack [here](/techstack.md)
 
@@ -17,11 +17,11 @@ Full tech stack [here](/techstack.md)
 ## Tech Stack
 yunnysunny/yunnysunny.github.io is built on the following main stack:
 
-- <img width='25' height='25' src='https://img.stackshare.io/service/1154/mQZOTo9f.png' alt='Hexo'/> [Hexo](http://hexo.io/) – Static Site Generators
-- <img width='25' height='25' src='https://img.stackshare.io/service/1209/javascript.jpeg' alt='JavaScript'/> [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) – Languages
 - <img width='25' height='25' src='https://img.stackshare.io/no-img-open-source.png' alt='EJS'/> [EJS](https://ejs.co/) – Templating Languages & Extensions
-- <img width='25' height='25' src='https://img.stackshare.io/service/5848/44mC-kJ3.jpg' alt='Yarn'/> [Yarn](https://yarnpkg.com/) – Front End Package Manager
+- <img width='25' height='25' src='https://img.stackshare.io/service/1209/javascript.jpeg' alt='JavaScript'/> [JavaScript](https://developer.mozilla.org/en-US/docs/Web/JavaScript) – Languages
 - <img width='25' height='25' src='https://img.stackshare.io/service/11563/actions.png' alt='GitHub Actions'/> [GitHub Actions](https://github.com/features/actions) – Continuous Integration
+- <img width='25' height='25' src='https://img.stackshare.io/service/5848/44mC-kJ3.jpg' alt='Yarn'/> [Yarn](https://yarnpkg.com/) – Front End Package Manager
+- <img width='25' height='25' src='https://img.stackshare.io/service/1154/mQZOTo9f.png' alt='Hexo'/> [Hexo](http://hexo.io/) – Static Site Generators
 
 Full tech stack [here](/techstack.md)
 
@@ -32,7 +32,7 @@ Full tech stack [here](/techstack.md)
 # Tech Stack File
 ![](https://img.stackshare.io/repo.svg "repo") [yunnysunny/yunnysunny.github.io](https://github.com/yunnysunny/yunnysunny.github.io)![](https://img.stackshare.io/public_badge.svg "public")
 <br/><br/>
-|9<br/>Tools used|02/05/24 <br/>Report generated|
+|9<br/>Tools used|02/29/24 <br/>Report generated|
 |------|------|
 </div>
 
