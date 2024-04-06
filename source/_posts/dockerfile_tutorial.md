@@ -376,6 +376,42 @@ DOCKER_BUILDKIT=1 docker build --file bin.Dockerfile --output bin .
 
 > 代码 1.4.1 和 代码 1.4.2 , 可以从项目 [use-my](https://gitlab.com/yunnysunny/use-my) 中找到。
 
+### 1.5 交叉构建
+docker 镜像支持在不同 CPU 平台中，通过 pull 同一个镜像名来下载对应平台的镜像。这就要求我们在构建镜像中的时候开启交叉构建支持。比如说你当前是 x86 平台，构建的时候还想同时构建 arm 平台的镜像，可以通过 --platform=linux/amd64,linux/arm64 参数实现。但是我们在构建镜像内部要安装的二进制包，就需要区别对待了，为此 docker 会预知几个构建参数，对于 platform 为 linux/amd64 来说，会注入如下几个构建参数：
+- `TARGETPLATFORM=linux/amd64`
+- `TARGETOS=linux`
+- `TARGETARCH=amd64`
+举一个例子，我们自己构建一个 nodejs 的镜像，需要在 dockerfile 中安装 node 的二进制文件，并且我们想让其支持 x64 和 arm64 两种 CPU 架构，可以在 dockerfile 中这么写：
+```dockerfile
+FROM yunnysunny/ubuntu
+RUN apt-get update \
+  && apt-get install --force-yes --no-install-recommends curl  -y \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/
+ARG NODE_VERSION=10.24.1
+ARG NPM_REGISTRY=https://registry.npmmirror.com
+ARG NPM_MIRROR=https://npmmirror.com
+ARG TARGETARCH
+RUN if [ "$TARGETARCH" = "arm64" ] ; then \
+    export ARCH=arm64 ; \
+  elif [ "$TARGETARCH" = "arm" ] ; then \
+    export ARCH=armv7l ; \
+  else \
+    export ARCH=x64 ; \
+  fi ; \
+  if [ "$TARGETARCH" = "arm64" ] || [ "$TARGETARCH" = "arm" ] ; then \
+    apt-get update \
+    && apt-get install libatomic1 --no-install-recommends -y \
+    && rm -rf /var/lib/apt/lists/* ; \
+  fi \
+  && curl -fsSLO --compressed "${NPM_MIRROR}/mirrors/node/v$NODE_VERSION/node-v$NODE_VERSION-linux-$ARCH.tar.gz" \
+  && tar -zxvf "node-v$NODE_VERSION-linux-$ARCH.tar.gz" -C /usr/local --strip-components=1 \
+  && rm "node-v$NODE_VERSION-linux-$ARCH.tar.gz" \
+  && ln -s /usr/local/bin/node /usr/local/bin/nodejs
+```
+**代码 1.5.1**
+由于 `TARGETARCH` 是预定义好的构建参数，我们只需要通过 `ARG` 指令声明一下，在后面的代码中就可以读取其中的值了。这里我们在 shell 中根据 `TARGETARCH` 做了一个映射，将其转成 node 平台上的 CPU 架构命名方式，进行下载。
+通过` DOCKER_BUILDKIT=1 docker buildx build --platform linux/amd64,linux/arm64,linux/arm .` 可以一键生成 x86 和 arm64 平台的镜像了。
 ## 2 已知问题
 
 ### 2.1 清理磁盘
@@ -410,8 +446,7 @@ docker rmi $(docker images | grep "none" | awk '{print $3}')
   "registry-mirrors": [
     "https://docker.mirrors.ustc.edu.cn",
     "https://hub-mirror.c.163.com",
-    "https://mirror.baidubce.com",
-    "https://registry.docker-cn.com"
+    "https://mirror.baidubce.com"
   ]
 }
 ```

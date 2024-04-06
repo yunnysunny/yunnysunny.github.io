@@ -9,7 +9,7 @@ categories:
 ---
 
 ## 3.1 背景
-谈到JNI的使用场景，最常用的就是android NDK的编写了。首先从http://developer.android.com/ndk/downloads/index.html#download 把最新版的NDK下载下来。下载完之后得到一个exe文件，这其实是一个自解压文件，运行后自动解压，解压完成后的文件夹有3GB，所以你的磁盘空间起码得留足5GB左右的剩余空间。
+谈到JNI的使用场景，最常用的就是android NDK的编写了。首先从https://developer.android.com/ndk/downloads/index.html#download 把最新版的NDK下载下来。下载完之后得到一个exe文件，这其实是一个自解压文件，运行后自动解压，解压完成后的文件夹有3GB，所以你的磁盘空间起码得留足5GB左右的剩余空间。
 最终我们得到这么一个目录结构：
 
 ![ndk目录结构](images/ndk_dir.jpg "")  
@@ -57,7 +57,7 @@ include $(BUILD_SHARED_LIBRARY)
 这个例子就是NDK`samples`目录中`hello-jni`项目，将这个项目随便拷贝到某一个目录，然后删除掉项目中的tests文件夹，这个是一个单元测试，我不知道怎么使用它，所以直接删除掉。然后打开eclipse，选择File->Project...->Android->Android Project From Existing Code,选择刚才拷贝后的路径，点击完成。
 在命令行中进入项目的jni文件夹，然后运行`ndk-build`，你会发现程序生成了好几个so文件夹，放置于项目的`libs`文件夹中，这是由于在文件`Application.mk`（位于文件夹`jni`中）文件中这一句造成的：  
 `APP_ABI := all`  
-`ABI`这个参数（可以参见百度百科词条[ABI](http://baike.baidu.com/subview/1433570/6276632.htm "")）比之前讲到的`ARCH`要更加细化，可以理解为在同一体系结构下CPU的不同版本，支持的指令集有所差异，android中支持的ABI可以参见[谷歌官方ABI解释](http://developer.android.com/ndk/guides/abis.html "")。最终在模拟器上运行程序成功：  
+`ABI`这个参数（可以参见百度百科词条[ABI](https://baike.baidu.com/subview/1433570/6276632.htm "")）比之前讲到的`ARCH`要更加细化，可以理解为在同一体系结构下CPU的不同版本，支持的指令集有所差异，android中支持的ABI可以参见[谷歌官方ABI解释](https://developer.android.com/ndk/guides/abis.html "")。最终在模拟器上运行程序成功：  
 
 ![运行hello-jni项目成功](images/hello_jni_run_success.png "")  
 **图3.3 运行hello-jni项目成功**  

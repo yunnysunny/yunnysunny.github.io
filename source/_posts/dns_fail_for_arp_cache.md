@@ -13,7 +13,7 @@ categories:
 我刚才排查的时候，先从 gitlab-runner 入手，因为它上面的错误信息比较明确：
 
 ```
-ERROR: Verifying runner... failed                   runner=5ce326a7 status=couldn't execute POST against http://gitlab.17zuoye.net/api/v4/runners/verify: Post http://gitlab.xxx.net/api/v4/runners/verify: dial tcp: lookup gitlab.xxx.net on 127.0.0.11:53: write udp 127.0.0.1:46184->127.0.0.11:53: write: invalid argument
+ERROR: Verifying runner... failed                   runner=5ce326a7 status=couldn't execute POST against http://gitlab.xxx.net/api/v4/runners/verify: Post http://gitlab.xxx.net/api/v4/runners/verify: dial tcp: lookup gitlab.xxx.net on 127.0.0.11:53: write udp 127.0.0.1:46184->127.0.0.11:53: write: invalid argument
 ```
 
 针对这个问题我首先咨询了 运维，他给的答复是 CPU 的 load 过高导致的。但是我对于这个答复比较持怀疑态度，当时高峰时期 CPU load 确实是实际核心数的两倍，但是 CPU 当时还有接近 50% 的 idle 存留，通过 top 命令看每个核心的实际占用，都还有 idle 余量，按理还说不至于在运算量如此小的 DNS 上卡死。

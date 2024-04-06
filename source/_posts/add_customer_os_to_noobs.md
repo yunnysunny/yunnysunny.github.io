@@ -15,7 +15,7 @@ NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安
 
 ## 实现
 
-关于添加自定义操作系统的问题，在NOOBS的github文档上也是有说明的，详见[这里](https://github.com/raspberrypi/noobs#how-to-create-a-custom-os-version)。假设我们现在要安装[RetroPie](http://blog.petrockblock.com/retropie/)这个系统，我们首先从[官方地址](http://blog.petrockblock.com/download/retropie-project-image/)上把它下载下来。根据github上提到的教程，那么制作NOOBS系统就应该是下面几步。
+关于添加自定义操作系统的问题，在NOOBS的github文档上也是有说明的，详见[这里](https://github.com/raspberrypi/noobs#how-to-create-a-custom-os-version)。假设我们现在要安装[RetroPie](https://blog.petrockblock.com/retropie/)这个系统，我们首先从[官方地址](https://blog.petrockblock.com/download/retropie-project-image/)上把它下载下来。根据github上提到的教程，那么制作NOOBS系统就应该是下面几步。
 
 1. 下载NOOBS.
 2. 解压下载后的文件。
@@ -32,7 +32,7 @@ NOOBS提供多个操作系统共存的方案，他提供了一个图形化的安
           "release_date": "2014-05-31",
           "kernel": "3.12",
           "description": "The RetroPie Project started with the idea of turning the Raspberry Pi into a retro-gaming console and evolved ever since.",
-          "url": "http://blog.petrockblock.com/retropie/",
+          "url": "https://blog.petrockblock.com/retropie/",
           "username": "pi",
           "password": "raspberry",
           "feature_level": 123900
