@@ -12,6 +12,7 @@
   "hexo": {
     "version": "7.0.0"
   },
+  "packageManager": "yarn@1.22.21",
   "dependencies": {
     "@next-theme/plugins": "^8.18.2",
     "copyfiles": "^2.4.1",
