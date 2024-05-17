@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "date": "git ls-files -z | while read -d '' path; do touch -d $(git log -1 --format=\"@%ct\" \"$path\") \"$path\"; done",
+    "date": "node update-time.js",
     "build": "hexo generate && node scripts/copy.js",
     "clean": "hexo clean",
     "deploy": "hexo deploy",
