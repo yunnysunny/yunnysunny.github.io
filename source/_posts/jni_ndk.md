@@ -41,7 +41,7 @@ include $(BUILD_SHARED_LIBRARY)
 - LOCAL_CFLAGS 定义编译用到的宏定义，当然也可以使用`-I`来指定头文件路径，不过这个使用`LOCAL_C_INCLUDES`更适合，因为后者可以被断点调试程序gdb识别。
 - TARGET_PLATFORM 指定当前使用的API版本，比如说android-9，就会使用NDK文件夹下的`platforms/android-9`中的头文件和库来参与编译（对于API版本和android版本之间的对应关系，可以参见百度百科的词条[Android历史版本](http://baike.baidu.com/view/7902337.htm "")）。
 - TARGET_ARCH 指定编译的CPU平台，不同API版本支持的类型不同，越新的API支持的CPU平台就越多，如果想查看当前API版本支持哪几个平台，去`plantforms/android-{API版本号}`中看一下便知道，比如说android-3仅仅支持一个平台`arch-arm`:  
-![1.5支持的cpu类型](images/1.5arch.png "")  
+![1.5支持的cpu类型](images/arch.png "")  
 **图3.2.1 anroid 1.5支持的cpu类型**  
 那么android-3，可选的`TARGET_ARCH`就只有一个`arm`选项。
 但是`android-21`就支持6个CPU平台：  
