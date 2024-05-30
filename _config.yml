@@ -9,7 +9,7 @@ description: '白一梓的个人技术博客，涉猎 Node Go Java 等语言和 
 keywords: '白一梓 IT技术 博客 Node Go Java SSO TCP'
 author: yunnysunny
 language: zh-CN
-timezone: ''
+timezone: 'Asia/Shanghai'
 
 # URL
 ## Set your site url here. For example, if you use GitHub Page, set url as 'https://username.github.io/project'

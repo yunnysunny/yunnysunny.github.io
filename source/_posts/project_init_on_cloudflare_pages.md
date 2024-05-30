@@ -3,6 +3,7 @@ abbrlink: project-init-on-cloudflare-pages
 title: cloudflare page 教程（一）项目初始化
 date: 2024-05-24
 description: 在之前的文章中，谈到了笔者的博客被攻击，在尝试了各种国内 CDN 解决方案后都无解，最后靠 cloudflare 提供的免费 page 服务完美解决。从这篇文章起，笔者将开始深入探究 page 的使用方法，让更多的人能够用上这种惠民的服务。作为开篇之作，本文重点关注 cloudflare page 的项目初始化和部署相关的内容。
+hide: true
 categories:
   - cloudflare
   - Serverless
