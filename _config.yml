@@ -36,6 +36,7 @@ skip_render:
   - "0a321c3fbb2d4b86915e04a05f622cfe.txt"
   - "sogousiteverification.txt"
   - "shenma-site-verification.txt"
+  - "MP_verify_FeNZ2NZKikoIyVsF.txt"
 
 # Writing
 new_post_name: :title.md # File name of new posts
