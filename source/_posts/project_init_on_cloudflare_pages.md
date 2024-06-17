@@ -124,3 +124,6 @@ export const onRequest: PagesFunction<Env> = async (context) => {
 }
 ```
 **代码 4.2.2**
+> 如果想读取 HTTP 请求 body 的内容，可以参见官方文档 [Request · Cloudflare Workers docs](https://developers.cloudflare.com/workers/runtime-apis/request/#instance-methods)。它提供了 `formData` `json` 等函数方便开发者使用。
+
+以上就是初始化 Pages 项目的全部内容了，下一篇内容预计会将 Pages 的请求路由的编写教程。
