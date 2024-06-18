@@ -196,9 +196,27 @@ job:build:
 
 **代码 2.2**
 
-上述代码仅仅给出了一个简单示例，代表当前提交的分支以 `feature` 开头，或者提交的 git tag 以 `v` 开头时，或者当前触发了 merge request 时，都会触发 `job:build`。
+上述代码仅仅给出了一个简单示例，代表当前提交的分支以 `feature` 开头，或者提交的 git tag 以 `v` 开头时，或者当前触发了 merge request 时，都会触发 `job:build`。rules 数组的各个条件是或的关系，gitlab 在处理时依次判断每个条件，只要找到一个命中的规则，就会退出，所以我们在编写的时候每个条件最好做成互斥的，否则会导致一些意想不到的问题出现。比如说我们看下面代码：
+```yaml
+rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      when: manual
+    - if: '$CI_PIPELINE_SOURCE == "schedule"'
+```
+**代码 2.3**
+我们的出发点是往 main 分支 push 的时候手动执行，或者在定时 pipeline 中自动执行。但当我们设置的 pipeline 规则生效后，却显示依然需要手动才能执行。这是由于 `CI_COMMIT_BRANCH` 这个环境变量在定时 pipeline 触发时，依然有值，且为 `main` ，然后由于命中了第一个判断条件，就不会判断第二个条件了，但是第一个判断条件有恰好必须手动来触发，所以最终我们定时 pipeline 就被堵塞住了。
+> ![create_schedule_pipeline](images/create_schedule_pipeline.png)
+> **图 2.1 创建定时 pipeline 的配置**
 
-rules 属于 gitlab 在 12.3 版本引入的特性，在此版本之前的 gitlab 使用 only 和 expect 属性来指定运行时机，比如说 `if: $CI_COMMIT_BRANCH =~ /^feature/` 可以转化为:
+解决上述问题的思路就是将两个判断条件做成互斥的
+```yaml
+rules:
+    - if: $CI_COMMIT_BRANCH == "main" && $CI_PIPELINE_SOURCE == "push"
+    - if: $CI_PIPELINE_SOURCE == "schedule"
+```
+
+**代码 2.4**
+注意 `rules` 属于 gitlab 在 12.3 版本引入的特性，在此版本之前的 gitlab 使用 `only` 和 `expect` 属性来指定运行时机，比如说 `if: $CI_COMMIT_BRANCH =~ /^feature/` 可以转化为:
 
 ```yaml
 only:
