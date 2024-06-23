@@ -75,7 +75,7 @@ categories:
 
 ### Github上的子站点怎么办？
 
-由于我的github page不仅仅在一个站点上启用了。默认的 [yunnysunny.github.io](http://yunnysunny.github.io)肯定是挂在/上的，但是我还有一个 nodebook项目，按理来说未迁移到 cloudflare 之前是挂在到 /nodebook 下的，迁移完之后，构建生成的静态文件只有默认项目的，所以如果不做处理请求 /nodebook 会直接 404。不过作为一个成熟的产品， cloudflare page已经考虑到了重定向的问题。我把 nodebook 项目也托管在 cloudflare 上，然后在 yunnysunny.github.io 构建时生成一个名字为 _redircts 的文件，并添加如下内容：
+由于我的github page不仅仅在一个站点上启用了。默认的 [yunnysunny.github.io](http://yunnysunny.github.io)肯定是挂在/上的，但是我还有一个 nodebook项目，按理来说未迁移到 cloudflare 之前是挂在到 /nodebook 下的，迁移完之后，构建生成的静态文件只有默认项目的，所以如果不做处理请求 /nodebook 会直接 404。不过作为一个成熟的产品， cloudflare page已经考虑到了重定向的问题。我把 nodebook 项目也托管在 cloudflare 上，然后在 yunnysunny.github.io 构建时生成一个名字为 _redircets 的文件，并添加如下内容：
 
 ```
 /nodebook/* https://node.whyun.com/:splat 
