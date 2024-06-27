@@ -43,6 +43,7 @@ Pages 提供了静态路由跳转的功能，方便你将一些旧有的页面�
 配置了上述代码之后，../browser.js 请求发送到 Pages 服务之后，其会自动去读取 /browser.js 路径映射的资源文件，这样就能完美的解决我们的问题。
 
 > 我们之所以没有使用 1.1 小节的解决方案，是由于它会触发浏览器跳转，效率上不如当前直接代理请求。
+> 上述配置的示例项目代码参见 [yunnysunny/whyun-player](https://github.com/yunnysunny/whyun-player) 。
 
 ## 2. 动态路由
 前面讲的是静态文件的路由，Pages 作为一个全栈解决方案，可以通过编写 Functions 代码来实现后端请求，我们学习 Node 后端框架（比如 Express、Koa ）等，首先要学的就是路由怎么写，可见路由在任何框架中都是关键技术。
@@ -97,3 +98,39 @@ export async function onRequest(context) {
 }
 ```
 **代码 2.2 [user].js**
+
+你也可以将 `[user].js` 改名为 `[[user]].js`，前者只能涵盖 `/v1/user/xxx` 这种路由，但是如果你有一个 `/v1/user/internal/xxx` 的路由，就必须得用 `[[user]].js`，它能够涵盖所有以 `/v1/user/` 开头的路由。假设你想写一个反向代理服务，使用 `[[]]` 这种格式是比较方便的。下面是一段代理请求到 dockerhub 的代码：
+```javascript
+export async function onRequest(context) {
+  const request = context.request
+  const url = new URL(request.url);
+  const path = url.pathname;
+  const originalHost = request.headers.get("host");
+  const registryHost = "registry-1.docker.io";
+  const headers = new Headers(request.headers);
+  headers.set("host", registryHost);
+  const registryUrl = `https://${registryHost}${path}`;
+  const registryRequest = new Request(registryUrl, {
+    method: request.method,
+    headers: headers,
+    body: request.body,
+    // redirect: "manual",
+    redirect: "follow",
+  });
+  const registryResponse = await fetch(registryRequest);
+  console.log(registryResponse.status);
+  const responseHeaders = new Headers(registryResponse.headers);
+  responseHeaders.set("access-control-allow-origin", originalHost);
+  responseHeaders.set("access-control-allow-headers", "Authorization");
+  return new Response(registryResponse.body, {
+    status: registryResponse.status,
+    statusText: registryResponse.statusText,
+    headers: responseHeaders,
+  });
+}
+```
+**代码 2.3 `[[api]].js`**
+
+上述文件 `[[api]].js` 放置到 `functions/v2` 目录下，然后将你的项目部署到 Pages 上，即可快速实现一个 dockerhub 镜像站的功能。
+
+> 上述完整项目代码参见 [whyun-pages/docker-registry (github.com)](https://github.com/whyun-pages/docker-registry) 。
