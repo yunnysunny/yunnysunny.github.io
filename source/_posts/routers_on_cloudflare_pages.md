@@ -1,6 +1,6 @@
 ---
 abbrlink: routers-on-cloudflare-pages
-title: cloudflare page 教程（一）路由配置
+title: cloudflare page 教程（二）路由配置
 date: 2024-06-27
 description: 在之前的文章中，谈到了如何初始化 cloudflare pages。这篇文章将更输入的展开，讲解如何使用 pages 中的路由功能，和如何在实际中进行应用。
 hide: false
