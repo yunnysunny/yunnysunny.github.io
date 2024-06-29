@@ -32,6 +32,11 @@ categories:
 ![](images/build_setting_for_pages.png)
 **图 3.1.2**
 当然你没有使用任何前端框架的话，可以直接选择 None，然后根据需要填写自己的构建命令。
+
+使用 git 模式，有一个副作用，就是你每次做 git push 的时候都会触发部署，即使你当前提交部署的内容仅仅是修改了一下 README.md 文件。cloudflare 官方已经考虑到了这个问题，你在 **Settings** 选项卡中，打开 **Builds & deployments** 菜单，找到 **Build watch paths** 表单，在输入框 **Exclude paths** 中输入你想忽略的文件即可，输入项支持路径前缀，比如说下图中的 `docs/*` 将忽略 `docs` 文件夹及其所有位于其下面的文件。
+
+![](images/skip_files_on_push.png)
+**图 3.1.3**
 ### 3. 2 直接上传本地文件
 如果你临时想做一个静态演示网站，又或者你由于某些原因不想将项目托管在 github 或者 gitlab 上，可以直接把本地的静态文件上传到 Pages 中。
 > github 在大陆访问性一般，可能有些人会更愿意选择 gitlab，但是如今 gitlab 官方已经关闭中国大陆和港澳地区的新用户注册通道（会被跳转到[极狐 GitLab](https://gitlab.cn/saasmigration/)，此产品仅允许试用 90 天）。虽然你可以选择使用 bitbucket 等第三方注册通道绕开这个限制，但是新注册的用户如果想使用其 gitalb ci 功能，需要验证信用卡和手机号，这两者都不支持中国的卡号，不过 gitlab 的其他功能不受影响。
