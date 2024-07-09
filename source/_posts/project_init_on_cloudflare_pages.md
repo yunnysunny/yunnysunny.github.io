@@ -120,10 +120,7 @@ callback.ts 中你可以接收请求的 querystring 参数或者 body 参数进�
 ```typescript
 import { urlParams } from "../utils";
 
-interface Env {
-    KV: KVNamespace;
-}
-export const onRequest: PagesFunction<Env> = async (context) => {
+export const onRequest: PagesFunction = async (context) => {
     const params = urlParams(context.request.url);
     return new Response(params.code);
 }

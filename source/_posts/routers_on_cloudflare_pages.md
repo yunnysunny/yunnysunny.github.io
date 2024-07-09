@@ -34,6 +34,8 @@ Pages 提供了静态路由跳转的功能，方便你将一些旧有的页面�
 └── test
     └── index.html
 ```
+**目录结构 1.2.1**
+
 我们程序的源代码在 browser.js 中编写，在 test 文件见下有一个测试网页 index.html ，为了方便双击 index.html 就能测试，我们在其内部通过`<script src="../browser.js" type="text/javascript"></script>` 来引入 browser.js 。现在我们想将这个项目部署到 cloudflare Pages 上去，想达到部署完之后输入域名就能打开这个 index.html 的目的，那么肯定需要将 test 文件夹设置为 Pages 的构建路径。但是这个 test 文件夹中没有 browser.js ，这个好办构建命令中将其拷贝到 test 文件夹即可。即使拷贝完成了，也有一个问题需要解决，index.html 中是通过 ../browser.js 引入的 js 文件，可现在它跟 index.html 在同一个目录了，这么写肯定是找不到文件的。解决这个问题的好方法还是使用 `_redirects` 文件做个声明：
 ```
 ../browser.js /browser.js 200
@@ -134,3 +136,52 @@ export async function onRequest(context) {
 上述文件 `[[api]].js` 放置到 `functions/v2` 目录下，然后将你的项目部署到 Pages 上，即可快速实现一个 dockerhub 镜像站的功能。
 
 > 上述完整项目代码参见 [whyun-pages/docker-registry (github.com)](https://github.com/whyun-pages/docker-registry) 。
+
+## 3. 已知问题
+### 3.1 动静态路由相互冲突问题
+如果项目中的动态路由和静态路由之间有重合，那么 Pages 将默认使用动态路由。举一个例子，
+```
+├── public
+│   └── index.html
+├── functions
+│   ├── [[proxy]].js
+│   └── config.js
+```
+**目录 3.1.1**
+
+> 上述目录树中 `public` 为 Pages 的构建输出目录。
+
+上述目录结构会导致所有请求都会由 `[[proxy]].js` 文件进行处理，这样我们在 public 目录中放置的 index.html 就白费了。想要网站输入域名后就能打开 index.html，我们可以在 public 目录中添加一个` _routes.json` 文件：
+```json
+{
+   "version": 1,
+   "include": ["/*"],
+   "exclude": ["/"]
+}
+```
+**代码 3.1.1 `public/_routes.json`**
+
+使用上述代码后，`/` 目录就可以正常加载 `index.html` 了。
+
+### 3.2 输入不存在的路由时加载了 index.html 的内容
+Pages 默认工作在单页应用模式，认为所有的请求路径在找不到时，都应该兜底返回 index.html 的内容。如果你想在请求路径不存在时返回 404，你需要在构建输出目录中放置一个 404.html 网页。
+
+同样举一个例子，
+```
+├── functions
+│   ├── oauth2
+│   │   └── callback.js
+│   └── utils.js
+└── public
+    ├── favicon.ico
+    ├── images
+    │   ├── back.png
+    │   ├── btnBg.png
+    │   ├── errIcon.png
+    │   ├── icon128.png
+    │   └── successIcon01.png
+    └── index.html
+```
+**目录结构 3.2.1**
+
+对于上述目录结构来说请求 `/oauth2/callback` 是存在的 ，请求 `/` 也是存在的，但是如过不做任何设置请求 `/xxx` 也会返回 `index.html` 的内容。现在我们在 `public` 目录下放一个 `404.html`，请求 `/xxx` 就可以正常渲染 `404` 页面了。
