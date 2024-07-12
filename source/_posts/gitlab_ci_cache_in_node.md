@@ -294,3 +294,88 @@ job:build:test:
   dependencies: []
 ```
 **代码 2.3.1**
+
+此外还有一个终极解决方案，不过这个方案必须得使用自建的 gitlab runner，不能使用线上 sass 版的 gitlab 共享 runner，因为我们需要修改 runner 部署机器上的配置文件。其次，我们需要使用 pnpm，借助其高效的本地磁盘缓存机制可以快速安装依赖包。示例代码如下：
+
+```yaml
+.install_node_modules:
+  script: &install-node-modules
+    - |
+      pnpm config set store-dir /pnpm/store
+      pnpm install
+
+stages:
+  - prepare
+  - test
+  - image
+
+.when-to-run: &when_to_run
+  rules:
+    - if: $CI_COMMIT_MESSAGE !~ /^\d+.\d+.\d+/
+    - if: $CI_COMMIT_TAG =~ /^v\d+.\d+.\d+\S*$/
+
+# prepare
+job:prepare:
+  stage: prepare
+  before_script:
+    - *install-node-modules
+  script:
+    - npm run lint
+    - npm run build
+  artifacts:
+    expire_in: 25min
+    paths:
+      - dist/
+  allow_failure: false
+  <<: *when_to_run
+
+
+job:test:
+  stage: test
+  coverage: '/All files[^|]*\|[^|]*\s+([\d\.]+)/'
+  script:
+    - *install-node-modules
+    - ls node_modules -lh
+    - npm run test
+  artifacts:
+    when: always
+    reports:
+      junit: junit.xml
+      coverage_report:
+        coverage_format: cobertura
+        path: coverage/cobertura-coverage.xml
+  allow_failure: false
+  <<: *when_to_run
+  dependencies: []
+```
+**代码 2.3.2**
+
+在代码的开头，我们使用了 `pnpm config set store-dir /pnpm/store` 强制让 pnpm 使用目录 /pnpm/store 目录来存储磁盘缓存文件。如果你是使用 shell 模式的话，这么配置完可以直接用，只要保证在 runner 执行的机器上 `/pnpm/store` 目录存在即可。如果使用 docker 模式，我们需要修改 runner 的 `/etc/gitlab-runner/config.toml` 文件，找到注册 runner 的配置，修改 `runners.docker` 下的 `volumes` 配置：
+
+```toml
+[[runners]]
+  name = "My Docker Runner"
+  url = "https://xxx.gitlab.com"
+  id = xxxx
+  token = "yyyy"
+  token_obtained_at = 2023-12-16T12:54:50Z
+  token_expires_at = 0001-01-01T00:00:00Z
+  executor = "docker"
+  [runners.cache]
+    MaxUploadedArchiveSize = 0
+  [runners.docker]
+    tls_verify = false
+    image = "docker:20.10.16"
+    privileged = true
+    disable_entrypoint_overwrite = false
+    oom_kill_disable = false
+    disable_cache = false
+    volumes = ["/var/run/docker.sock:/var/run/docker.sock","/cache", "/opt/pnpm/store:/pnpm/store"]
+    shm_size = 0
+    network_mtu = 0
+```
+**代码 2.3.3**
+
+上述配置中，我们将宿主机中的 `/opt/pnpm/store` 目录映射到容器中的 `/pnpm/store`，读者可以根据实际情况进行映射。
+
+这么设置完之后，不光当前项目会收益于 pnpm 的缓存，任何和此项目配置相同 pnpm 缓存路径的项目也能受益。
