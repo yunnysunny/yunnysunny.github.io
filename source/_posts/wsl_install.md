@@ -111,6 +111,16 @@ echo $TOKEN
 
 win10 下的 wsl2 默认会预留若干端口，导致我们程序中无法再使用这些端口做监听，在启动时程序会报错误 `listen EACCES: permission denied`，通过命令 `netsh interface ipv4 show excludedportrange protocol=tcp` 可以查看哪些端口被占用了。
 
+想要把你被占用的端口再“抢夺”回来，可以使用超级管理员运行 powershell，然后输入如下命令：
+
+```powershell
+netsh int ipv4 set dynamic tcp start=49152 num=16384
+netsh int ipv6 set dynamic tcp start=49152 num=16384
+```
+
+**代码 2.1.1**
+
+记住输入上述命令后，你需要重启，否则不会生效。
 ### 2.2 WSL2 下运行 docker 命令提示无权限
 
 运行 docker 命令后提示 `Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock`，则证明当前运行 docker 命令的用户不是 root 用户，需要加 sudo 来运行。
@@ -231,3 +241,5 @@ baidu.com.              200     IN      A       220.181.38.251
 上面输出中 `ANSWER SECTION` 中列出来了解析出来的 IP，代表解析成功。同样执行 dig 内网域名，也能被正常解析则证明配置正确。
 
 最后需要说明的是 wsl 不好做 service 的开机自启动，下次启动后需要手动执行 `sudo service dnsmasq start` 才能启动 dnsmasq 。这样就显得不是很友好，可以修改 /etc/resolv.conf，在 `nameserver 127.0.0.1` 的后面再追加一行 `nameserver 119.29.29.29` 这样 dnsmasq 没有启动时，可以保证公网域名能解析。
+## 参考资料
+- [解决 Windows 10 端口被 Hyper-V 随机保留（占用）的问题 | 一个兆基 (zhaoji.wang)](https://zhaoji.wang/solve-the-problem-of-windows-10-ports-being-randomly-reserved-occupied-by-hyper-v/)
