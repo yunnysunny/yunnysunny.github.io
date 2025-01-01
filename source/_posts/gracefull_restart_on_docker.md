@@ -25,7 +25,7 @@ docker 本身在启动的时候，会可以加参数做到容器崩溃后自动�
 
 下面是一个例子用来演示在给定的时间后异常退出当前进程。
 
-> 当前例子的代码都可以从[这里](https://gitlab.com/yunnysunny/docker-start/-/tree/main/start_always)找到
+> 当前例子的代码都可以从[这里](https://gitee.com/yunnysunny/docker-start/tree/main/start_always)找到
 
 ```go
 package main
@@ -54,7 +54,7 @@ func main() {
 
 **代码 1.1 delay_exit.go**
 
-我们制作一个 [dockerfile](https://gitlab.com/yunnysunny/docker-start/-/blob/main/start_always/start_always.Dockerfile) (详细代码参见[链接](https://gitlab.com/yunnysunny/docker-start/-/blob/main/start_always/start_always.Dockerfile))，指定 entrypoint 脚本内容如下
+我们制作一个 [dockerfile]https://gitee.com/yunnysunny/docker-start/blob/main/start_always/start_always.Dockerfile) ，指定 entrypoint 脚本内容如下
 
 ```shell
 #!/bin/bash

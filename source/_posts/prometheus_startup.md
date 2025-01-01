@@ -403,5 +403,5 @@ func main() {
 
 ## 代码
 
-本教程代码可以从这里找到 https://gitlab.com/yunnysunny/prometheus-learn
+本教程代码可以从这里找到 https://gitee.com/yunnysunny/prometheus-learn
 

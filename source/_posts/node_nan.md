@@ -134,6 +134,6 @@ Node.js在升级到0.12后，c++ API部分发生了翻天覆地的变化，如�
       NanReturnUndefined();
     }
 **代码2.4 async.cc**    
-[这里](https://gitlab.com/yunnysunny/async-tutorial-code/tree/master/addon "")有一个利用[nan](https://github.com/nodejs/nan)和node0.10/0.12来完成异步操作的对比。
+[这里](https://gitee.com/yunnysunny/async-tutorial-code/tree/master/addon) 有一个利用 [nan](https://github.com/nodejs/nan) 和 node0.10/0.12 来完成异步操作的对比。
 
-这篇教程仅仅是一个入门操作，就讲到这里了，详细的使用请参考nan的readme文档。
+这篇教程仅仅是一个入门操作，就讲到这里了，详细的使用请参考 nan 的 readme 文档。

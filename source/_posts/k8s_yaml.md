@@ -287,7 +287,7 @@ spec: #这是关于该Deployment的描述，可以理解为你期待该Deploymen
 
 ## 代码
 
-本文代码 https://gitlab.com/yunnysunny/k8s-learn
+本文代码 https://gitee.com/yunnysunny/k8s-learn
 
 本文中引用的部分镜像代码来源于 https://github.com/yunnysunny/dockerfiles
 

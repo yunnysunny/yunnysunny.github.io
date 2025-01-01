@@ -99,4 +99,4 @@ TARGET_PLATFORM := android-3
 在编译的时候，编译器就会去加载jni目录下的`include/openssl/pkcs12.h`文件。  
 >其实libcrypto.so在安卓系统的`/system/lib`就存在了，虽然编译完成之后libcrypto.so会被拷贝到安卓项目的libs目录的armeabi下，但是在APP运行时读取的还是`/system/lib`下的libcrypto.so。可以把libcrypto.so和openssl文件目录分别拷贝到NDK目录下的`platforms\android-3\arch-arm\usr`中的`lib`和`include`目录，这样不需要写`include $(PREBUILT_SHARED_LIBRARY)`代码块了。
 
-    本文用的代码可以从https://gitlab.com/yunnysunny/ndk/-/tree/master/chapter4 获取。
+    本文用的代码可以从 https://gitee.com/yunnysunny/ndk/tree/master/chapter4 获取。

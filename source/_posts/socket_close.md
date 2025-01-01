@@ -32,7 +32,7 @@ CloseSocket(client);
 	#endif
 代码片段1.2
 
-![socket的关闭流程1](https://gitlab.com/yunnysunny/socket_close/-/raw/master/doc/close1.png)
+![socket的关闭流程1](images/close1.png)
 
 图1.1 CLOSE_WAIT出现流程
 
@@ -66,7 +66,7 @@ clear:
 代码片段1.3
 
 这里摘录了服务器端部分代码，注意这个recv函数，这个函数在连接建立时，会堵塞住当前代码，等有数据接收成功后才返回，返回值为接收到的字节数；但是对于连接对方socket关闭情况，它能立即感应到，并且返回0.所以对于返回0的时候，可以跳出循环，结束当前socket处理，进行一些垃圾回收工作，注意最后一句closesocket操作是很重要的，假设没有写这句话，服务器端会一直处于CLOSE_WAIT状态。如果写了这句话，那么socket的流程就会是这样的：
-![socket的关闭流程2](https://gitlab.com/yunnysunny/socket_close/-/raw/master/doc/close2.png)
+![socket的关闭流程2](images/close2.png)
 
 图1.2 `TIME_WAIT`出现流程
 
@@ -118,7 +118,7 @@ so_linger.l_linger = 0;
 ```
 
 如果客户端的socket是这么设置的那么socket的关闭流程就直接是这个样子了：
-![socket的关闭流程3](https://gitlab.com/yunnysunny/socket_close/-/raw/master/doc/close3.png)
+![socket的关闭流程3](images/close3.png)
 
 图2.1 RST关闭流程
 

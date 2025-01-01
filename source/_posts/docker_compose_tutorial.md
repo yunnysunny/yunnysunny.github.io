@@ -196,4 +196,4 @@ services:
 
 - [docker挂载volume的用户权限问题,理解docker容器的uid](https://www.cnblogs.com/woshimrf/p/understand-docker-uid.html) 
 
-> 本教程源代码项目：https://gitlab.com/yunnysunny/docker-compose-tutorial
+> 本教程源代码项目：[白一梓/docker-compose-tutorial](https://gitee.com/yunnysunny/docker-compose-tutorial)
