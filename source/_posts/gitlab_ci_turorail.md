@@ -53,6 +53,15 @@ sudo gitlab-runner start
 
 **代码 1.2**
 
+> Linux 中通过 useradd 创建完用户后，需要将 /home/gitlab-runner/.bash_logout 中的下面几行注释掉：
+```shell
+if [ "$SHLVL" = 1 ]; then
+    [ -x /usr/bin/clear_console ] && /usr/bin/clear_console -q
+fi
+```
+
+> 否则使用 shell 模式运行 runner 时会报错：ERROR: Job failed: prepare environment: exit status 1. Check [https://docs.gitlab.com/runner/shells/index.html#shell-profile-loading](https://docs.gitlab.com/runner/shells/index.html#shell-profile-loading) for more information 。
+
 其他操作系统的的安装教程，可以参见官方文档 [Install GitLab Runner | GitLab](https://docs.gitlab.com/runner/install/) 。
 **图 1.1**
 ### 1.1 注册
