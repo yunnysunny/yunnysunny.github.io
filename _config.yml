@@ -37,6 +37,7 @@ skip_render:
   - "sogousiteverification.txt"
   - "shenma-site-verification.txt"
   - "MP_verify_FeNZ2NZKikoIyVsF.txt"
+  - "mermaid.ejs"
 
 # Writing
 new_post_name: :title.md # File name of new posts

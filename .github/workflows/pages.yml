@@ -32,7 +32,7 @@ jobs:
       - name: Install Dependencies
         run: yarn install
       - name: Clean
-        run: rm -rf db.json && rm -rf docs
+        run: rm -rf db.json && rm -rf docs && cp -r scripts/layout/_partials/plugins/mermaid.ejs node_modules/hexo-theme-fluid/layout/_partials/plugins/mermaid.ejs
       - name: Build
         run: npm run build
       # - name: Deploy

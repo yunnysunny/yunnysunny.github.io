@@ -10,7 +10,8 @@ code:
     prismjs:
       style: "default"
       preprocess: true
-
+static_prefix:
+  mermaid: https://cdn.jsdelivr.net/npm/mermaid@11/dist/
 giscus:
   repo:  yunnysunny/yunnysunny.github.io # Github repository name
   repo-id: MDEwOlJlcG9zaXRvcnkyMDU4ODk4Ng==
