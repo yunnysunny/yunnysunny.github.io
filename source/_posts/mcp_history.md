@@ -133,7 +133,7 @@ server.tool(
 	    };
 });
 server.tool(
-  'get location',
+  'get-location',
   'Get latitude and longitude from current location',
   {},
   async () => {
@@ -152,7 +152,7 @@ server.tool(
 
 **代码 2.1.1 server.ts**
 
-上述代码只包含单纯函数调用部分，最终这个执行结果还是要通过传输协议发送给请求者，这在 MCP 中被称之为 transport。MCP 协议中定义了 transport 的模式包括 监听标准输出模型、HTTP SSE 、HTTP stream 模式。如果开发者想给本地桌面程序提供 MCP 服务的话，可以直接用 fork 一个子进程，并监听标准输出；如果是服务器端封装大模型调用的话，更合理的方式是通过 HTTP 协议进行调用。这里只演示 HTTP stream 模式的代码封装：
+上述代码只包含单纯函数调用部分，最终这个执行结果还是要通过传输协议发送给请求者，这在 MCP 中被称之为 transport。MCP 协议中定义了 transport 的模式包括 监听标准输出模型、HTTP SSE 、HTTP stream 模式。如果开发者想给本地桌面程序提供 MCP 服务的话，可以直接用 fork 一个子进程，并监听标准输出；如果是服务器端封装大模型调用的话，更合理的方式是通过 HTTP 协议进行调用。这里只先给出 HTTP stream 模式的代码封装：
 
 ```typescript
 import express, { Request, Response } from "express";
@@ -195,9 +195,69 @@ app.post('/mcp', async (req: Request, res: Response) => {
 });
 ```
 
-**代码 2.1.2 transport.ts**
+**代码 2.1.2 streamable-transport.ts**
 
-写完服务器端代码，就可以测试当前各个 tools 函数是否运行正常
+标准输出的传输模式代码比较简单：
+
+```typescript
+import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
+import { server } from "./server";
+
+async function main() {
+  const transport = new StdioServerTransport();
+  await server.connect(transport);
+  console.error("Weather MCP Server running on stdio");
+}
+main().catch((error) => {
+  console.error("Fatal error in main():", error);
+  process.exit(1);
+});
+```
+
+**代码 2.1.3 stdout-transport.ts**
+
+写完服务器端代码，就可以测试当前各个 tools 函数是否运行正常，Anthropic 提供了两个工具，一个是  Claude Desktop ，一个是 @modelcontextprotocol/inspector 。前者在国内无法注册账号，后者是一个 npm 包，所以我们只能选择后者。
+
+要想调试，首先要有一个完整的工程，本教程代码已经在 github 上托管 https://github.com/whyun-demo/mcp-demo 。
+
+> 项目中使用了 和风天气 https://www.qweather.com/ 来获取天气预报数据，需要提前申请好开发 key。
+
+其 package.json 文件中包含了如下几个脚本：
+
+```json
+scripts": {
+	"test": "echo \"Error: no test specified\" && exit 1",
+	"start": "dotenvx run --  tsx src/stdout-transport.ts",
+	"streamable": "dotenvx run --  tsx src/streamable-transport.ts",
+	"inspect:stdout": "mcp-inspector npm run start",
+	"inspect": "mcp-inspector",
+	"client": "dotenvx run --  tsx src/client/client.ts",
+	"build": "tsc"
+},
+```
+
+**代码 2.1.4 package.json 中的脚本命令**
+
+运行 `npm run inspect:stdout` 即启动调试程序，启动成功后控制台会输出：
+
+```
+Starting MCP inspector...
+⚙️ Proxy server listening on port 6277
+🔍 MCP Inspector is up and running at http://127.0.0.1:6274 🚀
+```
+
+浏览器打开 http://127.0.0.1:6274 ，点击 Connect 按钮，底层代码会 fork 一个 node 进程来加载 MCP server 代码，并监听 MCP server 的标准输出。连接成功后，点击 List Tools 按钮，然后选择一个函数，填入输出参数（如果有的话），点击 Run Tool 按钮，即可看到执行结果。
+
+
+
+
+![](images/connect_mcp.jpeg)
+**图 2.1.1**
+
+![](images/run_tool.jpeg)
+
+**图 2.1.2**
+
 
 ### 2.2 客户端
 ```typescript
@@ -335,5 +395,37 @@ sequenceDiagram
     requester->>U: 返回大模型最终输出的文本响应
 ```
 
-**时序图 2.1 processQuery 使用流程**
+**时序图 2.2.1 processQuery 使用流程**
 
+代码的第 69 行 `this.mcp.callTool` 看上去是一个黑盒调用，不过我们可以通过抓包的方式来看一下 mcp 客户端和服务器端的通信的数据结构，下面是我们抓的获取天气的请求和影响的数据包：
+
+```
+POST /mcp HTTP/1.1
+host: localhost:3000
+connection: keep-alive
+content-type: application/json
+accept: application/json, text/event-stream
+accept-language: *
+sec-fetch-mode: cors
+user-agent: node
+accept-encoding: gzip, deflate
+content-length: 138
+
+{"method":"tools/call","params":{"name":"get-forecast","arguments":{"latitude":1.3553794,"longitude":103.8677444}},"jsonrpc":"2.0","id":3}
+HTTP/1.1 200 OK
+X-Powered-By: Express
+Content-Type: text/event-stream
+Cache-Control: no-cache
+Connection: keep-alive
+Date: Tue, 06 May 2025 14:15:55 GMT
+Transfer-Encoding: chunked
+
+event: message
+data: {"result":{"content":[{"type":"text","text":"Forecast for 1.3553794, 103.8677444:\n\nCurrent Time: 2025-05-06T21:50+08:00\nTemperature: 30°\nWind: 2 ESE\nPartly Cloudy\n---"}]},"jsonrpc":"2.0","id":3}
+```
+
+**数据包 2.2.1**
+
+可以看出响应是常用的 SSE 的数据包结构，也就是说假设我们不用 **Anthropic** 提供的 MCP SDK 包，自己手写一个 MCP 服务器代码，难度也不大。
+
+> 本地测试的时候，推荐使用字节跳动（https://www.volcengine.com/）提供的模型来运行，我使用过硅基流动的 API，不是很稳定。
