@@ -428,4 +428,4 @@ data: {"result":{"content":[{"type":"text","text":"Forecast for 1.3553794, 103.8
 
 可以看出响应是常用的 SSE 的数据包结构，也就是说假设我们不用 **Anthropic** 提供的 MCP SDK 包，自己手写一个 MCP 服务器代码，难度也不大。
 
-> 本地测试的时候，推荐使用字节跳动（https://www.volcengine.com/）提供的模型来运行，我使用过硅基流动的 API，不是很稳定。
+> 本地测试的时候，推荐使用字节跳动（ https://www.volcengine.com/ ）提供的模型来运行，我使用过硅基流动的 API，不是很稳定。
