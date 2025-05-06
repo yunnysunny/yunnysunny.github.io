@@ -3,6 +3,7 @@ title: mcp协议的前世今生
 date: 2025-05-01
 description: 随着智能体这个概念的大火，一个伴随起而来的 MCP 协议也渐渐走入技术人员的视野，这篇教程主要是用来智能体为何要使用 MCP 协议，以及它是怎么一步步演变过来的，适合想入手智能体开发的新手同学。
 abbrlink: mcp-history
+mermaid: true
 categories:
   - AI
   - MCP
@@ -77,6 +78,26 @@ print(f"Model>\t {message.content}")
 **代码 1.1**
 
 上述代码中第一调用 send_messages 函数，仅仅发送了 user 角色的消息，大模型检查测到当前提示词是问天气的，同时发现传递给大模型的 tools 中恰好含有一个天气处理的函数，于是在返回给调用者你需要使用天气处理函数来查询天气。调用者通过天气处理函数拿到天气描述后，再一次调用大模型，只不过这一次调用的时候除了之前的 user 角色的消息外，又追加了一条 tool 角色的消息，消息的正文是天气的描述信息。在这一次调用完成后，大模型看到提示词中的天气内容已经完成查询了，就会直接输出最终的自然语言返回给调用者，整个流程结束。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant requester as 大模型请求者
+    participant bigger as 大模型服务器
+
+
+    U->>requester: 输入提示词<br>How's the weather in Hangzhou?
+    requester->>bigger: 发送提示词 [How's the weather in Hangzhou?]<br> 和 tools 列表[get_weather]
+    bigger->>requester: 你需要调用 get_weather 函数
+    requester-->>requester: 调用 get_weather 函数，拿到天气描述信息
+    requester-->>bigger: 发送提示词 <br>[<br>How's the weather in Hangzhou?,<br> get_weather 的返回值<br>]<br> 和 tools 列表
+    bigger-->>requester: 不需要再调用 tools 函数，<br>只返回纯文本的响应结果
+    requester-->>U: 返回大模型最终输出的文本响应
+
+```
+
+**时序图 1.1 tools 参数使用流程**
 
 ## 2. MCP 协议
 通过 tools 这个参数简化了提示词的编写成本，让大模型和动态数据之间的交互更加灵活。不过在去年，也就是 24 年，智能体这个概念概念兴起，它所借助的也是 tools 这个功能，将传统 API 包裹成 一个个 tools 函数，这样就可以使用问答的模式来调用这些传统 API 了。但是在调用过程中，会发现将传统 API 改成 tools 的话，需要将很多 API 调用代码和大模型提示词的代码耦合在一期，显得不够优雅，且复用程度不高。于是在 2024 年 11 月，Anthropic 发布了 MCP 协议，将 tools 的封装单独抽离到独立的服务器，然后通过远程调用的模式来提供给大模型调用方。
@@ -287,6 +308,30 @@ main();
 
 MCP 中对于 tools 的数据结构客户端代码和 openai 不是很匹配，所以在 connectToServer 函数中做了数据结构转化。
 
-在一个提示词中可能不仅仅命中一个 tool 函数，所以在函数 processQuery 中有一个迭代调用的过程，命中完一个 tool 调用后，追加上 tool 调用的结果，重新调用一遍 processQuery 函数。
+在一个提示词中可能不仅仅命中一个 tool 函数，所以在函数 processQuery 中有遍历命中的 tool 函数列表，分别进行调用，每次调用完成后，追加原始的提示词 messages 数组中。接着重新调用一遍 processQuery 函数， 如果发现大模型还是有命中的 tool 函数，将前面的流程再迭代执行一遍；否则说明当前没有任何 tool 函数需要被调用了，直接返回给用户最终响应结果即可。
 
-> 这个processQuery 函数实现的依然有逻辑漏洞，假设一次调用完成后，大模型同时返回两个或多个 tool_call 时，调用顺序会乱，不过不影响我们这个简单的调用流程。 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as 用户
+    participant requester as 大模型请求者
+    participant bigger as 大模型服务器
+    participant mcp-server as MCP服务器
+
+    U->>requester: 输入提示词<br>用户提示词XXX
+    loop 请求大模型
+        requester->>bigger: 发送提示词 [用户提示词XXX]<br>和 tools 列表<br>[函数A, 函数B, ..., 函数N]
+        bigger->>requester: 大模型的响应结果
+        alt 需要调用函数X, 函数Y
+            requester->>mcp-server: 调用函数X, 函数Y
+            mcp-server-->>requester: 返回函数X, 函数Y执行结果
+            requester->>bigger: 发送提示词<br>[用户提示词XXX,<br>函数X的返回值,<br>函数Y的返回值]<br>和 tools 列表
+        else 不需要调用函数<br>只返回纯文本响应
+	        requester->>requester: 结束大模型请求
+        end
+    end
+    requester->>U: 返回大模型最终输出的文本响应
+```
+
+**时序图 2.1 processQuery 使用流程**
+
