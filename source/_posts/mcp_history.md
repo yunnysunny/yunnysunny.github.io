@@ -197,6 +197,8 @@ app.post('/mcp', async (req: Request, res: Response) => {
 
 **代码 2.1.2 transport.ts**
 
+写完服务器端代码，就可以测试当前各个 tools 函数是否运行正常
+
 ### 2.2 客户端
 ```typescript
 import { Client } from "@modelcontextprotocol/sdk/client/index.js";

@@ -13,9 +13,10 @@ jobs:
   pages:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v2  # 先安装 pnpm
         with:
-          fetch-depth: 0
+          version: 10.6.1
       - name: Restore file update time
         run: git ls-files -z | while read -d '' path; do touch -d $(git log -1 --format="@%ct" "$path") "$path"; done
       # 设置Node.js 环境并安装pnpm 
@@ -23,11 +24,7 @@ jobs:
         with:
           node-version: 20 
           cache: 'pnpm'
- 
-      # 安装pnpm（指定版本或最新）
-      - name: Install pnpm 
-        run: npm install -g pnpm
- 
+      # 缓存 pnpm store
       - uses: actions/cache@v4
         with:
           path: ~/.pnpm-store 
