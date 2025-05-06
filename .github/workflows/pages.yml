@@ -18,19 +18,27 @@ jobs:
           fetch-depth: 0
       - name: Restore file update time
         run: git ls-files -z | while read -d '' path; do touch -d $(git log -1 --format="@%ct" "$path") "$path"; done
-      - name: Use Node.js 16.x
-        uses: actions/setup-node@v2
+      # 设置Node.js 环境并安装pnpm 
+      - uses: actions/setup-node@v4
         with:
-          node-version: '16'
-      - name: Cache NPM dependencies
-        uses: actions/cache@v2
+          node-version: 20 
+          cache: 'pnpm'
+ 
+      # 安装pnpm（指定版本或最新）
+      - name: Install pnpm 
+        run: npm install -g pnpm
+ 
+      - uses: actions/cache@v4
         with:
-          path: node_modules
-          key: ${{ runner.OS }}-npm-cache
-          restore-keys: |
-            ${{ runner.OS }}-npm-cache
+          path: ~/.pnpm-store 
+          key: ${{ runner.os  }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml')  }}
+      # 安装依赖并缓存（加速后续构建）
+      - name: Install dependencies 
+        run: pnpm install 
+        env:
+          PNPM_HOME: ~/.pnpm 
       - name: Install Dependencies
-        run: yarn install
+        run: pnpm install
       - name: Clean
         run: rm -rf db.json && rm -rf docs && cp -r scripts/layout/_partials/plugins/mermaid.ejs node_modules/hexo-theme-fluid/layout/_partials/plugins/mermaid.ejs
       - name: Build
