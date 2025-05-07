@@ -220,7 +220,7 @@ main().catch((error) => {
 
 要想调试，首先要有一个完整的工程，本教程代码已经在 github 上托管 https://github.com/whyun-demo/mcp-demo 。
 
-> 项目中使用了 和风天气 https://www.qweather.com/ 来获取天气预报数据，需要提前申请好开发 key。
+> 项目中使用了 和风天气 https://www.qweather.com/ 来获取天气预报数据，需要提前申请好开发 key。同时需要申请大模型用的 API KEY。具体参见项目的 `example.env` 文件说明。
 
 其 package.json 文件中包含了如下几个脚本：
 
@@ -247,9 +247,6 @@ Starting MCP inspector...
 ```
 
 浏览器打开 http://127.0.0.1:6274 ，点击 Connect 按钮，底层代码会 fork 一个 node 进程来加载 MCP server 代码，并监听 MCP server 的标准输出。连接成功后，点击 List Tools 按钮，然后选择一个函数，填入输出参数（如果有的话），点击 Run Tool 按钮，即可看到执行结果。
-
-
-
 
 ![](images/connect_mcp.jpeg)
 **图 2.1.1**
@@ -383,11 +380,11 @@ sequenceDiagram
     U->>requester: 输入提示词<br>用户提示词XXX
     loop 请求大模型
         requester->>bigger: 发送提示词 [用户提示词XXX]<br>和 tools 列表<br>[函数A, 函数B, ..., 函数N]
-        bigger->>requester: 大模型的响应结果
+        bigger->>requester: 大模型的响应结果，记为响应R
         alt 需要调用函数X, 函数Y
             requester->>mcp-server: 调用函数X, 函数Y
             mcp-server-->>requester: 返回函数X, 函数Y执行结果
-            requester->>bigger: 发送提示词<br>[用户提示词XXX,<br>函数X的返回值,<br>函数Y的返回值]<br>和 tools 列表
+            requester->>bigger: 发送提示词<br>[用户提示词XXX,<br>响应R,<br>函数X的返回值,<br>函数Y的返回值]<br>和 tools 列表
         else 不需要调用函数<br>只返回纯文本响应
 	        requester->>requester: 结束大模型请求
         end
@@ -428,4 +425,4 @@ data: {"result":{"content":[{"type":"text","text":"Forecast for 1.3553794, 103.8
 
 可以看出响应是常用的 SSE 的数据包结构，也就是说假设我们不用 **Anthropic** 提供的 MCP SDK 包，自己手写一个 MCP 服务器代码，难度也不大。
 
-> 本地测试的时候，推荐使用字节跳动（ https://www.volcengine.com/ ）提供的模型来运行，我使用过硅基流动的 API，不是很稳定。
+> 本地测试的时候，推荐使用字节跳动（ https://www.volcengine.com/ ）提供的免费额度模型来运行，我使用过硅基流动的免费 API，不是很稳定。
