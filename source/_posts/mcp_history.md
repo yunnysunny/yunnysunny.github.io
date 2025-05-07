@@ -89,9 +89,9 @@ sequenceDiagram
 
     U->>requester: 输入提示词<br>How's the weather in Hangzhou?
     requester->>bigger: 发送提示词 [How's the weather in Hangzhou?]<br> 和 tools 列表[get_weather]
-    bigger->>requester: 你需要调用 get_weather 函数
-    requester-->>requester: 调用 get_weather 函数，拿到天气描述信息
-    requester-->>bigger: 发送提示词 <br>[<br>How's the weather in Hangzhou?,<br> get_weather 的返回值<br>]<br> 和 tools 列表
+    bigger-->>requester: 返回响应 R，R 中给出调用 get_weather 函数的说明
+    requester->>requester: 调用 get_weather 函数，拿到天气描述信息
+    requester->>bigger: 发送提示词 <br>[<br>How's the weather in Hangzhou?,<br>响应R,<br> get_weather 的返回值<br>]<br> 和 tools 列表
     bigger-->>requester: 不需要再调用 tools 函数，<br>只返回纯文本的响应结果
     requester-->>U: 返回大模型最终输出的文本响应
 
@@ -383,7 +383,7 @@ sequenceDiagram
         bigger->>requester: 大模型的响应结果，记为响应R
         alt 需要调用函数X, 函数Y
             requester->>mcp-server: 调用函数X, 函数Y
-            mcp-server-->>requester: 返回函数X, 函数Y执行结果
+            mcp-server->>requester: 返回函数X, 函数Y执行结果
             requester->>bigger: 发送提示词<br>[用户提示词XXX,<br>响应R,<br>函数X的返回值,<br>函数Y的返回值]<br>和 tools 列表
         else 不需要调用函数<br>只返回纯文本响应
 	        requester->>requester: 结束大模型请求
