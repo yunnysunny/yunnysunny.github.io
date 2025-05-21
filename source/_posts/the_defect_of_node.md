@@ -66,9 +66,9 @@ Node.js 在起步之初，语言层面只能利用单进程，后来官方引入
 >
 > internal/cluster/round_robin_handle.js 正是 Node 中处理主进程给工作进程分发 socket 句柄的逻辑的代码。
 
-解决当前问题的思路，无怪乎有三种：提高当前策略的效率，换一个更高效稳定的策略，降低客户端连接建立频率。对于第一种解决方案，在 pull request [#40615](https://github.com/nodejs/node/pull/40615) 中得到改善，目前代码正在被合并到主线中，尚未发布 Node 版本中；对于第二种方案，可以使用 Linux 内核 3.9+ 中新出来的 SO_REUSEPORT 特性来解决，需要同时改造 libuv 和 Node 源码，参见 pull request [#3198](https://github.com/libuv/libuv/pull/3198)，不过目前依然没有得到官方的合并通过。
+解决当前问题的思路，无怪乎有三种：提高当前策略的效率，换一个更高效稳定的策略，降低客户端连接建立频率。对于第一种解决方案，在 pull request [#40615](https://github.com/nodejs/node/pull/40615) 中得到改善；对于第二种方案，可以使用 Linux 内核 3.9+ 中新出来的 `SO_REUSEPORT` 特性来解决，官方在 [22.12.0](https://nodejs.org/api/net.html#serverlisten) 版本提供了支持，对于老版本 Node 来说可以采用下面的方案三。
 
-那么我们能实操的就只有方案三了，有高并发的服务一般都是大量用户同时访问导致的，对于这种从用户端来的流量，我们按照管理都会在前面架设 nginx，来做 https 证书解析和反向代理。我们就可以在这个 nginx 上做文章。
+有高并发的服务一般都是大量用户同时访问导致的，对于这种从用户端来的流量，我们按照管理都会在前面架设 nginx，来做 https 证书解析和反向代理。我们就可以在这个 nginx 上做文章。
 
 比如说我们有如下 nginx 配置：
 

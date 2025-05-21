@@ -21,6 +21,8 @@ curl -sSL https://get.daocloud.io/docker | sh
 
 安装 [docker desktop](https://www.docker.com/products/docker-desktop)。其基于 WSL2，需要安装 [WSL2](https://docs.microsoft.com/en-us/windows/wsl/install-win10#manual-installation-steps) ，否则无法启动。具体教程可以参见之前的博文 [wsl 和 docker desktop 的安装教程](https://blog.whyun.com/posts/wsl-and-docker-desktop-install/)。
 
+> 本文原始链接 https://blog.whyun.com/posts/dockerfile-tutorials/ ，转载请注明出处。
+
 ## 1 dockerfile
 
 ### 1.1 简单示例

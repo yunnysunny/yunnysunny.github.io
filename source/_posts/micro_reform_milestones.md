@@ -17,6 +17,8 @@ categories:
 
 **图 1.1 基于优先级的服务拓扑结构**
 
+> 本教程原始链接：https://blog.whyun.com/posts/micro-reform-milestones/ ，转载请注明出处。
+
 不过随着业务的深入发展，具体到某一个消息类型的处理流程可能会越来越复杂。拿答题上报来说，我们第一版的流程是这样的：
 
 ![](images/answer_report_flow1.png)
