@@ -1,17 +1,18 @@
 ---
 abbrlink: k8s-yaml
-title: k8s 部署文件简谈
-date:  2022-02-27
+title: 手把手教你 Kubernetes 服务部署：Deployment 与 Service 实战
+date: 2022-02-27
 description: 这篇文章通过讲解 k8s 中 yaml 配置文件的编写过程，来让大家熟悉如何在 k8s 中部署应用；同时会讲解初学者如何使用免费 k8s 环境来做练习。
 typora-copy-images-to: ..\images
 typora-root-url: ..
 categories:
-
-- [Cloud Native, K8s]
+  - - Cloud Native
+    - K8s
 ---
 
 在之前的教程 [k8s 网络原理入门](https://blog.whyun.com/posts/k8s-startup/) 中，我们了解到更多的是 k8s 如何保证集群内部各个服务在网络上互通。而这篇教程主要是讲实操的内容，会讲如何在 k8s 内部部署服务。
 
+> 本文原始链接：https://blog.whyun.com/posts/k8s-yaml/ ，转载请注明出处。
 ## 1. 基本操作
 
 ### 1.1 deployment
@@ -157,24 +158,9 @@ port 属性在 **代码 1.2.1** 中已经演示，一个 k8s 的 service 被访�
 k8s 本身没有提供负载均衡解决方案，虽然它预留了 `LoadBalancer` 类型的 service 定义（也就是将 **代码 1.2.1** 中的 `spec.type` 改为 `LoadBalancer` ），但是官方却没有给出具体实现方式。也就是说你自建一个 k8s 集群的话，是没有负载均衡功能的，不过你使用 阿里云、谷歌云之类的云服务倒是都实现 `LoadBalancer`，不过那就需要牵扯到付费服务了。
 
 业内对于这个问题的解决方案大体上分为一下几个个思路，一个是使用类似 Istio 、Linkerd 这些 Service Mesh 解决方案，不但给你解决负载均衡问题，还令带给你解决流量管控等问题，不过这种全家桶类型的解决方案对于原有架构来说是一个重大的升级。如果想追求，还可以使用一些第三方的反代工具，比如说 Envoy 。还有一种方案是直接对接 k8s 的 API，在客户端做服务发现和负载均衡，彻底做到自研。当然如果你想脱离 k8s 自身的服务转而使用第三方的服务发现组件，比如说 consul，也算是一种选择，主要看当前项目组在哪方面技术积累更深厚了。
+## 2. 实践与扩展
 
-## 2. 免费 k8s 资源
-
-由于 k8s 环境搭建需要一定的时间，且需要耗费一定的硬件资源，如果手动暂时没有 k8s 环境的话，可能连第 1 小节练习 k8s 命令的机会都没有。不过，不要慌，https://cloud.okteto.com/ 上可以申请免费的 k8s 资源，只需要用 github 账户登录即可。它最多可以创建 10 个 pod，一般练习使用够用了。不过毕竟是免费的，有一些功能是不能用的，比如说创建 NodePort 类型的 service、修改操作系统内核参数等若干影响到宿主机的功能是不给提供的。
-
-接着点击左侧 **Settings** 菜单，然后点击按钮 **Download Config File**，然后会弹出设置 `KUBECONFIG` 环境变量的提示框，将其命令拷贝到终端执行，则当前终端中就能直接找到 k8s 的配置文件，否则的话你执行 kubectl 命令的时候，都需要添加 ` --kubeconfig ` 的参数。
-
-![image-20220227203214263](images/image-20220227203214263.png)
-
-**图 2.1**
-
-<img src="/images/image-20220227203127277.png" alt="image-20220227203127277" style="zoom: 80%;" />
-
-**图 2.2**
-
-## 3. 实践与扩展
-
-由于 k8s 可以方便的做扩容，所以在执行压测程序时特别方便，这里给出一个在 k8s 中做打压的实例。由于性能测试非常消耗机器资源，请不要在 okteto 上尝试，否则容易封号。
+由于 k8s 可以方便的做扩容，所以在执行压测程序时特别方便，这里给出一个在 k8s 中做打压的实例。
 
 ```yaml
 apiVersion: apps/v1 #与k8s集群版本有关，使用 kubectl api-versions 即可查看当前集群支持的版本

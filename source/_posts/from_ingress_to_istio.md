@@ -1,13 +1,16 @@
 ---
-title: 从 ingress 到 istio
-date:  2025-04-20
+title: 从七层代理到服务网格：K8S 中 Ingress 与 Istio 的对比与实战应用
+date: 2025-04-20
 description: 提到 k8s 网关服务，我们一般想到的就是 ingress，不过 istio 作为后起之秀，能够对于服务流量进行更精确的管控，逐渐吸引了更多企业的目光。本文通过简短的介绍来比较两者之间的异同，让你在做技术选项时更加有的放矢。
 abbrlink: from-ingress-to-istio
 categories:
-- [Cloud Native, K8s]
+  - - Cloud Native
+    - K8s
 ---
 
 提到 k8s 网关服务，我们一般想到的就是 ingress，不过 istio 作为后起之秀，能够对于服务流量进行更精确的管控，逐渐吸引了更多企业的目光。本文通过简短的介绍来比较两者之间的异同，让你在做技术选项时更加有的放矢。
+
+> 本文原始链接 https://blog.whyun.com/posts/from-ingress-to-istio/ ，转载请注明出处。
 
 ## 1. 为何使用 ingress
 
