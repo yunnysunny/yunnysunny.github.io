@@ -379,7 +379,7 @@ DOCKER_BUILDKIT=1 docker build --file bin.Dockerfile --output bin .
 > 代码 1.4.1 和 代码 1.4.2 , 可以从项目 [use-my](https://gitlab.com/yunnysunny/use-my) 中找到。
 
 ### 1.5 交叉构建
-docker 镜像支持在不同 CPU 平台中，通过 pull 同一个镜像名来下载对应平台的镜像。这就要求我们在构建镜像中的时候开启交叉构建支持。比如说你当前是 x86 平台，构建的时候还想同时构建 arm 平台的镜像，可以通过 --platform=linux/amd64,linux/arm64 参数实现。但是我们在构建镜像内部要安装的二进制包，就需要区别对待了，为此 docker 会预知几个构建参数，对于 platform 为 linux/amd64 来说，会注入如下几个构建参数：
+docker 镜像支持在不同 CPU 平台中，通过 pull 同一个镜像名来下载对应平台的镜像。这就要求我们在构建镜像中的时候开启交叉构建支持。比如说你当前是 x86 平台，构建的时候还想同时构建 arm 平台的镜像，可以通过 --platform=linux/amd64,linux/arm64 参数实现。但是我们在构建镜像内部要安装的二进制包，就需要区别对待了，为此 docker 会预置几个构建参数，对于 platform 为 linux/amd64 来说，会注入如下几个构建参数：
 - `TARGETPLATFORM=linux/amd64`
 - `TARGETOS=linux`
 - `TARGETARCH=amd64`
@@ -387,9 +387,9 @@ docker 镜像支持在不同 CPU 平台中，通过 pull 同一个镜像名来�
 ```dockerfile
 FROM yunnysunny/ubuntu
 RUN apt-get update \
-  && apt-get install --force-yes --no-install-recommends curl  -y \
-  && apt-get clean \
-  && rm -rf /var/lib/apt/lists/
+    && apt-get install --force-yes --no-install-recommends curl  -y \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/
 ARG NODE_VERSION=10.24.1
 ARG NPM_REGISTRY=https://registry.npmmirror.com
 ARG NPM_MIRROR=https://npmmirror.com
@@ -418,7 +418,7 @@ RUN if [ "$TARGETARCH" = "arm64" ] ; then \
 
 ### 2.1 清理磁盘
 
-在 **1.1** 小节讲到 dockerfile 中的每一个命令都会创建一个临时 docker，但是如果你的 dockerfile 文件有问题，执行到一半退出了，那么这些临时 docker 不会被删除，同时这些临时 docker 还会对应临时镜像，也会被保留，素以我们需要定期清理。
+在 **1.1** 小节讲到 dockerfile 中的每一个命令都会创建一个临时 docker，但是如果你的 dockerfile 文件有问题，执行到一半退出了，那么这些临时 docker 不会被删除，同时这些临时 docker 还会对应临时镜像，也会被保留，所以我们需要定期清理。
 
 docker 1.13 版本开始提供了一个实用的命令, `docker system prune` 删除关闭的容器、无用的数据卷和网络，以及dangling镜像（即无tag的镜像），通过 `docker system df` 可以查看当前所有镜像占用的磁盘统计信息。
 
@@ -512,7 +512,7 @@ centos       7         eeb6ee3f44bd   5 weeks ago   204MB
 
 **图 2.3.1 查看 first-centos 的各层空间占用**
 
-可以看到最后两个 yum 命令，会在 /var/cache 中生成大量缓存文件，是导致我们镜像内容变动的原因。yum 的在运行 install 命令时，会检测包元数据的缓存数据是否存在，如果不存在就会重新生成。所以我们在查看 yum install 命令的级联文件变动的时候，会在 /var/cache 下显示如此大的磁盘新增量。
+可以看到最后两个 yum 命令，会在 /var/cache 中生成大量缓存文件，是导致我们镜像内容变动的原因。yum 的在运行 install 命令时，会检测包元数据的缓存数据是否存在，如果不存在就会重新生成。所以我们在查看 yum install 命令的相关文件变动的时候，会在 /var/cache 下显示如此大的磁盘新增量。
 
 接着我们修改一下 **代码 2.3.1** ,增加缓存清理机制：
 
