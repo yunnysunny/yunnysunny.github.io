@@ -307,6 +307,9 @@ before_script:
 ```
 
 **代码 4.1**
+
+> 由于这里 `git config` 命令使用了 `--global` 参数，所以推荐在 docker 模式的 runner 中使用，防止污染宿主环境。关于 docker 模式 runner 配置，参见下一篇文章 [gitlab ci 系列教程（二）—— docker 模式 runner](https://blog.whyun.com/posts/gitlab-runner-docker/) 。
+
 `CI_JOB_TOKEN` 的权限的权限和当前 CI 的触发者的权限一致，所以只要执行 CI 的人也有当前以来项目的仓库 clone 权限，即可使用 `CI_JOB_TOKEN` 的模式 clone 此依赖包。
 
 > 从 gitlab 16.3 开始，官方对于 `CI_JOB_TOKEN` 进行了限制，默认需要在 **Settings -> CI/CD -> Token Access** 中手动添加项目白名单才能允许跨项目访问。如果嫌麻烦，可以直接将 **Limit access to this project** 关闭掉。
