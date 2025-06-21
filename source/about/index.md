@@ -8,4 +8,10 @@ layout: about
 
 原创不易，需要您的支持。
 
-![](images/alipay.jpg)
+**支付宝**
+
+![](images/alipay.jpg) 
+
+**微信公众号**
+
+![](images/mp_wx.jpg)

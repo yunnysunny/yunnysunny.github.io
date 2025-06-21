@@ -508,7 +508,7 @@ centos       7         eeb6ee3f44bd   5 weeks ago   204MB
 
 使用 `dive first-centos` 来查看各个层的文件变动，加载完界面后，按 `Tab` 键激活左右命令行区域，切换到右侧区域后，按 `CTRL+U`键可以过滤掉未修改的文件，只显示被修改的文件。然后再通过 `Tab` 键回到左侧区域，通过方向键切换查看各个指令，对应右侧区域会显示镜像内有哪些文件被更改。
 
-![查看 first-centos 的各层空间占用](images/dive-first.gif)
+<video src="/images/dive-first.mp4" autoplay muted loop></video>
 
 **图 2.3.1 查看 first-centos 的各层空间占用**
 

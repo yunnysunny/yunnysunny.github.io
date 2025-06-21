@@ -11,7 +11,7 @@
     "preview": "cd docs && anywhere 8888"
   },
   "hexo": {
-    "version": "7.2.0"
+    "version": "7.3.0"
   },
   "dependencies": {
     "@next-theme/plugins": "^8.20.0",

@@ -14,7 +14,7 @@ categories:
 ## 1. 跳转路由
 Pages 提供了静态路由跳转的功能，方便你将一些旧有的页面路由迁移到新版本上去。注意这种路由是静态配置，不经过 Workers 代码动态处理，在 cloudflare 上是完全免费的，所以对于静态文件的跳转规则优先使用跳转路由。其实现方式也很简单，在项目构建目录中放置一个 `_redirects` 文件即可。
 ### 1.1 跨域名跳转
-笔者之前是使用 github Pages 功能的，默认所有的开启 github Pages 的项目都挂载到一个域名上，但是 cloudflare Pages 支持每个项目单独设置域名。我将 yunnysunny/yunnysunny.github.io yunnysunny/nodebook 两个项目都迁移到了 cloudflare Pages，迁移后前者域名为 blog.whyun.com，后者域名为 node.whyun.com ；迁移前我将 yunnysunny.github.io 前面配置了 CDN 进行反代，CDN 的域名同样为 blog.whyun.com，所以迁移前两者对应的 github Pages 的访问地址分别为 https://blog.whyun.com 和 https://blog.whyun.com/nodebook 。迁移后，这里我们需要一个跳转规则保证在访问域名 blog.whyun.com 的 nodebook 路径时能够正常跳转到域名 node.whyun.com，为了实现上述目的我们在 `_redirects` 中写入如下一行配置即可：
+笔者之前是使用 github Pages 功能的，默认所有的开启 github Pages 的项目都挂载到一个域名上，但是 cloudflare Pages 支持每个项目单独设置域名。我将 yunnysunny/yunnysunny.github.io yunnysunny/nodebook 两个项目都迁移到了 cloudflare Pages，迁移后前者域名为 blog.whyun.com，后者域名为 node.whyun.com ；迁移前我将 yunnysunny.github.io 前面配置了 CDN 进行反代，CDN 的域名同样为 blog.whyun.com，所以迁移前两者对应的 github Pages 的访问地址分别为 `https://blog.whyun.com` 和 `https://blog.whyun.com/nodebook` 。迁移后，这里我们需要一个跳转规则保证在访问域名 blog.whyun.com 的 nodebook 路径时能够正常跳转到域名 node.whyun.com，为了实现上述目的我们在 `_redirects` 中写入如下一行配置即可：
 ```
 /nodebook/* https://node.whyun.com/:splat 301
 ```
