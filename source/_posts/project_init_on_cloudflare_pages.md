@@ -25,6 +25,12 @@ categories:
 ### 3.1 对接 github 或者 gitlab 的项目
 这个是笔者最推荐的方式，虽然说其只支持对接 github 和 gitlab 项目，但是为了能免费使用 Pages 的功能，将原有不在这两个网站上托管的项目迁移过去，也未尝不可，毕竟现在两个网站都不限制私有仓库的数量。
 
+也许是羊毛薅的太疼了，Clouldflare 新版界面中对于 Pages 做了弱化处理，很多人一开始都会找不着：
+
+![](images/new-entry-for-pages.png)
+
+**图 3.1.0 必须点击这个【开始使用】链接才能进入 Pages 创建页面**
+
 唯一让人感觉到不爽的是，我的 github 项目有些多，它没有提供筛选功能，我只能一页页自己翻。
 ![](images/select_git_project_to_pages.png)
 **图 3.1.1**
