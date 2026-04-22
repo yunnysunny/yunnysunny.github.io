@@ -2,7 +2,7 @@
 title: 无法忍受 openclaw 的龟速启动，我对其源码动手了
 date: 2026-04-22
 description: openclaw 在启动网管服务的时候，会有几分钟的卡顿，实现无法忍受了，决定分析一下其源码，本文主要讲解性能瓶颈的排查思路。
-abbrlink: chinese-ai-history-fantasy
+abbrlink: openclaw-slow-analysis
 typora-copy-images-to: ../images
 typora-root-url: ..\
 categories:
@@ -94,6 +94,3 @@ D:\node\node.exe --inspect=9999  D:\pnpm\global\5\.pnpm\openclaw@2026.4.15_@emna
 
 未完待续……
 
-
-
-![]()
