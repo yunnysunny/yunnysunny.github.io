@@ -35,7 +35,7 @@ categories:
 10:21:51 [plugins] embedded acpx runtime backend ready
 ```
 
-日志 1.0 openclaw 启动日志
+**日志 1.0 openclaw 启动日志**
 
 从上述日志中可以看出执行完 `[hooks] loaded 4 internal hook handlers` 和 `[plugins] embedded acpx runtime backend registered (cwd: C:\Users\yunnysunny\.openclaw\workspace)` 直接隔了几分钟的时间，真是等的黄花菜都凉了。虽然我的电脑是 8 代 i5，老了点，但是官方教程中可以说树莓派都能支持，我这笔记本怎么也是树莓派强多了。
 
@@ -47,20 +47,20 @@ categories:
 D:\node\node.exe --inspect=9999  D:\pnpm\global\5\.pnpm\openclaw@2026.4.15_@emnapi+_63993eeb80c075f86cc91107e81b8ada\node_modules\openclaw\dist\index.js gateway --port 18789
 ```
 
-命令 1.0 调试模式启动 gateway
+**命令 1.0 调试模式启动 gateway**
 
 在运行上述命令之前，需要先打开 Chrome，在地址中输入 `chrome://inspect` 回车，打开远程调试配置界面，在上面点击按钮 `Configure...` ，即可打开远程调试地址配置窗口，在其新增一条 `localhost:9999` 即可
 
 ![](images/remote-debug-port.png)
 
 
-图 1.0 调试端口配置
+**图 1.0 调试端口配置**
 
 接着启动命令，Chrome 会自动检测到可以调试 Node 进程上线，点击 inspect 链接即可打开远程调试控制台。
 
 ![](images/remote-debug-ready.png)
 
-图 1.1 远程调试可用
+**图 1.1 远程调试可用**
 
 远程调试控制台和我们平常用的浏览器网页控制台是一样的，在 Performance 面板点击 Record 按钮即可录制 CPU Profiler，在启动完成后手动结束录制即可。
 
@@ -68,19 +68,25 @@ D:\node\node.exe --inspect=9999  D:\pnpm\global\5\.pnpm\openclaw@2026.4.15_@emna
 
 ![](images/remove-ignore-list.png)
 
-图 1.2 移除 node 代码的忽略选项
+**图 1.2 移除 node 代码的忽略选项**
 
 > 由于生成的 CPU Profiler 比较大，在实时调试时，电脑性能不足的话，会比较卡，可以将其下载下载下来，然后再一个不处于调试状态的 Chrome 内核的浏览器中导入来查看。
 
-点击下侧的 Bottom-up 标签页，可以看到 lstat 这个函数调用最频繁，从火焰图上通过点选带有 lstat 函数的调用块，可以找到下面两个堆栈：
+点击下侧的 Bottom-up 标签页，可以看到 lstat 这个函数调用最频繁。
+
+![](images/lstat.png)
+
+**图 1.3 lstat 调用占大头**
+
+从火焰图上通过点选带有 lstat 函数的调用块，可以找到下面两个堆栈：
 
 ![](images/stack-1.png)
 
-图 1.3 耗时多的堆栈1
+**图 1.4 耗时多的堆栈1**
 
 ![](images/stack-2.png)
 
-图 1.4 耗时多的堆栈 2
+**图 1.5 耗时多的堆栈 2**
 
 我对照者源码看了一下，这两个堆栈中绝大多数代码都是同步调用的，也就是说在主线程上调用，我说启动的时候咋吃满一整颗 CPU 核心，原来症状在这里。话说写个异步版本就是换换语法而已，但是带来的性能提升却是杠杠的，不知道 openclaw 团队是在想什么，现在文件 IO 都堵在了主线程上，不慢才怪。
 
